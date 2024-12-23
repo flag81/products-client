@@ -169,14 +169,110 @@ app.post('/insertProducts1', async (req, res) => {
   }
 });
 
+// write api to get all stores from database table stores
 
+app.get("/getStores", (req, res) => {
+
+  //const q = "SELECT tableid,  users.id  FROM orders join users on orders.userid = users.id WHERE orders.status = 0 ";
+  const q = `SELECT * from stores order by storeId desc`;
+
+  //console.log("getUserEmail:", q);
+
+  const userId= req.query.userId;
+
+    db.query(q, (err, data) => {
+
+    if (err) {
+
+
+      console.log("getStores error:", err);
+      return res.json(err);
+    }
+
+    return res.json(data);
+  });
+});
+
+
+app.get("/searchProducts", (req, res) => {
+  const { keyword } = req.query;
+
+  let q = `
+    SELECT 
+      p.productId as productId, 
+      p.product_description as product_description, 
+      p.old_price as old_price, 
+      p.new_price as new_price, 
+      p.discount_percentage as discount_percentage, 
+      p.sale_end_date as sale_end_date, 
+      p.storeId as storeId, 
+      p.image_url as image_url,
+      GROUP_CONCAT(k.keyword) AS keywords
+    FROM 
+      products p
+    LEFT JOIN 
+      productkeywords pk ON p.productId = pk.productId
+    LEFT JOIN 
+      keywords k ON pk.keywordId = k.keywordId
+  `;
+
+  const queryParams = [];
+
+  if (keyword) {
+    const keywords = keyword.split(' ').map(kw => kw.trim());
+    const keywordConditions = keywords.map(() => `k.keyword LIKE ?`).join(' OR ');
+    q += ` WHERE ${keywordConditions}`;
+    queryParams.push(...keywords.map(kw => `%${kw}%`));
+  }
+
+  q += `
+    GROUP BY 
+      p.productId
+    ORDER BY 
+      p.productId DESC
+  `;
+
+  db.query(q, queryParams, (err, results) => {
+    if (err) {
+      console.error('Error searching products:', err);
+      return res.status(500).json({ error: 'Failed to search products' });
+    }
+    res.status(200).json(results);
+  });
+});
 
 
 
 app.get("/getProducts", (req, res) => {
 
+  //change the query to get all products from the database to include all the keywords for each product , use file schema.sql as reference
+
+
+
+
   //const q = "SELECT tableid,  users.id  FROM orders join users on orders.userid = users.id WHERE orders.status = 0 ";
-  const q = `SELECT * from products `;
+  const q = `
+  SELECT 
+    p.productId, 
+    p.product_description, 
+    p.old_price, 
+    p.new_price, 
+    p.discount_percentage, 
+    p.sale_end_date, 
+    p.storeId, 
+    p.image_url,
+    GROUP_CONCAT(k.keyword) AS keywords
+  FROM 
+    products p
+  LEFT JOIN 
+    productkeywords pk ON p.productId = pk.productId
+  LEFT JOIN 
+    keywords k ON pk.keywordId = k.keywordId
+  GROUP BY 
+    p.productId
+  ORDER BY 
+    p.productId DESC
+`;
   
 
   console.log("getUserEmail:", q);

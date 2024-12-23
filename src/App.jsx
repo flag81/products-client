@@ -20,12 +20,73 @@ function App() {
   const [insertStatus, setInsertStatus] = useState('');
   const [deleteStatus, setDeleteStatus] = useState('');
 
+  const [stores, setStores] = useState([]);
+
   const CLOUD_NAME = 'dt7a4yl1x';
   const API_KEY = '443112686625846';
   const API_SECRET = 'e9Hv5bsd2ECD17IQVOZGKuPmOA4';
 
   // NEW: State to track selected public_id values
   const [selectedImages, setSelectedImages] = useState([]);
+
+  const prompt = 
+
+  'You are a product data extractor from sales flyer. Can you extract product sale information in albanian language from this sales flyer in the format for each product' +
+' Convert ë letter to e for all the keywords. Do not include conjunctions, articles words in albanian, in keywords.\n' +
+ ' Do not include size info for keywords and only words with more than 2 characters as keywords, \n' + 
+ ' The the image url(s) is(are): ';
+
+
+ //change
+
+  const getStores = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/getStores', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setStores(result);
+        console.log('result:', result);
+      } else {
+        console.error('Failed to fetch stores:', result.message);
+      }
+    } catch (error) {
+      console.error('Error fetching stores:', error);
+    }
+  };
+
+
+
+  const searchProducts = async (keyword) => {
+    try {
+      const response = await fetch(`http://localhost:3000/searchProducts?keyword=${encodeURIComponent(keyword)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      const result = await response.json();
+  
+      if (response.ok) {
+        setProducts(result);
+        console.log('result:', result);
+      } else {
+        console.error('Failed to fetch products:', result.message);
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
+  };
+
+  //change getAllProducts to include a keyword sent to the server to filter products
+
 
   const getAllProducts = async () => {
     try {
@@ -167,6 +228,27 @@ function App() {
     );
   };
 
+
+    // NEW: Copy the list of selected public_id values to the clipboard
+    const copyPrompt = () => {
+      const selectedIdsString = selectedImages.join(', ');
+  
+      // GET THE CONTENT OF THE TEXTAREA AND COPY IT TO THE CLIPBOARD
+  
+      navigator.clipboard.writeText(prompt + selectedIdsString).then(
+  
+        () => {
+          setCopySuccess('Copied selected image IDs to clipboard!');
+          setTimeout(() => setCopySuccess(''), 2000); // Clear message after 2 seconds
+        },
+        () => {
+          setCopySuccess('Failed to copy');
+          setTimeout(() => setCopySuccess(''), 2000); // Clear message after 2 seconds
+        }
+      );
+    };
+  
+
     // Handle product insertion
     const insertProducts = async () => {
       const textarea = document.getElementById('products');
@@ -292,13 +374,13 @@ function App() {
         <div>
           <h2>Prompt</h2>
           <textarea
-            value="This is a prompt..."
+            value={prompt}
             readOnly
             rows="4"
             cols="50"
           />
           <br />
-          <button onClick={copySelectedImages}>Copy Selected IDs</button>
+          <button onClick={copyPrompt}>Copy prompt</button>
           <p>{copySuccess}</p>
         </div>
 
@@ -331,6 +413,10 @@ function App() {
           <textarea id="products" name="products" rows="20" cols="50" />
           <br />
           <button onClick={insertProducts}>Insert Products</button>
+
+
+          <button onClick={() => document.getElementById('products').value = ''}>Clear</button>
+
           <p>{insertStatus}</p>
         </div>
   </div> 
