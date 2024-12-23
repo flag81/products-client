@@ -18,6 +18,7 @@ function App() {
   const [status, setStatus] = useState('');
   const [folderName, setFolderName] = useState('uploads'); // Folder name input
   const [insertStatus, setInsertStatus] = useState('');
+  const [deleteStatus, setDeleteStatus] = useState('');
 
   const CLOUD_NAME = 'dt7a4yl1x';
   const API_KEY = '443112686625846';
@@ -220,6 +221,32 @@ function App() {
       }
     };
 
+    const handleDeleteProduct = async (productId) => {
+      try {
+
+        console.log('productId sent delete:', productId);
+        const response = await fetch(`http://localhost:3000/deleteProduct/${productId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+  
+        if (response.ok) {
+          setProducts((prevProducts) =>
+            prevProducts.filter((product) => product.productId !== productId)
+          );
+          setDeleteStatus(`Product with ID ${productId} deleted successfully.`);
+          console.log(`Product with ID ${productId} deleted successfully.`);
+        } else {
+          console.error('Failed to delete product');
+        }
+      } catch (error) {
+        console.error('Error deleting product:', error);
+      }
+    };
+  
+
   // If loading or error occurs
   if (loading) {
     return <div>Loading media files...</div>;
@@ -231,58 +258,82 @@ function App() {
 
   return (
     <>
-      <div>
-        <h1>Upload Image to Specific Folder</h1>
-        <form onSubmit={handleImageUpload}>
-          <input
-            type="text"
-            value={folderName}
-            onChange={(e) => setFolderName(e.target.value)}
-            placeholder="Enter folder name"
-            required
+      <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '20px' }}>
+        <div>
+          <h2>Upload Image to Specific Folder</h2>
+          <form onSubmit={handleImageUpload}>
+            <input
+              type="text"
+              value={folderName}
+              onChange={(e) => setFolderName(e.target.value)}
+              placeholder="Enter folder name"
+              required
+            />
+            <br />
+            <input type="file" name="image" accept="image/*" required />
+            <button type="submit">Upload</button>
+          </form>
+          <p>{status}</p>
+        </div>
+
+        <div>
+          <h2>Selected Image IDs</h2>
+          <textarea
+            value={selectedImages.join(', ')}
+            readOnly
+            rows="4"
+            cols="50"
           />
           <br />
-          <input type="file" name="image" accept="image/*" required />
-          <button type="submit">Upload</button>
-        </form>
+          <button onClick={copySelectedImages}>Copy Selected IDs</button>
+          <p>{copySuccess}</p>
+        </div>
 
-        <p>{status}</p>
-      </div>
+        <div>
+          <h2>Prompt</h2>
+          <textarea
+            value="This is a prompt..."
+            readOnly
+            rows="4"
+            cols="50"
+          />
+          <br />
+          <button onClick={copySelectedImages}>Copy Selected IDs</button>
+          <p>{copySuccess}</p>
+        </div>
 
-            {/* NEW: Textarea for selected image public_ids */}
-            <div>
-        <h2>Selected Image IDs</h2>
-        <textarea
-          value={selectedImages.join(', ')}
-          readOnly
-          rows="4"
-          cols="50"
-        />
-        <br />
-        <button onClick={copySelectedImages}>Copy Selected IDs</button>
-        <p>{copySuccess}</p> {/* NEW: Copy success message */}
-      </div>
+        
 
-      <div>
-      <button onClick={getAllProducts}>Get Products</button>
-      <ul>
-        {products.map(product => (
-          <li key={product.productId}>{product.product_description}</li>
-        ))}
-      </ul>
-    </div>
+</div>
 
-                {/* NEW: Textarea for selected image public_ids */}
-                <div>
-        <h1>Insert Products</h1>
-        <textarea id = "products" name= "products"
-          rows="20"
-          cols="50"
-        />
-        <br />
-        <button onClick={insertProducts}>Insert Products</button>
-        <p>{insertStatus}</p> {/* NEW: Copy success message */}
-      </div>
+<div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
+
+        <div><p>{deleteStatus}</p>
+          <button onClick={getAllProducts}>Get Products</button>
+          <table border="1" cellPadding="10" cellSpacing="0" width="50%">
+            {products.map(product => (
+              <tr>
+              <td>{product.productId}</td>
+                <td>{product.product_description}</td> 
+                  <td>       <img
+                  src={`https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_100/${product.image_url}`}
+                 
+                />{product.image_url}</td>
+                <td><button onClick={() => handleDeleteProduct(product.productId)}>Delete</button></td>
+              
+              </tr>
+            ))}
+          </table>
+        </div>
+
+        <div>
+          <h1>Insert Products</h1>
+          <textarea id="products" name="products" rows="20" cols="50" />
+          <br />
+          <button onClick={insertProducts}>Insert Products</button>
+          <p>{insertStatus}</p>
+        </div>
+  </div> 
 
       <h1>Cloudinary Media Library</h1>
       <table border="1" cellPadding="10" cellSpacing="0">

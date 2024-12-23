@@ -14,6 +14,50 @@ app.use(cors()); // Allow all origins, especially Vite's localhost:5173
 
 const upload = multer({ dest: 'uploads/' }); // Define upload middleware
 
+app.delete('/deleteProduct/:productId', async (req, res) => {
+  const productId = req.params.productId;
+
+  console.log('productId received:', productId);
+
+  const dbQuery = (query, params) => {
+    return new Promise((resolve, reject) => {
+      db.query(query, params, (err, result) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(result);
+      });
+    });
+  };
+
+  try {
+    // Start a transaction
+    await dbQuery('START TRANSACTION');
+
+    // Delete product-keyword relations from ProductKeywords
+    await dbQuery('DELETE FROM ProductKeywords WHERE productId = ?', [productId]);
+
+    // Optionally, clean up keywords that are no longer linked to any products
+    await dbQuery(`
+      DELETE FROM keywords 
+      WHERE keywordId NOT IN (SELECT keywordId FROM ProductKeywords)
+    `);
+
+    // Delete the product from the products table
+    await dbQuery('DELETE FROM products WHERE productId = ?', [productId]);
+
+    // Commit the transaction
+    await dbQuery('COMMIT');
+    
+    res.status(200).json({ message: 'Product and related data deleted successfully.' });
+  } catch (error) {
+    // Rollback transaction in case of error
+    await dbQuery('ROLLBACK');
+    console.error('Error deleting product:', error);
+    res.status(500).json({ message: 'An error occurred while deleting the product.' });
+  }
+});
+
 app.post('/insertProducts', (req, res) => {
   // Extract the array of products from the request body
   const products = req.body;
@@ -42,101 +86,7 @@ app.post('/insertProducts', (req, res) => {
 
 
 // POST endpoint to insert products
-app.post('/insertProducts3', async (req, res) => {
-  //const products = req.body;
 
-  // make products iterable , data is send like body: JSON.stringify({ products: [{ product_description: productData }] }),
-
-   const products = req.body
-
-
-
-  
-  console.log('products received:', products);
-
-  if (!Array.isArray(products)) {
-    return res.status(400).json({ message: 'Invalid data format. Expected an array of products.' });
-  }
-  else {
-    console.log('products received is an array:', products);
-  }
-
-  /*
-
-
-
-  */
-
-  try {
-    // Loop over each product in the JSON array
-    //for (let product of products) {
-
-      products.forEach(product => {
-      
-      const { product_description, old_price, new_price, discount_percentage, sale_end_date, storeId, keywords } = product;
-
-        console.log('individual product:', product_description);
-
-      // Start a transaction
-      db.query('START TRANSACTION');
-
-      // Insert the product into the products table
-      const [productResult] = db.query(
-        `INSERT INTO products (product_description, old_price, new_price, discount_percentage, sale_end_date, storeId) 
-        VALUES (?, ?, ?, ?, ?, ?)`,
-        [product_description, old_price, new_price, discount_percentage, sale_end_date, storeId]
-      );
-
-      console.log('productResult:......');
-
-      // Get the last inserted productId
-      const productId = productResult.insertId;
-
-      console.log('last inserted productId:', productId);
-
-      // Insert the keywords and link them to the product
-      //for (let keyword of keywords) {
-
-
-      //check if keywords is an array
-      if (Array.isArray(keywords)) {
-        // Loop through each keyword in the array
-        console.log('keywords is an arraay:', keywords);
-
-      } else {
-        console.log('keywords is not an array');
-      }
-
-        keywords.forEach(keyword => {
-        // Insert keyword if it doesn't exist, otherwise get the existing keywordId
-        const [keywordResult] =  db.query(
-          `INSERT INTO keywords (keyword) VALUES (?) 
-          ON DUPLICATE KEY UPDATE keywordId = LAST_INSERT_ID(keywordId)`,
-          [keyword]
-        );
-
-        // Get the last inserted or updated keywordId
-        const keywordId = keywordResult.insertId;
-
-        // Insert into ProductKeywords table to link product and keyword
-        db.query(
-          `INSERT INTO ProductKeywords (productId, keywordId) VALUES (?, ?)`,
-          [productId, keywordId]
-        );
-      });
-
-      // Commit the transaction
-      db.query('COMMIT');
-    });
-
-    res.status(200).json({ message: 'All products and keywords inserted successfully!' });
-  } catch (error) {
-    // Rollback in case of an error
-    db.query('ROLLBACK');
-    console.error('Error inserting products and keywords:', error);
-    res.status(500).json({ error: 'Failed to insert products and keywords' });
-  }
-});
 
 
 app.post('/insertProducts1', async (req, res) => {
@@ -233,7 +183,7 @@ app.get("/getProducts", (req, res) => {
 
   const userId= req.query.userId;
 
-  db.query(q, (err, data) => {
+   db.query(q, (err, data) => {
 
     if (err) {
 
