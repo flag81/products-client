@@ -391,6 +391,14 @@ function App() {
 <div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
 
         <div><p>{deleteStatus}</p>
+
+// add a search box to search for products
+
+          <h1>Search Products</h1>
+          <input type="text" id="keyword" name="keyword" />
+          <button onClick={() => searchProducts(document.getElementById('keyword').value)}>Search</button>
+          
+
           <button onClick={getAllProducts}>Get Products</button>
           <table border="1" cellPadding="10" cellSpacing="0" width="50%">
             {products.map(product => (

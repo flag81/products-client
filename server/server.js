@@ -228,8 +228,7 @@ app.get("/searchProducts", (req, res) => {
   q += `
     GROUP BY 
       p.productId
-    ORDER BY 
-      p.productId DESC
+
   `;
 
   db.query(q, queryParams, (err, results) => {
