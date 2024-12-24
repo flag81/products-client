@@ -21,6 +21,7 @@ function App() {
   const [deleteStatus, setDeleteStatus] = useState('');
 
   const [stores, setStores] = useState([]);
+const [users, setUsers] = useState([]);
 
   const CLOUD_NAME = 'dt7a4yl1x';
   const API_KEY = '443112686625846';
@@ -39,6 +40,40 @@ function App() {
 
  //change
 
+ useEffect(() => {
+
+  getStores();
+  getUsers();
+  //getAllProducts();
+}, []);
+
+
+const getUsers = async () => {
+  try {
+
+    const response = await fetch('http://localhost:3000/getUsers', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+
+      setUsers(result);
+      console.log('users result:', result);
+    } else {
+      console.error('Failed to fetch users:', result.message);
+    }
+  } catch (error) {
+    console.error('Error fetching users:', error);
+  }
+};
+
+
+
   const getStores = async () => {
     try {
       const response = await fetch('http://localhost:3000/getStores', {
@@ -52,7 +87,7 @@ function App() {
 
       if (response.ok) {
         setStores(result);
-        console.log('result:', result);
+        console.log('stores result:', result);
       } else {
         console.error('Failed to fetch stores:', result.message);
       }
@@ -60,6 +95,57 @@ function App() {
       console.error('Error fetching stores:', error);
     }
   };
+
+  // create a new function to add a product to favorites with user id and product id
+
+  const addProductToFavorites = async (userId, productId) => {
+
+    try {
+      const response = await fetch('http://localhost:3000/addFavorite', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, productId }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        console.log('result:', result);
+        getAllProducts(userId);
+      }
+    }
+    catch (error) {
+      console.error('Error adding product to favorites:', error);
+    }
+  };
+
+// create a new function to remove a product from favorites with user id and product id
+
+const removeProductFromFavorites = async (userId, productId) => {
+
+  try {
+    const response = await fetch('http://localhost:3000/removeFavorite', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId, productId }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+
+      console.log('result:', result);
+      getAllProducts(userId);
+    }
+  }
+  catch (error) {
+    console.error('Error removing product from favorites:', error);
+  }
+};
 
 
 
@@ -88,13 +174,14 @@ function App() {
   //change getAllProducts to include a keyword sent to the server to filter products
 
 
-  const getAllProducts = async () => {
+  const getAllProducts = async (userId) => {
     try {
-      const response = await fetch('http://localhost:3000/getProducts', {
+      const response = await fetch(`http://localhost:3000/getProducts?userId=${encodeURIComponent(userId)}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
+        
       });
 
       const result = await response.json();
@@ -388,19 +475,37 @@ function App() {
 
 </div>
 
+
+<div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
+  
+  <select name='store'>
+    {stores.map(store => (
+      <option value={store.storeId}>{store.storeName}</option>
+    ))}
+
+  </select>
+
+  <select name='user'>
+    {users.map(user => (
+      <option value={user.userId}>{user.userName}</option>
+    ))}
+
+  </select>
+</div>
+
+
 <div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
 
         <div><p>{deleteStatus}</p>
 
-// add a search box to search for products
 
           <h1>Search Products</h1>
           <input type="text" id="keyword" name="keyword" />
           <button onClick={() => searchProducts(document.getElementById('keyword').value)}>Search</button>
           
 
-          <button onClick={getAllProducts}>Get Products</button>
-          <table border="1" cellPadding="10" cellSpacing="0" width="50%">
+          <button onClick={()=>getAllProducts(document.querySelector('select[name="user"]').value)}>Get Products</button>
+          <div className='scrollable-div'><table border="1" cellPadding="10" cellSpacing="0">
             {products.map(product => (
               <tr>
               <td>{product.productId}</td>
@@ -408,12 +513,33 @@ function App() {
                   <td>       <img
                   src={`https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_100/${product.image_url}`}
                  
-                />{product.image_url}</td>
+                /></td>
+                <td>{product.keywords}</td>
+
+                <td><input type="checkbox" checked={product.isFavorite} onChange={(e) => {
+
+                  const userId = document.querySelector('select[name="user"]').value;
+
+                  console.log('userId:', userId);
+
+                  if (e.target.checked) {
+
+                    // get the user id from the select element with name user
+
+                    addProductToFavorites(userId, product.productId);
+                  } else {
+                    removeProductFromFavorites(userId, product.productId);
+                  }
+                }
+                } /></td>
+
+
                 <td><button onClick={() => handleDeleteProduct(product.productId)}>Delete</button></td>
               
               </tr>
             ))}
-          </table>
+          </table></div>
+          
         </div>
 
         <div>
@@ -430,6 +556,7 @@ function App() {
   </div> 
 
       <h1>Cloudinary Media Library</h1>
+      <div className='scrollable-div'>
       <table border="1" cellPadding="10" cellSpacing="0">
         <thead>
           <tr>
@@ -485,6 +612,7 @@ function App() {
           ))}
         </tbody>
       </table>
+      </div>
 
 
     </>

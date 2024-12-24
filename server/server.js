@@ -174,7 +174,7 @@ app.post('/insertProducts1', async (req, res) => {
 app.get("/getStores", (req, res) => {
 
   //const q = "SELECT tableid,  users.id  FROM orders join users on orders.userid = users.id WHERE orders.status = 0 ";
-  const q = `SELECT * from stores order by storeId desc`;
+  const q = `SELECT * from stores order by storeId asc`;
 
   //console.log("getUserEmail:", q);
 
@@ -193,6 +193,68 @@ app.get("/getStores", (req, res) => {
   });
 });
 
+
+// write api to add a product to favorites for a user
+
+app.post("/addFavorite", (req, res) => {
+
+  const { userId, productId } = req.body;
+
+  const q = `INSERT INTO favorites (userId, productId) VALUES (?, ?)`;
+
+  db.query(q, [userId, productId], (err, result) => {
+    if (err) {
+      console.error('Error adding favorite:', err);
+      return res.status(500).json({ error: 'Failed to add favorite' });
+    }
+    res.status(200).json({ message: 'Favorite added successfully' });
+  }
+  );
+});
+
+// write api to remove a product from favorites for a user
+
+app.delete("/removeFavorite", (req, res) => {
+
+  const { userId, productId } = req.body;
+
+  const q = `DELETE FROM favorites WHERE userId = ? AND productId = ?`;
+
+  db.query(q, [userId, productId], (err, result) => {
+
+    if (err) {
+
+      console.error('Error removing favorite:', err);
+      return res.status(500).json({ error: 'Failed to remove favorite' });
+    }
+    res.status(200).json({ message: 'Favorite removed successfully' });
+  }
+  );
+});
+
+
+
+app.get("/getUsers", (req, res) => {
+
+  //const q = "SELECT tableid,  users.id  FROM orders join users on orders.userid = users.id WHERE orders.status = 0 ";
+  const q = `SELECT * from users order by userId asc`;
+
+  //console.log("getUserEmail:", q);
+
+  const userId= req.query.userId;
+
+    db.query(q, (err, data) => {
+
+    if (err) {
+
+
+      console.log("getStores error:", err);
+      return res.json(err);
+    }
+
+    return res.json(data);
+  });
+});
 
 app.get("/searchProducts", (req, res) => {
   const { keyword } = req.query;
@@ -244,6 +306,7 @@ app.get("/searchProducts", (req, res) => {
 
 app.get("/getProducts", (req, res) => {
 
+
   //change the query to get all products from the database to include all the keywords for each product , use file schema.sql as reference
 
 
@@ -260,13 +323,16 @@ app.get("/getProducts", (req, res) => {
     p.sale_end_date, 
     p.storeId, 
     p.image_url,
-    GROUP_CONCAT(k.keyword) AS keywords
+    GROUP_CONCAT(k.keyword) AS keywords,
+    CASE WHEN f.userId IS NOT NULL THEN TRUE ELSE FALSE END AS isFavorite
   FROM 
     products p
   LEFT JOIN 
     productkeywords pk ON p.productId = pk.productId
   LEFT JOIN 
     keywords k ON pk.keywordId = k.keywordId
+    LEFT JOIN 
+      favorites f ON p.productId = f.productId AND f.userId = ?
   GROUP BY 
     p.productId
   ORDER BY 
@@ -278,7 +344,7 @@ app.get("/getProducts", (req, res) => {
 
   const userId= req.query.userId;
 
-   db.query(q, (err, data) => {
+   db.query(q, [userId], (err, data) => {
 
     if (err) {
 
