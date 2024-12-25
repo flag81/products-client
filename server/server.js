@@ -305,57 +305,65 @@ app.get("/searchProducts", (req, res) => {
 
 
 app.get("/getProducts", (req, res) => {
+  // Get userId and storeId from query parameters
+  const userId = req.query.userId || null;
+  let storeId = parseInt(req.query.storeId, 10);  // Convert storeId to integer
 
+  // If storeId is not a valid number (NaN or <= 0), treat it as null
+  if (isNaN(storeId) || storeId <= 0) {
+    storeId = null;
+  }
 
-  //change the query to get all products from the database to include all the keywords for each product , use file schema.sql as reference
-
-
-
-
-  //const q = "SELECT tableid,  users.id  FROM orders join users on orders.userid = users.id WHERE orders.status = 0 ";
-  const q = `
-  SELECT 
-    p.productId, 
-    p.product_description, 
-    p.old_price, 
-    p.new_price, 
-    p.discount_percentage, 
-    p.sale_end_date, 
-    p.storeId, 
-    p.image_url,
-    GROUP_CONCAT(k.keyword) AS keywords,
-    CASE WHEN f.userId IS NOT NULL THEN TRUE ELSE FALSE END AS isFavorite
-  FROM 
-    products p
-  LEFT JOIN 
-    productkeywords pk ON p.productId = pk.productId
-  LEFT JOIN 
-    keywords k ON pk.keywordId = k.keywordId
+  // Base SQL query
+  let q = `
+    SELECT 
+      p.productId, 
+      p.product_description, 
+      p.old_price, 
+      p.new_price, 
+      p.discount_percentage, 
+      p.sale_end_date, 
+      p.storeId, 
+      p.image_url,
+      GROUP_CONCAT(k.keyword) AS keywords,
+      CASE WHEN f.userId IS NOT NULL THEN TRUE ELSE FALSE END AS isFavorite
+    FROM 
+      products p
+    LEFT JOIN 
+      productkeywords pk ON p.productId = pk.productId
+    LEFT JOIN 
+      keywords k ON pk.keywordId = k.keywordId
     LEFT JOIN 
       favorites f ON p.productId = f.productId AND f.userId = ?
-  GROUP BY 
-    p.productId
-  ORDER BY 
-    p.productId DESC
-`;
-  
+  `;
 
-  console.log("getUserEmail:", q);
+  // Add storeId filtering if storeId is valid (greater than 0)
+  if (storeId !== null) {
+    q += ` WHERE p.storeId = ?`;
+  }
 
-  const userId= req.query.userId;
+  q += `
+    GROUP BY 
+      p.productId
+    ORDER BY 
+      p.productId DESC
+  `;
 
-   db.query(q, [userId], (err, data) => {
+  // Parameters array for the query
+  const params = storeId !== null ? [userId, storeId] : [userId];
 
+  // Execute the query, passing userId and optionally storeId
+  db.query(q, params, (err, data) => {
     if (err) {
-
-
-      console.log("getUserEmail error:", err);
+      console.log("getProducts error:", err);
       return res.json(err);
     }
 
+    // Send the retrieved data back as a JSON response
     return res.json(data);
   });
 });
+
 
 
 app.delete('/delete-image', async (req, res) => {

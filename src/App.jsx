@@ -30,11 +30,14 @@ const [users, setUsers] = useState([]);
   // NEW: State to track selected public_id values
   const [selectedImages, setSelectedImages] = useState([]);
 
+
   const prompt = 
 
-  'You are a product data extractor from sales flyer. Can you extract product sale information in albanian language from this sales flyer in the format for each product' +
+  'Can you extract product sale information in albanian language from this sales flyer in the format for each product' +
 ' Convert ë letter to e for all the keywords. Do not include conjunctions, articles words in albanian, in keywords.\n' +
  ' Do not include size info for keywords and only words with more than 2 characters as keywords, \n' + 
+  ' The userId is:{userId}. \n' +
+  ' The storeId is:{storeId}. \n' +
  ' The the image url(s) is(are): ';
 
 
@@ -44,6 +47,8 @@ const [users, setUsers] = useState([]);
 
   getStores();
   getUsers();
+
+ // storeId = document.querySelector('select[name="store"]').value;
   //getAllProducts();
 }, []);
 
@@ -174,9 +179,9 @@ const removeProductFromFavorites = async (userId, productId) => {
   //change getAllProducts to include a keyword sent to the server to filter products
 
 
-  const getAllProducts = async (userId) => {
+  const getAllProducts = async (userId, storeId) => {
     try {
-      const response = await fetch(`http://localhost:3000/getProducts?userId=${encodeURIComponent(userId)}`, {
+      const response = await fetch(`http://localhost:3000/getProducts?userId=${encodeURIComponent(userId)}&storeId=${encodeURIComponent(storeId)}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -321,8 +326,16 @@ const removeProductFromFavorites = async (userId, productId) => {
       const selectedIdsString = selectedImages.join(', ');
   
       // GET THE CONTENT OF THE TEXTAREA AND COPY IT TO THE CLIPBOARD
+
+      // replace {storeId} text with the value of the store select element and {userId} with the value of the user select element in the promt variable 
+      // and then copy the prompt and the selectedIdsString to the clipboard
+
+      const storeId = document.querySelector('select[name="store"]').value;
+      const userId = document.querySelector('select[name="user"]').value;
+      const modifiedPrompt = prompt.replace('{storeId}', storeId).replace('{userId}', userId);
+
   
-      navigator.clipboard.writeText(prompt + selectedIdsString).then(
+      navigator.clipboard.writeText(modifiedPrompt + selectedIdsString).then(
   
         () => {
           setCopySuccess('Copied selected image IDs to clipboard!');
@@ -504,7 +517,7 @@ const removeProductFromFavorites = async (userId, productId) => {
           <button onClick={() => searchProducts(document.getElementById('keyword').value)}>Search</button>
           
 
-          <button onClick={()=>getAllProducts(document.querySelector('select[name="user"]').value)}>Get Products</button>
+          <button onClick={()=>getAllProducts(document.querySelector('select[name="user"]').value , document.querySelector('select[name="store"]').value)}>Get Products</button>
           <div className='scrollable-div'><table border="1" cellPadding="10" cellSpacing="0">
             {products.map(product => (
               <tr>
@@ -513,7 +526,10 @@ const removeProductFromFavorites = async (userId, productId) => {
                   <td>       <img
                   src={`https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_100/${product.image_url}`}
                  
-                /></td>
+                />
+                <br /> {product.sale_end_date}
+                </td>
+               
                 <td>{product.keywords}</td>
 
                 <td><input type="checkbox" checked={product.isFavorite} onChange={(e) => {
