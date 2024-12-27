@@ -6,6 +6,9 @@ import fs from 'fs';
 import { format } from 'path';
 import db from './connection.js';
 
+import OpenAI from "openai";
+const openai = new OpenAI();
+
 export const app = express();
 
 app.use(express.json());
@@ -387,6 +390,101 @@ app.delete('/delete-image', async (req, res) => {
     }
   });
   
+
+
+  //create a get endpoint that will take storeId and prompt string as query parameters and return the response from openai chat completions api
+
+  app.get('/chatgptExtractProducts', async (req, res) => {
+
+    const { storeId, imageUrl } = req.query;
+
+    const imageBaseUrl = "https://res.cloudinary.com/dt7a4yl1x/image/upload/";
+
+    // get image name as the last part of the URL split with forward slash /
+    
+    const imageName = imageUrl.split('/').pop();
+
+
+    console.log('storeId:', storeId);
+    console.log('imageUrl:', imageUrl);
+    console.log('imageName:', imageName);
+
+  
+
+    const prompt = `Can you extract product sale information in albanian language from this sales flyer in the format for each product
+  Convert ë letter to e for all the keywords. Do not include conjunctions, articles words in albanian, in keywords.
+  Do not include size info for keywords and only words with more than 2 characters as keywords. 
+  The storeId is:${storeId}. 
+ populate the "image_url" field with a variable ${imageName} from above". 
+  The response should be in the JSON format only like the following example if the info is available: 
+  [
+    {
+      "product_description": "Mandarina kg",
+      "old_price": 0.89,
+      "new_price": 0.69,
+      "discount_percentage": 22,
+      "sale_end_date": "2024-12-26",
+      "storeId": 1,
+      "image_url": ${imageName}, 
+      "keywords": ["mandarina"]
+    },
+    {
+      "product_description": "Kerpudhe pako",
+      "old_price": 1.49,
+      "new_price": 0.99,
+      "discount_percentage": 33,
+      "sale_end_date": "2024-12-26",
+      "storeId": 1,
+      "image_url": ${imageName}, 
+      "keywords": ["kerpudhe"]
+}]
+      
+` ;
+
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            {
+              type: "image_url",
+              image_url: {
+                "url": imageUrl,
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+
+
+
+    //console.log('response:', response.choices[0]);
+
+    let resp = response.choices[0];
+
+    let content = resp.message.content;
+
+// Remove the code block markers (```json and ```)
+content = content.replace(/```json\n/, '').replace(/```$/, '');
+
+// Parse the remaining content as JSON
+const productList = JSON.parse(content);
+
+console.log(productList);
+
+
+
+
+    res.json(productList);
+  }
+  );
+
+
 
 
 // Function to upload an image to a specific folder in Cloudinary
