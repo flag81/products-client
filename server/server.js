@@ -404,6 +404,8 @@ app.delete('/delete-image', async (req, res) => {
     
     const imageName = imageUrl.split('/').pop();
 
+    
+
 
     console.log('storeId:', storeId);
     console.log('imageUrl:', imageUrl);
@@ -411,12 +413,13 @@ app.delete('/delete-image', async (req, res) => {
 
   
 
-    const prompt = `Can you extract product sale information in albanian language from this sales flyer in the format for each product
+    const prompt = `Can you extract product sale information in albanian language from this sales flyer for each product in the image , if available.
   Convert ë letter to e for all the keywords. Do not include conjunctions, articles words in albanian, in keywords.
   Do not include size info for keywords and only words with more than 2 characters as keywords. 
   The storeId is:${storeId}. 
  populate the "image_url" field with a variable ${imageName} from above". 
-  The response should be in the JSON format only like the following example if the info is available: 
+ If some data is not available, leave the field empty.
+  The response should be in the JSON format,  like the following example: 
   [
     {
       "product_description": "Mandarina kg",
@@ -443,7 +446,7 @@ app.delete('/delete-image', async (req, res) => {
 
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4-turbo",
       messages: [
         {
           role: "user",

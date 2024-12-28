@@ -10,7 +10,7 @@ const response = await openai.chat.completions.create({
       {
         role: "user",
         content: [
-          { type: "text", text: "extract product descriptions in Albanian from this sales flyer." },
+          { type: "text", text: "extract product descriptions along with sale data , sale end date , in Albanian,  from this sales flyer and return the result as json array of objects, for each object containing product data ." },
           {
             type: "image_url",
             image_url: {
