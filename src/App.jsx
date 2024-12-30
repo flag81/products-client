@@ -27,6 +27,9 @@ const [users, setUsers] = useState([]);
   const API_KEY = '443112686625846';
   const API_SECRET = 'e9Hv5bsd2ECD17IQVOZGKuPmOA4';
 
+
+  const imageBaseUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/`;
+
   // NEW: State to track selected public_id values
   const [selectedImages, setSelectedImages] = useState([]);
 
@@ -38,7 +41,31 @@ const [users, setUsers] = useState([]);
  ' Do not include size info for keywords and only words with more than 2 characters as keywords, \n' + 
   ' The userId is:{userId}. \n' +
   ' The storeId is:{storeId}. \n' +
- ' The the image url(s) is(are): ';
+  'The response should be in the format: \n' +
+  `[
+    {
+      "product_description": "Mandarina kg",
+      "old_price": 0.89,
+      "new_price": 0.69,
+      "discount_percentage": 22,
+      "sale_end_date": "2024-12-26",
+      "storeId": 1,
+      "userId": 1,
+      "image_url": "uploads/ccmainz5m07eguwyipyw.jpg",
+      "keywords": ["mandarina"]
+    },
+    {
+      "product_description": "Kerpudhe pako",
+      "old_price": 1.49,
+      "new_price": 0.99,
+      "discount_percentage": 33,
+      "sale_end_date": "2024-12-26",
+      "storeId": 1,
+      "userId": 1,
+      "image_url": "uploads/ccmainz5m07eguwyipyw.jpg",
+      "keywords": ["kerpudhe"]
+}]` +
+ ' The the image url(s) is(are): '  ;
 
 
  //change
@@ -260,6 +287,7 @@ const removeProductFromFavorites = async (userId, productId) => {
       if (response.ok) {
         setStatus(`Image uploaded successfully! URL: ${result.url}`);
         setMediaFiles((prevFiles) => [...prevFiles, result]); // Add new image to mediaFiles
+        fetchMediaFiles(); // Fetch media files again to include the new image
       } else {
         setStatus(`Upload failed: ${result.error}`);
       }
@@ -271,6 +299,8 @@ const removeProductFromFavorites = async (userId, productId) => {
 
   // NEW: Handle checkbox change
   const handleCheckboxChange = (public_id) => {
+
+
     setSelectedImages((prevSelected) => {
       if (prevSelected.includes(public_id)) {
         return prevSelected.filter(id => id !== public_id);
@@ -310,11 +340,11 @@ const removeProductFromFavorites = async (userId, productId) => {
     const selectedIdsString = selectedImages.join(', ');
     navigator.clipboard.writeText(selectedIdsString).then(
       () => {
-        setCopySuccess('Copied selected image IDs to clipboard!');
+        setStatus('Copied selected image IDs to clipboard!');
         setTimeout(() => setCopySuccess(''), 2000); // Clear message after 2 seconds
       },
       () => {
-        setCopySuccess('Failed to copy');
+        setStatus('Failed to copy');
         setTimeout(() => setCopySuccess(''), 2000); // Clear message after 2 seconds
       }
     );
@@ -338,16 +368,52 @@ const removeProductFromFavorites = async (userId, productId) => {
       navigator.clipboard.writeText(modifiedPrompt + selectedIdsString).then(
   
         () => {
-          setCopySuccess('Copied selected image IDs to clipboard!');
+          setStatus('Copied selected image IDs to clipboard!');
           setTimeout(() => setCopySuccess(''), 2000); // Clear message after 2 seconds
         },
         () => {
-          setCopySuccess('Failed to copy');
+          setStatus('Failed to copy');
           setTimeout(() => setCopySuccess(''), 2000); // Clear message after 2 seconds
         }
       );
     };
-  
+
+    // call server api   app.get('/chatgptExtractProducts', async (req, res) => {
+    
+    //  const { storeId, imageUrl } = req.query;
+  // to get the data extrcted from image
+
+  // Handle product extraction
+  const extractProducts = async (storeId, imageUrl) => {
+    try {
+
+
+      console.log('extractProducts storeId:', storeId);
+      console.log('extractProducts imageUrl:', imageUrl);
+
+
+      const response = await fetch(`http://localhost:3000/chatgptExtractProducts?storeId=${storeId}&imageUrl=${imageUrl}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        //setProducts(result);
+        document.getElementById('products').value = JSON.stringify(result, null, 2);
+        console.log('result:', result);
+      } else {
+        console.error('Failed to extract products:', result.message);
+      }
+    } catch (error) {
+      console.error('Error extracting products:', error);
+    }
+
+  };
+
 
     // Handle product insertion
     const insertProducts = async () => {
@@ -369,11 +435,11 @@ const removeProductFromFavorites = async (userId, productId) => {
         
         // Check if parsed data is an array of objects
         if (!Array.isArray(parsedProductData)) {
-          setInsertStatus('Product data should be an array of products.');
+          setStatus('Product data should be an array of products.');
           return;
         }
       } catch (error) {
-        setInsertStatus('Invalid product data. Please enter valid JSON.');
+        setStatus('Invalid product data. Please enter valid JSON.');
         console.error('Parsing error:', error);
         return;
       }
@@ -393,12 +459,12 @@ const removeProductFromFavorites = async (userId, productId) => {
         const result = await response.json();
   
         if (response.ok) {
-          setInsertStatus('Products inserted successfully!');
+          setStatus('Products inserted successfully!');
         } else {
-          setInsertStatusatus(`Failed to insert products: ${result.error}`);
+          setStatus(`Failed to insert products: ${result.error}`);
         }
       } catch (error) {
-        setInsertStatus('An error occurred while inserting products.');
+        setStatus('An error occurred while inserting products.');
         console.error('Error:', error);
       }
     };
@@ -418,7 +484,7 @@ const removeProductFromFavorites = async (userId, productId) => {
           setProducts((prevProducts) =>
             prevProducts.filter((product) => product.productId !== productId)
           );
-          setDeleteStatus(`Product with ID ${productId} deleted successfully.`);
+          setStatus(`Product with ID ${productId} deleted successfully.`);
           console.log(`Product with ID ${productId} deleted successfully.`);
         } else {
           console.error('Failed to delete product');
@@ -438,11 +504,15 @@ const removeProductFromFavorites = async (userId, productId) => {
     return <div>{error}</div>;
   }
 
+  const clearImageDiv = () => {
+    document.getElementById('prod_image ').innerHTML = '';
+  };
+
   return (
-    <>
-      <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '20px' }}>
+    <div style={{ margin: '0', padding: '0', width: '90vw' }}>
+      <div style={{ display: 'flex', flexDirection: 'row',  flexWrap: 'wrap', gap: '10px' , width: '100vw' }}>
         <div>
-          <h2>Upload Image to Specific Folder</h2>
+          <h2>Upload Image </h2>
           <form onSubmit={handleImageUpload}>
             <input
               type="text"
@@ -453,40 +523,61 @@ const removeProductFromFavorites = async (userId, productId) => {
             />
             <br />
             <input type="file" name="image" accept="image/*" required />
+            <br />
             <button type="submit">Upload</button>
           </form>
-          <p>{status}</p>
+        
         </div>
 
         <div>
           <h2>Selected Image IDs</h2>
-          <textarea
+          <textarea id = "selectedImages"
             value={selectedImages.join(', ')}
-            readOnly
             rows="4"
-            cols="50"
+            cols="30"
           />
           <br />
           <button onClick={copySelectedImages}>Copy Selected IDs</button>
+          <button onClick={() => document.getElementById('selectedImages').value = ''}>Clear</button>
           <p>{copySuccess}</p>
         </div>
 
         <div>
           <h2>Prompt</h2>
-          <textarea
-            value={prompt}
-            readOnly
+          <textarea id="prompt"
+            value={prompt}   
             rows="4"
-            cols="50"
+            cols="30"
           />
           <br />
           <button onClick={copyPrompt}>Copy prompt</button>
+          <button onClick={() => document.getElementById('prompt').value = ''}>Clear</button>
+
           <p>{copySuccess}</p>
+        </div>
+
+        <div>
+          <h2>Insert Products</h2>
+          <textarea id="products" name="products" rows="10" cols="50" />
+          <br />
+          <button onClick={insertProducts}>Insert Products</button>
+
+
+          <button onClick={() => document.getElementById('products').value = ''}>Clear</button>
+
+          <p>{insertStatus}</p>
         </div>
 
         
 
 </div>
+
+
+<div>
+<p>{status}</p>
+  </div>
+
+
 
 
 <div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
@@ -504,33 +595,54 @@ const removeProductFromFavorites = async (userId, productId) => {
     ))}
 
   </select>
+
+<button onClick={() => extractProducts(document.querySelector('select[name="store"]').value, document.getElementById('selectedImages').value)}>Extract Products</button>
+
 </div>
 
-
-<div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
-
-        <div><p>{deleteStatus}</p>
+<div>
 
 
-          <h1>Search Products</h1>
+<h2>Search Products</h2>
           <input type="text" id="keyword" name="keyword" />
           <button onClick={() => searchProducts(document.getElementById('keyword').value)}>Search</button>
           
 
           <button onClick={()=>getAllProducts(document.querySelector('select[name="user"]').value , document.querySelector('select[name="store"]').value)}>Get Products</button>
-          <div className='scrollable-div'><table border="1" cellPadding="10" cellSpacing="0">
+          
+</div>
+
+
+<div style={{ display: 'flex',flexDirection: 'row', gap: '10px', borderColor : "black", borderWidth: 1, width: '100%' }}>
+
+
+
+          
+      <div className='scrollable-div' style={{ flexGrow:1, width: '100vw' }}>
+      <div id="prod_image" style={{ display: 'flex', flexDirection: 'row', gap: '10px', width: '80vw', overflow: 'hidden' }}>
+
+
+    </div>
+            <table name="products" border="1" cellPadding="10" cellSpacing="0" borderColor="black">
             {products.map(product => (
               <tr>
               <td>{product.productId}</td>
                 <td>{product.product_description}</td> 
                   <td>       <img
-                  src={`https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_100/${product.image_url}`}
+                  src={`https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_100/uploads/${product.image_url}`}
                  
                 />
                 <br /> {product.sale_end_date}
                 </td>
-               
-                <td>{product.keywords}</td>
+
+                <td>{product.keywords.split(',').map(keyword => (
+                  <div>{keyword}</div>
+                ))}</td>
+
+
+
+
+             
 
                 <td><input type="checkbox" checked={product.isFavorite} onChange={(e) => {
 
@@ -556,82 +668,68 @@ const removeProductFromFavorites = async (userId, productId) => {
             ))}
           </table></div>
           
-        </div>
-
-        <div>
-          <h1>Insert Products</h1>
-          <textarea id="products" name="products" rows="20" cols="50" />
-          <br />
-          <button onClick={insertProducts}>Insert Products</button>
+        
 
 
-          <button onClick={() => document.getElementById('products').value = ''}>Clear</button>
 
-          <p>{insertStatus}</p>
-        </div>
-  </div> 
+      <div className='scrollable-div' style={{ flexGrow:1, width: '100%' }}> 
 
-      <h1>Cloudinary Media Library</h1>
-      <div className='scrollable-div'>
-      <table border="1" cellPadding="10" cellSpacing="0">
-        <thead>
-          <tr>
-            <th>Thumbnail</th>
-            <th>Public ID</th>
-            <th>Format</th>
-            <th>URL</th>
-            <th>Actions</th>
-            <th>Select</th> {/* NEW: Select column */}
-          </tr>
-        </thead>
+        
+
+      <table name = "media" border="1" cellPadding="10" cellSpacing="0" >
+
         <tbody>
           {mediaFiles.map((file) => (
             <tr key={file.public_id}>
-              <td>
+              <td style={{width:"30"}}>
+
                 <img
                   src={`https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_100/${file.public_id}.${file.format}`}
-                  alt={file.public_id}
+                  alt={file.public_id}  onClick={() => {
+                    document.getElementById('selectedImages').value = file.public_id;
+                    document.getElementById('prod_image').innerHTML = `<img id="largeImage" src="https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_600/${file.public_id}.${file.format}" />`;
+                    
+                  }}
+
+                  onDoubleClick={() => {
+                    document.getElementById('selectedImages').value = file.public_id;
+                    document.getElementById('prod_image').innerHTML = '';
+                  }
+                  }
+
                 />
+
+        
+
+
+
+      
               </td>
-              <td>{file.public_id}</td>
-              <td>{file.format}</td>
-              <td>
-                <a href={file.secure_url} target="_blank" rel="noopener noreferrer">
-                  View Image
-                </a>
-                <br />
-                <button onClick={() => copyToClipboard(`https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_150/${file.public_id}.${file.format}`)}>Copy</button>
-              </td>
-              <td>
+              <td style={{fontSize:10, width: "20%"}}>{file.public_id}.{file.format}</td>
+
+              <td style={{width:"15%"}}>
                 <button onClick={() => handleDeleteImage(file.public_id)}>Delete</button>
               </td>
-              <td> {/* NEW: Checkbox for selecting images */}
+              <td style={{width:"5%"}}> {/* NEW: Checkbox for selecting images */}
+              
                 <input
                   type="checkbox"
-                  onChange={() => handleCheckboxChange(file.public_id + '.'+ file.format)}
-                  checked={selectedImages.includes(file.public_id + '.'+ file.format)}
+                  onChange={() => handleCheckboxChange(file.public_id.split('/').pop() + '.'+ file.format)}
+                  checked={selectedImages.includes(file.public_id.split('/').pop() + '.'+ file.format)}
                 />
               </td>
-              <td>
-                <button
-                  onClick={() =>
-                    handleDownload(
-                      file.secure_url,
-                      `media-${file.public_id}.${file.format}`
-                    )
-                  }
-                >
-                  Download
-                </button>
-              </td>
+              
             </tr>
           ))}
         </tbody>
       </table>
       </div>
+  </div> 
 
 
-    </>
+
+
+    </div>
   );
 }
 
