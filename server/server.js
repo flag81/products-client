@@ -305,12 +305,85 @@ app.get("/searchProducts", (req, res) => {
   });
 });
 
+// add api to add a keword to a product in the database table productkeywords and keywords
+
+app.post("/addKeyword", (req, res) => {
+
+  const { productId, keyword } = req.body;
+
+  const q = `INSERT INTO keywords (keyword) VALUES (?) ON DUPLICATE KEY UPDATE keywordId = LAST_INSERT_ID(keywordId)`;
+
+  db.query(q, [keyword], (err, result) => {
+    if (err) {
+      console.error('Error adding keyword:', err);
+      return res.status(500).json({ error: 'Failed to add keyword' });
+    }
+
+    const keywordId = result.insertId;
+
+    db.query(
+      `INSERT INTO productkeywords (productId, keywordId) VALUES (?, ?)`,
+      [productId, keywordId],
+      (err, result) => {
+        if (err) {
+          console.error('Error adding keyword to product:', err);
+          return res.status(500).json({ error: 'Failed to add keyword to product' });
+        }
+        res.status(200).json({ message: 'Keyword added successfully' });
+      }
+    );
+  }
+  );
+});
+
+// add api to remove a keword from a product in the database table productkeywords and keywords
+
+
+
+app.delete("/removeKeyword", (req, res) => {
+
+  const { productId, keyword } = req.body;
+
+  db.query(
+    `SELECT keywordId FROM keywords WHERE keyword = ?`,
+    [keyword],
+    (err, result) => {
+      if (err) {
+        console.error('Error getting keywordId:', err);
+        return res.status(500).json({ error: 'Failed to get keywordId' });
+      }
+
+      const keywordId = result[0]?.keywordId;
+
+      db.query(
+        `DELETE FROM productkeywords WHERE productId = ? AND keywordId = ?`,
+        [productId, keywordId],
+        (err, result) => {
+          if (err) {
+            console.error('Error removing keyword from product:', err);
+            return res.status(500).json({ error: 'Failed to remove keyword from product' });
+          }
+          res.status(200).json({ message: 'Keyword removed successfully' });
+        }
+      );
+    }
+
+  );
+});
+
+
+
 
 
 app.get("/getProducts", (req, res) => {
   // Get userId and storeId from query parameters
   const userId = req.query.userId || null;
   let storeId = parseInt(req.query.storeId, 10);  // Convert storeId to integer
+
+  const isFavorite = req.query.isFavorite || null;
+  const onSale = req.query.onSale || null;
+
+  const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
 
   // If storeId is not a valid number (NaN or <= 0), treat it as null
   if (isNaN(storeId) || storeId <= 0) {
@@ -345,6 +418,16 @@ app.get("/getProducts", (req, res) => {
     q += ` WHERE p.storeId = ?`;
   }
 
+  // Add favorite filtering if isFavorite is set to true
+  if (isFavorite === 'true') {
+    q += storeId !== null ? ` AND f.userId IS NOT NULL` : ` WHERE f.userId IS NOT NULL`;
+  }
+
+  // Add onSale filtering if onSale is set to true
+  if (onSale === 'true') {
+    q += (storeId !== null || isFavorite === 'true') ? ` AND p.sale_end_date >= ?` : ` WHERE p.sale_end_date >= ?`;
+  }
+
   q += `
     GROUP BY 
       p.productId
@@ -354,8 +437,11 @@ app.get("/getProducts", (req, res) => {
 
   // Parameters array for the query
   const params = storeId !== null ? [userId, storeId] : [userId];
+  if (onSale === 'true') {
+    params.push(today);
+  }
 
-  // Execute the query, passing userId and optionally storeId
+  // Execute the query, passing userId and optionally storeId and/or today's date
   db.query(q, params, (err, data) => {
     if (err) {
       console.log("getProducts error:", err);

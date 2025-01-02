@@ -26,6 +26,13 @@
   border: 1px solid #110505;
 }
 
+.scrollable-div2 {
+  max-height: 200px; /* Set the maximum height */
+  overflow-y: auto;  /* Enables vertical scrolling if the content exceeds the max height */
+  overflow-x: auto; /* Disables horizontal scrolling */
+  border: 1px solid #110505;
+}
+
 @keyframes logo-spin {
   from {
     transform: rotate(0deg);

@@ -32,40 +32,33 @@ const [users, setUsers] = useState([]);
 
   // NEW: State to track selected public_id values
   const [selectedImages, setSelectedImages] = useState([]);
+  const [selectedProduct , setSelectedProduct] = useState('');
 
 
   const prompt = 
 
   'Can you extract product sale information in albanian language from this sales flyer in the format for each product' +
-' Convert ë letter to e for all the keywords. Do not include conjunctions, articles words in albanian, in keywords.\n' +
+' Convert ë letter to e for all the keywords. Do not include conjunctions, articles words in Albanian language, in keywords.\n' +
  ' Do not include size info for keywords and only words with more than 2 characters as keywords, \n' + 
   ' The userId is:{userId}. \n' +
   ' The storeId is:{storeId}. \n' +
-  'The response should be in the format: \n' +
+ 
+  'The response should be in the format for each product as object in an array of objects: \n' +
   `[
+
     {
-      "product_description": "Mandarina kg",
-      "old_price": 0.89,
-      "new_price": 0.69,
-      "discount_percentage": 22,
-      "sale_end_date": "2024-12-26",
+      "product_description": "",
+      "old_price": "",
+      "new_price": "",
+      "discount_percentage": "",
+      "sale_end_date": "YYYY-MM-DD",
       "storeId": 1,
       "userId": 1,
-      "image_url": "uploads/ccmainz5m07eguwyipyw.jpg",
-      "keywords": ["mandarina"]
-    },
-    {
-      "product_description": "Kerpudhe pako",
-      "old_price": 1.49,
-      "new_price": 0.99,
-      "discount_percentage": 33,
-      "sale_end_date": "2024-12-26",
-      "storeId": 1,
-      "userId": 1,
-      "image_url": "uploads/ccmainz5m07eguwyipyw.jpg",
+      "image_url": {imageUrl},
       "keywords": ["kerpudhe"]
 }]` +
- ' The the image url(s) is(are): '  ;
+' Replace the placeholder data in the example with extracted and given data. \n' +
+ '  '  ;
 
 
  //change
@@ -206,9 +199,16 @@ const removeProductFromFavorites = async (userId, productId) => {
   //change getAllProducts to include a keyword sent to the server to filter products
 
 
-  const getAllProducts = async (userId, storeId) => {
+  const getAllProducts = async (userId, storeId, isFavorite, onSale) => {
     try {
-      const response = await fetch(`http://localhost:3000/getProducts?userId=${encodeURIComponent(userId)}&storeId=${encodeURIComponent(storeId)}`, {
+
+      console.log('getAllProducts userId:', userId);
+      console.log('getAllProducts storeId:', storeId);
+      console.log('getAllProducts isFavorite:', isFavorite);
+      console.log('getAllProducts onSale:', onSale);
+
+      
+      const response = await fetch(`http://localhost:3000/getProducts?userId=${encodeURIComponent(userId)}&storeId=${encodeURIComponent(storeId)}&isFavorite=${encodeURIComponent(isFavorite)}&onSale=${encodeURIComponent(onSale)}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -362,7 +362,17 @@ const removeProductFromFavorites = async (userId, productId) => {
 
       const storeId = document.querySelector('select[name="store"]').value;
       const userId = document.querySelector('select[name="user"]').value;
-      const modifiedPrompt = prompt.replace('{storeId}', storeId).replace('{userId}', userId);
+
+      const imageUrl = document.getElementById('selectedImages').value;
+
+      if(imageUrl === '') {
+        setStatus('Please select an image.');
+        return;
+      }
+
+      let modifiedPrompt = prompt.replace('{storeId}', storeId).replace('{userId}', userId).replace('{imageUrl}', imageUrl);
+
+       
 
   
       navigator.clipboard.writeText(modifiedPrompt + selectedIdsString).then(
@@ -377,6 +387,58 @@ const removeProductFromFavorites = async (userId, productId) => {
         }
       );
     };
+
+
+// add a new function to call the server api addKeyword to add a keyword to a product
+
+const addKeyword = async (productId, keyword) => {
+  try {
+    const response = await fetch('http://localhost:3000/addKeyword', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ productId, keyword }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      console.log('result:', result);
+      getAllProducts();
+    }
+  }
+  catch (error) {
+    console.error('Error adding keyword:', error);
+  }
+};
+
+// add a new function to call the server api removeKeyword to remove a keyword from a product
+
+const removeKeyword = async (productId, keyword) => {
+  try {
+    const response = await fetch('http://localhost:3000/removeKeyword', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ productId, keyword }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      console.log('result:', result);
+      getAllProducts();
+    }
+  }
+  catch (error) {
+    console.error('Error removing keyword:', error);
+  }
+};
+
+
+
 
     // call server api   app.get('/chatgptExtractProducts', async (req, res) => {
     
@@ -419,6 +481,16 @@ const removeProductFromFavorites = async (userId, productId) => {
     const insertProducts = async () => {
       const textarea = document.getElementById('products');
       const productData = textarea.value;
+
+      const storeId = document.querySelector('select[name="store"]').value;
+
+
+      //if storetId is not selected then show error message and return from the function
+
+      if (!storeId || storeId === '0') {
+        setStatus('Please select a store.');
+        return;
+      }
 
       console.log('productData sent:', productData);
   
@@ -596,19 +668,41 @@ const removeProductFromFavorites = async (userId, productId) => {
 
   </select>
 
+
+  Favorite:<input type="checkbox" id="favorites" name="favorites" />
+
+  On Sale:<input type="checkbox" id="onSale" name="onSale" />
+
 <button onClick={() => extractProducts(document.querySelector('select[name="store"]').value, document.getElementById('selectedImages').value)}>Extract Products</button>
 
+
+  <input type="text" id="keyword" name="keyword" />
+  <button onClick={() => addKeyword(selectedProduct, document.getElementById('keyword').value)}>Add Keyword to {selectedProduct}</button>
+  <button onClick={() => removeKeyword(selectedProduct, document.getElementById('keyword').value)}>Remove Keyword from {selectedProduct}</button>
+
+
 </div>
+
+{/* add a div withe input and button to add a keyword to a product */}
+
+<pre>{}</pre>
+
+
 
 <div>
 
 
-<h2>Search Products</h2>
-          <input type="text" id="keyword" name="keyword" />
-          <button onClick={() => searchProducts(document.getElementById('keyword').value)}>Search</button>
-          
 
-          <button onClick={()=>getAllProducts(document.querySelector('select[name="user"]').value , document.querySelector('select[name="store"]').value)}>Get Products</button>
+
+
+
+
+
+
+<h2>Search Products</h2>
+<input type="text" id="keyword" name="keyword" onKeyDown={(e) => { if (e.key === 'Enter') searchProducts(e.target.value); }} />
+<button onClick={() => searchProducts(document.getElementById('keyword').value)}>Search</button>
+<button onClick={()=>getAllProducts(document.querySelector('select[name="user"]').value , document.querySelector('select[name="store"]').value, document.getElementById('favorites').checked, document.getElementById('onSale').checked ) }>Get Products</button>
           
 </div>
 
@@ -619,17 +713,38 @@ const removeProductFromFavorites = async (userId, productId) => {
 
           
       <div className='scrollable-div' style={{ flexGrow:1, width: '100vw' }}>
-      <div id="prod_image" style={{ display: 'flex', flexDirection: 'row', gap: '10px', width: '80vw', overflow: 'hidden' }}>
 
-
-    </div>
             <table name="products" border="1" cellPadding="10" cellSpacing="0" borderColor="black">
             {products.map(product => (
               <tr>
+                {/* //add  td with checkbox with productId value , when check is set to selectedProduct */}
+
+                <td><input type="checkbox" checked={selectedProduct === product.productId} onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedProduct(product.productId);
+                  } else {
+                    setSelectedProduct('');
+                  }
+                }} /></td>
+
+                
+
+
               <td>{product.productId}</td>
                 <td>{product.product_description}</td> 
                   <td>       <img
                   src={`https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_100/uploads/${product.image_url}`}
+                  onClick={() => {
+                    
+                    document.getElementById('prod_image').innerHTML = `<img id="largeImage" src="https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_600/uploads/${product.image_url}" />`;
+                    
+                  }}
+
+                  onDoubleClick={() => {
+                    
+                    document.getElementById('prod_image').innerHTML = '';
+                  }
+                }
                  
                 />
                 <br /> {product.sale_end_date}
@@ -670,9 +785,10 @@ const removeProductFromFavorites = async (userId, productId) => {
           
         
 
+          <div id="prod_image" />
 
+      <div className='scrollable-div2' style={{  width: '100%'}}> 
 
-      <div className='scrollable-div' style={{ flexGrow:1, width: '100%' }}> 
 
         
 
@@ -723,8 +839,18 @@ const removeProductFromFavorites = async (userId, productId) => {
           ))}
         </tbody>
       </table>
+      
       </div>
+          <br />
+
+          
+       
+
+
+
+
   </div> 
+
 
 
 
