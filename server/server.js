@@ -372,25 +372,38 @@ app.delete("/removeKeyword", (req, res) => {
 });
 
 
+// add api to edit the product description for a product with product id and new description
 
+app.put("/editProductDescription", (req, res) => {
+  
+  const { productId, newDescription } = req.body;
 
+  const q = `UPDATE products SET product_description = ? WHERE productId = ?`;
+
+  db.query(q, [newDescription, productId], (err, result) => {
+    if (err) {
+      console.error('Error updating product description:', err);
+      return res.status(500).json({ error: 'Failed to update product description' });
+    }
+    res.status(200).json({ message: 'Product description updated successfully' });
+  }
+  );
+}
+);
+
+//update getProducts endpoint to order the results by keyword count matches between the keywords of the favorite products and the keywords of the products in the database descending
 
 app.get("/getProducts", (req, res) => {
-  // Get userId and storeId from query parameters
   const userId = req.query.userId || null;
-  let storeId = parseInt(req.query.storeId, 10);  // Convert storeId to integer
-
+  let storeId = parseInt(req.query.storeId, 10);
   const isFavorite = req.query.isFavorite || null;
   const onSale = req.query.onSale || null;
+  const today = new Date().toISOString().split('T')[0];
 
-  const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
-
-  // If storeId is not a valid number (NaN or <= 0), treat it as null
   if (isNaN(storeId) || storeId <= 0) {
     storeId = null;
   }
 
-  // Base SQL query
   let q = `
     SELECT 
       p.productId, 
@@ -402,7 +415,20 @@ app.get("/getProducts", (req, res) => {
       p.storeId, 
       p.image_url,
       GROUP_CONCAT(k.keyword) AS keywords,
-      CASE WHEN f.userId IS NOT NULL THEN TRUE ELSE FALSE END AS isFavorite
+      CASE WHEN f.userId IS NOT NULL THEN TRUE ELSE FALSE END AS isFavorite,
+      (
+        SELECT COUNT(*)
+        FROM productkeywords pkf
+        JOIN keywords kf ON pkf.keywordId = kf.keywordId
+        WHERE pkf.productId = p.productId
+          AND kf.keyword IN (
+            SELECT k.keyword
+            FROM favorites f
+            JOIN productkeywords pk ON f.productId = pk.productId
+            JOIN keywords k ON pk.keywordId = k.keywordId
+            WHERE f.userId = ?
+          )
+      ) AS keywordMatchCount
     FROM 
       products p
     LEFT JOIN 
@@ -413,17 +439,14 @@ app.get("/getProducts", (req, res) => {
       favorites f ON p.productId = f.productId AND f.userId = ?
   `;
 
-  // Add storeId filtering if storeId is valid (greater than 0)
   if (storeId !== null) {
     q += ` WHERE p.storeId = ?`;
   }
 
-  // Add favorite filtering if isFavorite is set to true
   if (isFavorite === 'true') {
     q += storeId !== null ? ` AND f.userId IS NOT NULL` : ` WHERE f.userId IS NOT NULL`;
   }
 
-  // Add onSale filtering if onSale is set to true
   if (onSale === 'true') {
     q += (storeId !== null || isFavorite === 'true') ? ` AND p.sale_end_date >= ?` : ` WHERE p.sale_end_date >= ?`;
   }
@@ -431,27 +454,26 @@ app.get("/getProducts", (req, res) => {
   q += `
     GROUP BY 
       p.productId
-    ORDER BY 
-      p.productId DESC
+    ORDER BY isFavorite DESC,
+      keywordMatchCount DESC, p.productId DESC
   `;
 
-  // Parameters array for the query
-  const params = storeId !== null ? [userId, storeId] : [userId];
+  const params = storeId !== null ? [userId, userId, storeId] : [userId, userId];
   if (onSale === 'true') {
     params.push(today);
   }
 
-  // Execute the query, passing userId and optionally storeId and/or today's date
   db.query(q, params, (err, data) => {
     if (err) {
       console.log("getProducts error:", err);
       return res.json(err);
     }
-
-    // Send the retrieved data back as a JSON response
     return res.json(data);
   });
 });
+
+
+
 
 
 

@@ -33,6 +33,7 @@ const [users, setUsers] = useState([]);
   // NEW: State to track selected public_id values
   const [selectedImages, setSelectedImages] = useState([]);
   const [selectedProduct , setSelectedProduct] = useState('');
+  const [selectedProductDescription , setSelectedProductDescription] = useState('');
 
 
   const prompt = 
@@ -172,6 +173,29 @@ const removeProductFromFavorites = async (userId, productId) => {
   }
 };
 
+// add function to edit the product description for a product with product id and new description
+
+const editProductDescription = async (productId, newDescription) => {
+  try {
+    const response = await fetch('http://localhost:3000/editProductDescription', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ productId, newDescription }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      console.log('result:', result);
+      getAllProducts();
+    }
+  }
+  catch (error) {
+    console.error('Error editing product description:', error);
+  }
+};
 
 
   const searchProducts = async (keyword) => {
@@ -208,7 +232,9 @@ const removeProductFromFavorites = async (userId, productId) => {
       console.log('getAllProducts onSale:', onSale);
 
       
-      const response = await fetch(`http://localhost:3000/getProducts?userId=${encodeURIComponent(userId)}&storeId=${encodeURIComponent(storeId)}&isFavorite=${encodeURIComponent(isFavorite)}&onSale=${encodeURIComponent(onSale)}`, {
+      const response = await fetch(`http://localhost:3000/getProducts?userId=${encodeURIComponent(userId)}
+      &storeId=${encodeURIComponent(storeId)}
+      &isFavorite=${encodeURIComponent(isFavorite)}&onSale=${encodeURIComponent(onSale)}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -679,6 +705,8 @@ const removeKeyword = async (productId, keyword) => {
   <input type="text" id="keyword" name="keyword" />
   <button onClick={() => addKeyword(selectedProduct, document.getElementById('keyword').value)}>Add Keyword to {selectedProduct}</button>
   <button onClick={() => removeKeyword(selectedProduct, document.getElementById('keyword').value)}>Remove Keyword from {selectedProduct}</button>
+  <button onClick={() => editProductDescription(selectedProduct, document.getElementById('keyword').value)}>Edit description for {selectedProduct}</button>
+
 
 
 </div>
@@ -722,8 +750,10 @@ const removeKeyword = async (productId, keyword) => {
                 <td><input type="checkbox" checked={selectedProduct === product.productId} onChange={(e) => {
                   if (e.target.checked) {
                     setSelectedProduct(product.productId);
+                    document.getElementById('keyword').value = product.product_description;
                   } else {
                     setSelectedProduct('');
+                    document.getElementById('keyword').value = '';
                   }
                 }} /></td>
 
