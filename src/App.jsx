@@ -378,6 +378,45 @@ const editProductDescription = async (productId, newDescription) => {
   };
 
 
+  //create a function to copy to generate a array of object from selected produc and properties and copy to textarea with id products
+  // in format [{product_description: "product description", old_price: "old price", new_price: "new price", discount_percentage: "discount percentage", sale_end_date: "sale end date", storeId: 1, userId: 1, image_url: "image url", keywords: ["keyword1", "keyword2"]}]
+  //replace the values of the properties with the values of the selected product
+  // the product object is passed as a parameter to the function
+
+
+
+  const copySelectedProduct = (product) => {
+    const storeId = document.querySelector('select[name="store"]').value;
+    const userId = document.querySelector('select[name="user"]').value;
+    const imageUrl = document.getElementById('selectedImages').value;
+
+    // conver product.sale_end_date to a date object and then to a string in the format YYYY-MM-DD
+
+    const saleEndDate = new Date(product.sale_end_date).toISOString()?.split('T')[0];
+
+
+
+    const productData = [
+      {
+        product_description: product.product_description,
+        old_price: product.old_price,
+        new_price: product.new_price,
+        discount_percentage: product.discount_percentage,
+
+        sale_end_date: saleEndDate,
+        storeId: storeId,
+        userId: userId,
+        image_url: product.image_url,
+        keywords: [],
+      },
+    ];
+
+    document.getElementById('products').value = JSON.stringify(productData, null, 2);
+  }
+
+
+
+
     // NEW: Copy the list of selected public_id values to the clipboard
     const copyPrompt = () => {
       const selectedIdsString = selectedImages.join(', ');
@@ -751,6 +790,7 @@ const removeKeyword = async (productId, keyword) => {
                 <td><input type="checkbox" checked={selectedProduct === product.productId} onChange={(e) => {
                   if (e.target.checked) {
                     setSelectedProduct(product.productId);
+                    copySelectedProduct(product);
                     document.getElementById('keyword').value = product.product_description;
                   } else {
                     setSelectedProduct('');
@@ -778,10 +818,11 @@ const removeKeyword = async (productId, keyword) => {
                 }
                  
                 />
-                <br /> {product.sale_end_date}
+                <br /> { new Date(product.sale_end_date).toLocaleDateString('EN-UK')  }
+                <br /> { product.storeName }
                 </td>
 
-                <td>{product.keywords.split(',').map(keyword => (
+                <td>{product?.keywords?.split(',').map(keyword => (
                   <div>{keyword}</div>
                 ))}</td>
 

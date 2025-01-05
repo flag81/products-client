@@ -405,6 +405,7 @@ app.get("/getProducts", (req, res) => {
   if (isNaN(storeId) || storeId <= 0) {
     storeId = null;
   }
+  
 
   let q = `
     SELECT 
@@ -416,6 +417,7 @@ app.get("/getProducts", (req, res) => {
       p.sale_end_date, 
       p.storeId, 
       p.image_url,
+      s.storeName,
       GROUP_CONCAT(k.keyword) AS keywords,
       CASE WHEN f.userId IS NOT NULL THEN TRUE ELSE FALSE END AS isFavorite,
       CASE WHEN p.sale_end_date >= ? THEN TRUE ELSE FALSE END AS productOnSale,
@@ -440,6 +442,8 @@ app.get("/getProducts", (req, res) => {
       keywords k ON pk.keywordId = k.keywordId
     LEFT JOIN 
       favorites f ON p.productId = f.productId AND f.userId = ?
+      LEFT JOIN
+      stores s ON p.storeId = s.storeId
   `;
 
   if (storeId !== null) {
