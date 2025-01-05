@@ -6,10 +6,12 @@ import fs from 'fs';
 import { format } from 'path';
 import db from './connection.js';
 
+
 import OpenAI from "openai";
 const openai = new OpenAI();
 
 export const app = express();
+
 
 app.use(express.json());
 
@@ -416,6 +418,7 @@ app.get("/getProducts", (req, res) => {
       p.image_url,
       GROUP_CONCAT(k.keyword) AS keywords,
       CASE WHEN f.userId IS NOT NULL THEN TRUE ELSE FALSE END AS isFavorite,
+      CASE WHEN p.sale_end_date >= ? THEN TRUE ELSE FALSE END AS productOnSale,
       (
         SELECT COUNT(*)
         FROM productkeywords pkf
@@ -454,11 +457,11 @@ app.get("/getProducts", (req, res) => {
   q += `
     GROUP BY 
       p.productId
-    ORDER BY isFavorite DESC,
+    ORDER BY productOnSale DESC , isFavorite DESC,
       keywordMatchCount DESC, p.productId DESC
   `;
 
-  const params = storeId !== null ? [userId, userId, storeId] : [userId, userId];
+  const params = storeId !== null ? [today, userId, userId, storeId] : [today, userId, userId];
   if (onSale === 'true') {
     params.push(today);
   }
@@ -603,11 +606,14 @@ app.post('/upload', upload.single('image'), async (req, res) => {
   const imagePath = req.file.path;
   const { folderName } = req.body; // Get folder name from request body
 
+
   console.log('folderName:', folderName);
 
   try {
     const result = await cloudinary.uploader.upload(imagePath, {
       folder: folderName || 'default-folder', // If no folder is specified, use 'default-folder'
+      use_filename: true,                       // Keep the original filename
+      unique_filename: false,                   // Do not append a unique ID to the filename
     });
 
     console.log('result from upload:', result);
