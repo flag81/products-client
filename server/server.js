@@ -13,6 +13,8 @@ const openai = new OpenAI();
 export const app = express();
 
 
+import Tesseract from 'tesseract.js';
+
 app.use(express.json());
 
 app.use(cors()); // Allow all origins, especially Vite's localhost:5173
@@ -175,6 +177,51 @@ app.post('/insertProducts1', async (req, res) => {
 });
 
 // write api to get all stores from database table stores
+
+// create a get endpoint that will extarct text from image using tesseract.js and return the extracted text as response GIVE THE IMAGE URL AS QUERY PARAMETER
+
+app.get('/extractText', async (req, res) => {
+  const  imageUrl  = "./sample1.jpg";
+
+  try {
+    const { data: { text } } = await Tesseract.recognize(imageUrl, 'eng', { logger: m => console.log(m) });
+
+    console.log('Extracted Text:', text); // Output the extracted text
+
+    res.json({ text });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+// create a api endpoint to rename the image file in cloudinary with the public_id and new name as query parameters
+
+
+app.put('/rename-image', async (req, res) => {
+
+  const { public_id, new_name } = req.body;
+
+  if (!public_id || !new_name) {
+    return res.status(400).json({ error: 'Missing public_id or new_name' });
+  }
+
+  try {
+    const result = await cloudinary.uploader.rename(public_id, new_name);
+
+    if (result.result === 'ok') {
+      res.status(200).json({ message: 'Image renamed successfully' });
+    } else {
+      res.status(500).json({ error: 'Failed to rename image' });
+    }
+  }
+  catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+
 
 app.get("/getStores", (req, res) => {
 
@@ -617,10 +664,12 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     const result = await cloudinary.uploader.upload(imagePath, {
       folder: folderName || 'default-folder', // If no folder is specified, use 'default-folder'
       use_filename: true,                       // Keep the original filename
-      unique_filename: false,                   // Do not append a unique ID to the filename
+      unique_filename: false,    
+      ocr: "adv_ocr"                // Do not append a unique ID to the filename
     });
 
     console.log('result from upload:', result);
+    console.log('OCR Text:', result.info.ocr.adv_ocr.data[0].textAnnotations[0].description);
 
     // Clean up the local uploaded file
     fs.unlinkSync(imagePath);

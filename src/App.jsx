@@ -16,6 +16,7 @@ function App() {
   const [copySuccess, setCopySuccess] = useState(''); // State for copy success message
   
   const [status, setStatus] = useState('');
+  const [statusError, setStatusError] = useState('');
   const [folderName, setFolderName] = useState('uploads'); // Folder name input
   const [insertStatus, setInsertStatus] = useState('');
   const [deleteStatus, setDeleteStatus] = useState('');
@@ -41,6 +42,7 @@ const [users, setUsers] = useState([]);
   'Can you extract product sale information in albanian language from this sales flyer in the format for each product' +
 ' Convert ë letter to e for all the keywords. Do not include conjunctions, articles words in Albanian language, in keywords.\n' +
  ' Do not include size info for keywords and only words with more than 2 characters as keywords, \n' + 
+ ' Do not show euro and percetage symbols. \n' + 
   ' The userId is:{userId}. \n' +
   ' The storeId is:{storeId}. \n' +
  
@@ -55,11 +57,11 @@ const [users, setUsers] = useState([]);
       "sale_end_date": "YYYY-MM-DD",
       "storeId": 1,
       "userId": 1,
-      "image_url": {imageUrl},
-      "keywords": ["kerpudhe"]
+      "image_url": "",
+      "keywords": ["keyword1", "keyword2"]
 }]` +
 ' Replace the placeholder data in the example with extracted and given data. \n' +
- '  '  ;
+ ' The iamage urls are in the listed bellow in the order attached to this prompt. \n' ;
 
 
  //change
@@ -295,7 +297,7 @@ const editProductDescription = async (productId, newDescription) => {
     console.log('file:', file);
 
     if (!file) {
-      setStatus('Please select an image to upload.');
+      setStatus(`<font style={{color:"red"}}>Please select an image to upload.</font>`);
       return;
     }
 
@@ -545,6 +547,10 @@ const removeKeyword = async (productId, keyword) => {
 
     // Handle product insertion
     const insertProducts = async () => {
+
+      console.log('insertProducts called');
+
+
       const textarea = document.getElementById('products');
       const productData = textarea.value;
 
@@ -554,7 +560,7 @@ const removeKeyword = async (productId, keyword) => {
       //if storetId is not selected then show error message and return from the function
 
       if (!storeId || storeId === '0') {
-        setStatus('Please select a store.');
+        setStatusError('Please select a store.');
         return;
       }
 
@@ -633,6 +639,59 @@ const removeKeyword = async (productId, keyword) => {
     };
   
 
+    //crate a function to call api extractText
+    // to extract text from an image
+
+    const extractText = async (imageUrl) => {
+      try {
+        const response = await fetch(`http://localhost:3000/extractText?imageUrl=${imageUrl}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+    
+        const result = await response.json();
+    
+        if (response.ok) {
+          console.log('result:', result);
+        } else {
+          console.error('Failed to extract text:', result.message);
+        }
+      } catch (error) {
+        console.error('Error extracting text:', error);
+      }
+    }
+
+
+    //create a function to call the server api rename-image to rename an image with a new name
+    // the function will take the old name and new name as parameters
+
+    const renameImage = async (oldName, newName) => {
+      try {
+        const response = await fetch('http://localhost:3000/rename-image', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ oldName, newName }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          console.log('result:', result);
+          fetchMediaFiles();
+        }
+      }
+      catch (error) {
+
+        console.error('Error renaming image:', error);
+      }
+    };
+
+
+
   // If loading or error occurs
   if (loading) {
     return <div>Loading media files...</div>;
@@ -664,6 +723,11 @@ const removeKeyword = async (productId, keyword) => {
             <br />
             <button type="submit">Upload</button>
           </form>
+          <h2>Image name </h2>
+          <input
+              type="text" id = "image_name"
+
+            />
         
         </div>
 
@@ -710,7 +774,6 @@ const removeKeyword = async (productId, keyword) => {
 
 </div>
 
-
 <div>
 <p>{status}</p>
   </div>
@@ -733,6 +796,7 @@ const removeKeyword = async (productId, keyword) => {
     ))}
 
   </select>
+
 
 
   Favorite:<input type="checkbox" id="favorites" name="favorites" />
@@ -792,9 +856,11 @@ const removeKeyword = async (productId, keyword) => {
                     setSelectedProduct(product.productId);
                     copySelectedProduct(product);
                     document.getElementById('keyword').value = product.product_description;
+                    document.getElementById('image_name').value = product.image_url;
                   } else {
                     setSelectedProduct('');
                     document.getElementById('keyword').value = '';
+                    document.getElementById('image_name').value = '';
                   }
                 }} /></td>
 
@@ -802,12 +868,16 @@ const removeKeyword = async (productId, keyword) => {
 
 
               <td>{product.productId}</td>
-                <td>{product.product_description}</td> 
+                <td>{product.product_description}
+                <br /> { new Date(product.sale_end_date).toLocaleDateString('EN-UK')  }
+                <br /> { product.storeName }
+                  </td> 
                   <td>       <img
                   src={`https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_100/uploads/${product.image_url}`}
                   onClick={() => {
                     
                     document.getElementById('prod_image').innerHTML = `<img id="largeImage" src="https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_600/uploads/${product.image_url}" />`;
+                    document.getElementById('selectedImages').value = product.image_url;
                     
                   }}
 
@@ -818,8 +888,7 @@ const removeKeyword = async (productId, keyword) => {
                 }
                  
                 />
-                <br /> { new Date(product.sale_end_date).toLocaleDateString('EN-UK')  }
-                <br /> { product.storeName }
+               
                 </td>
 
                 <td>{product?.keywords?.split(',').map(keyword => (
