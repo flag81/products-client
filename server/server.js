@@ -665,11 +665,32 @@ app.post('/upload', upload.single('image'), async (req, res) => {
       folder: folderName || 'default-folder', // If no folder is specified, use 'default-folder'
       use_filename: true,                       // Keep the original filename
       unique_filename: false,    
-      ocr: "adv_ocr"                // Do not append a unique ID to the filename
+      
     });
 
-    console.log('result from upload:', result);
-    console.log('OCR Text:', result.info.ocr.adv_ocr.data[0].textAnnotations[0].description);
+    console.log('result from upload:', result.public_id);
+
+    const publicId = result.public_id;
+
+    const transformationResult = await cloudinary.uploader.upload(publicId, {
+      type: 'upload',
+      overwrite: true, // Ensure the image is replaced
+      transformation: [
+        {
+          overlay: {
+            font_family: 'Arial',
+            font_size: 30,
+            text: publicId,
+          },
+          gravity: 'north',
+          y: 20,
+        },
+      ],
+    });
+
+    console.log('Transformed image URL:', transformationResult.secure_url);
+  
+  
 
     // Clean up the local uploaded file
     fs.unlinkSync(imagePath);
