@@ -672,6 +672,14 @@ app.post('/upload', upload.single('image'), async (req, res) => {
 
     const publicId = result.public_id;
 
+    // split the public_id with forward slash / and get the last part of the string
+
+    const imageName = publicId.split('/').pop();
+      
+    // can you add option to add text overlay at the bottom also
+
+
+
     const transformationResult = await cloudinary.uploader.upload(publicId, {
       type: 'upload',
       overwrite: true, // Ensure the image is replaced
@@ -680,10 +688,23 @@ app.post('/upload', upload.single('image'), async (req, res) => {
           overlay: {
             font_family: 'Arial',
             font_size: 30,
-            text: publicId,
+            padding: 10,
+            text: '#'+ imageName,
           },
           gravity: 'north',
-          y: 20,
+          y: -30,
+          x: 10
+        },
+
+        {
+          overlay: {
+            font_family: 'Arial',
+            font_size: 30,
+            text: '#'+ imageName,
+          },
+          gravity: 'south_east',
+          y: 10,
+          x:10
         },
       ],
     });
