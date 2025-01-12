@@ -10,6 +10,8 @@ import db from './connection.js';
 import OpenAI from "openai";
 const openai = new OpenAI();
 
+import download from 'image-downloader';
+
 export const app = express();
 
 
@@ -508,8 +510,10 @@ app.get("/getProducts", (req, res) => {
   q += `
     GROUP BY 
       p.productId
-    ORDER BY productOnSale DESC , isFavorite DESC,
-      keywordMatchCount DESC, p.productId DESC
+    ORDER BY 
+    p.productId DESC,
+    productOnSale DESC , isFavorite DESC,
+      keywordMatchCount DESC
   `;
 
   const params = storeId !== null ? [today, userId, userId, storeId] : [today, userId, userId];
@@ -650,6 +654,94 @@ console.log(productList);
   );
 
 
+  //write function to upload multiple images to cloudinary and return the public ids of the uploaded images , with all functionali os the upload endpoint
+
+
+  app.post('/upload-multiple', upload.array('images', 10), async (req, res) => {
+
+    const { folderName } = req.body; // Get folder name from request body
+
+    console.log('folderName:', folderName);
+
+    try {
+      const uploadPromises = req.files.map(async (file) => {
+
+        const imagePath = file.path;
+
+        const result = await cloudinary.uploader.upload(imagePath, {
+
+          folder: folderName || 'default-folder', // If no folder is specified, use 'default-folder'
+          use_filename: true,                       // Keep the original filename
+          unique_filename: false,
+        });
+
+        console.log('result from upload:', result.public_id);
+
+        const publicId = result.public_id;
+
+        // split the public_id with forward slash / and get the last part of the string
+
+        const imageName = publicId.split('/').pop();
+
+        // can you add option to add text overlay at the bottom also
+
+        const transformationResult = await cloudinary.uploader.upload(publicId, {
+          type: 'upload',
+          overwrite: true, // Ensure the image is replaced
+          transformation: [
+            {
+              overlay: {
+                font_family: 'Arial',
+                font_size: 30,
+                padding: 10,
+                text: '#' + imageName,
+              },
+              gravity: 'north',
+              y: -30,
+              x: 10
+            }
+          ],
+        });
+
+        console.log('Transformed image URL:', transformationResult.secure_url);
+
+        // add code to download the image from the transformed image url and save it to the local folder using cloudinary
+
+        const options = {
+          url: transformationResult.secure_url,
+          dest: '../../downloads/',
+        };
+
+        download.image(options)
+
+
+          .then(({ filename }) => {
+            console.log('Saved to', filename);  // saved to /path/to/dest/image.jpg
+          }
+          )
+          .catch((err) => console.error(err));
+
+        // Clean up the local uploaded file
+        fs.unlinkSync(imagePath);
+
+        // Return the Cloudinary URL and public ID of the uploaded image
+        return { success: true, url: result.secure_url, public_id: result.public_id, format: result.format };
+      });
+
+      const results = await Promise.all(uploadPromises);
+
+      res.json(results);
+    } catch (error) {
+      res.status(500).json({ success: false, error: 'Failed to upload image' });
+    }
+  });
+
+  
+
+
+
+
+
 
 
 // Function to upload an image to a specific folder in Cloudinary
@@ -694,23 +786,33 @@ app.post('/upload', upload.single('image'), async (req, res) => {
           gravity: 'north',
           y: -30,
           x: 10
-        },
+        }
 
-        {
-          overlay: {
-            font_family: 'Arial',
-            font_size: 30,
-            text: '#'+ imageName,
-          },
-          gravity: 'south_east',
-          y: 10,
-          x:10
-        },
+        
       ],
     });
 
     console.log('Transformed image URL:', transformationResult.secure_url);
   
+    // add code to download the image from the transformed image url and save it to the local folder using cloudinary
+
+
+
+
+    const options = {
+      url: transformationResult.secure_url,
+      dest: '../../downloads/',
+    };
+
+
+    download.image(options)
+      .then(({ filename }) => {
+        console.log('Saved to', filename);  // saved to /path/to/dest/image.jpg
+      })
+      .catch((err) => console.error(err));
+
+
+
   
 
     // Clean up the local uploaded file

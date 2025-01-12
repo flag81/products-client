@@ -41,10 +41,12 @@ const [users, setUsers] = useState([]);
 
   'Can you extract product sale information in albanian language from this sales flyer in the format for each product' +
 ' Convert ë letter to e for all the keywords. Do not include conjunctions, articles words in Albanian language, in keywords.\n' +
- ' Do not include size info for keywords and only words with more than 2 characters as keywords, \n' + 
+ ' Do not include size info for keywords but only for description , and only words with more than 2 characters include as keywords, \n' + 
+ ' Do not stop until you extract all the products from all the attached images, just continue \n' + 
+ ' Do not ask me to continue, just continue on your own\n' + 
  ' Do not show euro and percetage symbols. \n' + 
   ' The userId is:{userId}. \n' +
-  ' The storeId is:{storeId}. \n' +
+
  
   'The response should be in the format for each product as object in an array of objects: \n' +
   `[
@@ -61,7 +63,23 @@ const [users, setUsers] = useState([]);
       "keywords": ["keyword1", "keyword2"]
 }]` +
 ' Replace the placeholder data in the example with extracted and given data. \n' +
- ' The iamage urls are in the listed bellow in the order attached to this prompt. \n' ;
+
+ ` The image url is the first text on top of the image starting with # sign. Do not include the # sign , but add .jpg at the end of string \n 
+ 
+ Extract the store name from the flyer and try to match its storeId from the list bellow
+
+ Viva Fresh - StoreId: 1
+ Maxi - StoreId: 2
+ Spar - StoreId: 3
+ Meridian - StoreId: 4
+ ETC - StoreId: 5
+ KAM Market - StoreId: 6
+ Interex - StoreId: 7
+ Horeca - StoreId: 8
+ 
+ 
+ \n` 
+ ;
 
 
  //change
@@ -288,8 +306,59 @@ const editProductDescription = async (productId, newDescription) => {
     console.log('error change:', error);
   }, [error]);
 
-  // Handle image upload
+  // write the function bellow Handle image upload for multiple files at once and send the folder name in the request
   const handleImageUpload = async (event) => {
+    event.preventDefault();
+    const files = event.target.elements.images.files;
+
+    console.log('files:', files);
+
+    if (files.length === 0) {
+      setStatus(`<font style={{color:"red"}}>Please select images to upload.</font>`);
+      return;
+    }
+
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append('images', files[i]);
+      console.log('files[i]:', files[i]);
+    }
+    formData.append('folderName', folderName); // Send folder name in request
+
+    console.log('formData:', formData);
+    console.log('folderName:', folderName);
+
+    try {
+      const response = await fetch('http://localhost:3000/upload-multiple', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setStatus('Images uploaded successfully!');
+        setMediaFiles((prevFiles) => [...prevFiles, ...result]); // Add new images to mediaFiles
+        fetchMediaFiles(); // Fetch media files again to include the new images
+      } else {
+        setStatus(`Upload failed: ${result.error}`);
+      }
+    } catch (error) {
+      setStatus('An error occurred while uploading the images.');
+      console.error('Error:', error);
+    }
+  };
+
+
+
+
+
+
+
+
+
+
+  const handleImageUpload2 = async (event) => {
     event.preventDefault();
     const fileInput = event.target.elements.image;
     const file = fileInput.files[0];
@@ -433,11 +502,8 @@ const editProductDescription = async (productId, newDescription) => {
 
       const imageUrl = document.getElementById('selectedImages').value;
 
-      if(imageUrl === '') {
-        setStatus('Please select an image.');
-        return;
-      }
-
+      
+   
       let modifiedPrompt = prompt.replace('{storeId}', storeId).replace('{userId}', userId).replace('{imageUrl}', imageUrl);
 
        
@@ -714,12 +780,15 @@ const removeKeyword = async (productId, keyword) => {
             <input
               type="text"
               value={folderName}
-              onChange={(e) => setFolderName(e.target.value)}
+
               placeholder="Enter folder name"
               required
+              multiple
+
             />
+
+              <input type="file" name="images" accept="image/*" multiple required />
             <br />
-            <input type="file" name="image" accept="image/*" required />
             <br />
             <button type="submit">Upload</button>
           </form>
