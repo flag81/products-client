@@ -42,7 +42,7 @@ const [users, setUsers] = useState([]);
   'Can you extract product sale information in albanian language from this sales flyer in the format for each product' +
 ' Convert ë letter to e for all the keywords. Do not include conjunctions, articles words in Albanian language, in keywords.\n' +
  ' Do not include size info for keywords but only for description , and only words with more than 2 characters include as keywords, \n' + 
- ' Do not stop until you extract all the products from all the attached images, just continue \n' + 
+ ' After you have extracted data from firt image , pause for 3 seconds and continue with next one , untill all of them are finished. \n' +  
  ' Do not ask me to continue, just continue on your own\n' + 
  ' Do not show euro and percetage symbols. \n' + 
   ' The userId is:{userId}. \n' +
@@ -550,6 +550,17 @@ const addKeyword = async (productId, keyword) => {
 // add a new function to call the server api removeKeyword to remove a keyword from a product
 
 const removeKeyword = async (productId, keyword) => {
+
+
+// check if productId or keyword is empty and return from the function if it is empty
+
+
+if (!productId || !keyword) {
+  setStatus(<font style={{color:'red'}}><b>Please select a product and keyword</b></font>);
+  return;
+}
+
+
   try {
     const response = await fetch('http://localhost:3000/removeKeyword', {
       method: 'DELETE',
@@ -877,7 +888,6 @@ const removeKeyword = async (productId, keyword) => {
 
   <input type="text" id="keyword" name="keyword" />
   <button onClick={() => addKeyword(selectedProduct, document.getElementById('keyword').value)}>Add Keyword to {selectedProduct}</button>
-  <button onClick={() => removeKeyword(selectedProduct, document.getElementById('keyword').value)}>Remove Keyword from {selectedProduct}</button>
   <button onClick={() => editProductDescription(selectedProduct, document.getElementById('keyword').value)}>Edit description for {selectedProduct}</button>
 
 
@@ -940,6 +950,7 @@ const removeKeyword = async (productId, keyword) => {
                 <td>{product.product_description}
                 <br /> { new Date(product.sale_end_date).toLocaleDateString('EN-UK')  }
                 <br /> { product.storeName }
+                <br /> { product.old_price } -  { product.new_price }
                   </td> 
                   <td>       <img
                   src={`https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_100/uploads/${product.image_url}`}
@@ -961,7 +972,7 @@ const removeKeyword = async (productId, keyword) => {
                 </td>
 
                 <td>{product?.keywords?.split(',').map(keyword => (
-                  <div>{keyword}</div>
+                  <div><button onClick={() => removeKeyword(selectedProduct, keyword)}>{keyword} X</button></div>
                 ))}</td>
 
 
