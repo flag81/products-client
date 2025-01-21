@@ -6,6 +6,9 @@ import fs from 'fs';
 import { format } from 'path';
 import db from './connection.js';
 
+import cookieParser from 'cookie-parser';
+import bodyParser from'body-parser';
+
 
 import OpenAI from "openai";
 const openai = new OpenAI();
@@ -17,9 +20,14 @@ export const app = express();
 
 import Tesseract from 'tesseract.js';
 
+import webPush from 'web-push';
+
 app.use(express.json());
 
 app.use(cors()); // Allow all origins, especially Vite's localhost:5173
+
+app.use(cookieParser());
+app.use(bodyParser.json());
 
 const upload = multer({ dest: 'uploads/' }); // Define upload middleware
 
@@ -336,7 +344,14 @@ app.get("/searchProducts", (req, res) => {
 
   if (keyword) {
     const keywords = keyword.split(' ').map(kw => kw.trim());
-    const keywordConditions = keywords.map(() => `k.keyword LIKE ?`).join(' OR ');
+
+    // Create a condition for each keyword to be longer than 1 character 
+    const keywordConditions = keywords
+      .filter(kw => kw.length > 1)
+      .map(() => `k.keyword LIKE ?`)
+      .join(' OR ');
+
+
     q += ` WHERE ${keywordConditions}`;
     queryParams.push(...keywords.map(kw => `%${kw}%`));
   }
@@ -420,6 +435,26 @@ app.delete("/removeKeyword", (req, res) => {
     }
 
   );
+});
+
+
+app.put("/updateProductPrices", (req, res) => {
+
+  const { productId, oldPrice, newPrice } = req.body;
+
+  const q = `UPDATE products SET old_price = ?, new_price = ? WHERE productId = ?`;
+
+  db.query(q, [oldPrice, newPrice, productId], (err, result) => {
+
+    if (err) {
+      console.error('Error updating product prices:', err);
+      return res.status(500).json({ error: 'Failed to update product prices' });
+
+    }
+    res.status(200).json({ message: 'Product prices updated successfully' });
+  }
+  );
+
 });
 
 

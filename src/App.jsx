@@ -93,6 +93,55 @@ const [users, setUsers] = useState([]);
   //getAllProducts();
 }, []);
 
+async function requestNotificationPermission() {
+
+console.log('requestNotificationPermission called');
+
+  try {
+    // Check if the Notifications API is supported
+    if (!('Notification' in window)) {
+      console.log('This browser does not support notifications.');
+      return false;
+    }
+
+    // Check the current permission status
+    const permission = Notification.permission;
+
+    if (permission === 'granted') {
+      console.log('Notifications already granted.');
+      return true;
+    } else if (permission === 'denied') {
+      console.log('Notifications are blocked.');
+      return false;
+    }
+
+    // If permission is "default", request permission from the user
+    const result = await Notification.requestPermission();
+    if (result === 'granted') {
+      console.log('User granted notification permissions.');
+      return true;
+    } else {
+      console.log('User denied or dismissed the notification request.');
+      return false;
+    }
+  } catch (error) {
+    console.error('Error requesting notification permissions:', error);
+    return false;
+  }
+}
+
+
+function showNotification() {
+  if (Notification.permission === 'granted') {
+    new Notification('Hello!', {
+      body: 'You have successfully enabled notifications.',
+      icon: '/icon.png', // Optional icon for the notification
+    });
+  } else {
+    console.log('Cannot show notification - permission not granted.');
+  }
+}
+
 
 const getUsers = async () => {
   try {
@@ -741,6 +790,34 @@ if (!productId || !keyword) {
     }
 
 
+  const updateProductPrices = async (productId, oldPrice, newPrice) => {
+
+  if(!productId || !oldPrice || !newPrice) {
+    setStatus('Please enter product ID, old price and new price.');
+    return; 
+  }
+
+      try {
+        const response = await fetch('http://localhost:3000/updateProductPrices', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ productId, oldPrice, newPrice }),
+        });
+    
+        const result = await response.json();
+    
+        if (response.ok) {
+          console.log('result:', result);
+          getAllProducts();
+        }
+      }
+      catch (error) {
+        console.error('Error updating product prices:', error);
+      }
+    };
+
     //create a function to call the server api rename-image to rename an image with a new name
     // the function will take the old name and new name as parameters
 
@@ -855,6 +932,10 @@ if (!productId || !keyword) {
 </div>
 
 <div>
+<button onClick={requestNotificationPermission}>Enable Notifications</button>
+  </div>
+
+<div>
 <p>{status}</p>
   </div>
 
@@ -894,7 +975,15 @@ if (!productId || !keyword) {
 
 </div>
 
-{/* add a div withe input and button to add a keyword to a product */}
+{/* add a div with two input fields to update old\-price and  */}
+
+
+
+<div style={{ display: 'flex', flexDirection: 'row', gap: '10px', margin: '10px', padding: '10px', borderColor: 'black', borderWidth: 1 }}>
+  <input type="text" id="oldPrice" name="oldPrice" />
+  <input type="text" id="newPrice" name="newPrice" />
+  <button onClick={() => updateProductPrices(selectedProduct, document.getElementById('oldPrice').value, document.getElementById('newPrice').value)}>Update Prices for {selectedProduct}</button>
+</div>
 
 <pre>{}</pre>
 
@@ -911,8 +1000,9 @@ if (!productId || !keyword) {
 
 
 <h2>Search Products</h2>
-<input type="text" id="keyword" name="keyword" onKeyDown={(e) => { if (e.key === 'Enter') searchProducts(e.target.value); }} />
-<button onClick={() => searchProducts(document.getElementById('keyword').value)}>Search</button>
+<input type="text" id="keyword_search" name="keyword_search" onKeyDown={(e) => { if (e.key === 'Enter') searchProducts(e.target.value); }} />
+
+<button onClick={() => document.getElementById('keyword_search').value = ''}>Clear</button>
 <button onClick={()=>getAllProducts(document.querySelector('select[name="user"]').value , document.querySelector('select[name="store"]').value, document.getElementById('favorites').checked, document.getElementById('onSale').checked ) }>Get Products</button>
           
 </div>
