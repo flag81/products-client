@@ -93,6 +93,44 @@ const [users, setUsers] = useState([]);
   //getAllProducts();
 }, []);
 
+
+async function getUserPreferences() {
+  try {
+    const response = await fetch('/get-preferences', { credentials: 'include' });
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log('User preferences:', data.preferences);
+    } else {
+      console.log('Failed to fetch preferences');
+    }
+  } catch (error) {
+    console.error('Error fetching preferences:', error);
+  }
+}
+
+async function saveUserPreferences(preferences) {
+  try {
+    const response = await fetch('/save-preferences', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ preferences }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log('Preferences saved:', data);
+    } else {
+      console.log('Failed to save preferences');
+    }
+  } catch (error) {
+    console.error('Error saving preferences:', error);
+  }
+};
+
+
+
 async function requestNotificationPermission() {
 
 console.log('requestNotificationPermission called');

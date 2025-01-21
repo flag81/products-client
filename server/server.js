@@ -20,6 +20,8 @@ export const app = express();
 
 import Tesseract from 'tesseract.js';
 
+import jwt from 'jsonwebtoken';
+
 import webPush from 'web-push';
 
 app.use(express.json());
@@ -29,7 +31,76 @@ app.use(cors()); // Allow all origins, especially Vite's localhost:5173
 app.use(cookieParser());
 app.use(bodyParser.json());
 
+const SECRET_KEY = 'AAAA-BBBB-CCCC-DDDD-EEEE';
+
 const upload = multer({ dest: 'uploads/' }); // Define upload middleware
+
+
+function generateJwtToken(payload, expiresIn = '240h') {
+  return jwt.sign(payload, SECRET_KEY, { expiresIn });
+}
+
+// Middleware to check for JWT
+function authenticateJWT(req, res, next) {
+  const token = req.cookies.jwt; // Get token from cookies
+
+  if (!token) {
+    return res.status(401).json({ message: 'Unauthorized: No token provided' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, SECRET_KEY); // Verify and decode the token
+    req.user = decoded; // Add user info to request object
+    next();
+  } catch (error) {
+    res.status(403).json({ message: 'Invalid or expired token' });
+  }
+}
+
+// Route to set JWT cookie for a new user or returning user without a token
+app.get('/initialize', (req, res) => {
+  let token = req.cookies.jwt;
+
+  if (!token) {
+    // Create a new JWT if no token is found
+    const userId = Math.random().toString(36).substring(2); // Generate a unique user ID
+    token = jwt.sign({ userId }, SECRET_KEY, { expiresIn: '7d' }); // 7-day expiry
+
+    res.cookie('jwt', token, {
+      httpOnly: true, // Prevent JavaScript access
+      secure: false,  // Use `true` in production (requires HTTPS)
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+    });
+
+    res.json({ message: 'JWT set for new user', userId });
+  } else {
+    // Decode existing token
+    const decoded = jwt.verify(token, SECRET_KEY);
+    res.json({ message: 'User identified', userId: decoded.userId });
+  }
+});
+
+// Route to save user preferences
+app.post('/save-preferences', authenticateJWT, (req, res) => {
+  const { userId } = req.user; // Get user ID from the JWT
+  const { preferences } = req.body; // Get preferences from the request body
+
+  // Save preferences in the mock database
+  preferencesDB[userId] = preferences;
+
+  res.json({ message: 'Preferences saved', userId, preferences });
+});
+
+// Route to get user preferences
+app.get('/get-preferences', authenticateJWT, (req, res) => {
+  const { userId } = req.user; // Get user ID from the JWT
+
+  const preferences = preferencesDB[userId] || {}; // Retrieve preferences or return empty object
+
+  res.json({ message: 'Preferences retrieved', userId, preferences });
+});
+
+
 
 app.delete('/deleteProduct/:productId', async (req, res) => {
   const productId = req.params.productId;
