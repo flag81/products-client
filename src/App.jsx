@@ -181,6 +181,57 @@ function showNotification() {
 }
 
 
+async function initializeUser() {
+  try {
+    // Check if the browser has the `jwt` cookie
+    const cookies = document.cookie.split('; ').reduce((acc, cookie) => {
+      const [key, value] = cookie.split('=');
+      acc[key] = value;
+      return acc;
+    }, {});
+
+    //console.log('Cookies:', cookies);
+
+    // Check for the 'jwt' cookie
+    if (!cookies.jwt) {
+      console.log('No JWT found. Initializing user...');
+      
+      // Call the API to generate a JWT and save it in cookies
+      const response = await fetch('http://localhost:3000/initialize', { credentials: 'include' });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('User initialized with ID:', data.userId);
+      } else {
+        console.error('Failed to initialize user');
+      }
+    } else {
+      console.log('JWT found in cookies. Reusing existing session.');
+    }
+
+    // Fetch user preferences
+    await fetchUserPreferences();
+  } catch (error) {
+    console.error('Error during initialization:', error);
+  }
+}
+
+async function fetchUserPreferences() {
+  try {
+    const response = await fetch('http://localhost:3000/get-preferences', { credentials: 'include' });
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log('User preferences:', data.preferences);
+    } else {
+      console.error('Failed to fetch preferences');
+    }
+  } catch (error) {
+    console.error('Error fetching preferences:', error);
+  }
+}
+
+
 const getUsers = async () => {
   try {
 
@@ -386,6 +437,8 @@ const editProductDescription = async (productId, newDescription) => {
   };
 
   useEffect(() => {
+    initializeUser();
+
     fetchMediaFiles();
   }, []);
 

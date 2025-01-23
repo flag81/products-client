@@ -26,7 +26,12 @@ import webPush from 'web-push';
 
 app.use(express.json());
 
-app.use(cors()); // Allow all origins, especially Vite's localhost:5173
+const corsOptions = {
+  origin: 'http://localhost:5173', // Replace with your frontend's origin
+  credentials: true, // Allow cookies to be sent with requests
+};
+
+app.use(cors(corsOptions)); // Allow all origins, especially Vite's localhost:5173
 
 app.use(cookieParser());
 app.use(bodyParser.json());
@@ -61,10 +66,28 @@ function authenticateJWT(req, res, next) {
 app.get('/initialize', (req, res) => {
   let token = req.cookies.jwt;
 
-  if (!token) {
+  
+  console.log('Token:', token);
+
+  if (1==1) {
     // Create a new JWT if no token is found
     const userId = Math.random().toString(36).substring(2); // Generate a unique user ID
     token = jwt.sign({ userId }, SECRET_KEY, { expiresIn: '7d' }); // 7-day expiry
+
+    // insert the token into the users table for the users in the fiels jwr
+
+    const q = `INSERT INTO users (jwt) VALUES (?) ON DUPLICATE KEY UPDATE jwt = ?`;
+
+    db.query(q, [token, token], (err, result) => {
+      if (err) {
+        console.error('Error setting JWT:', err);
+        return res.status(500).json({ message: 'Failed to set JWT' });
+      }
+    }
+    );
+
+
+    
 
     res.cookie('jwt', token, {
       httpOnly: true, // Prevent JavaScript access
@@ -85,8 +108,12 @@ app.post('/save-preferences', authenticateJWT, (req, res) => {
   const { userId } = req.user; // Get user ID from the JWT
   const { preferences } = req.body; // Get preferences from the request body
 
-  // Save preferences in the mock database
-  preferencesDB[userId] = preferences;
+  // Save preferences in the mock database;
+  // preferencesDB[userId] = preferences;
+
+  // code to insers the uerId into the users table field jwt 
+
+
 
   res.json({ message: 'Preferences saved', userId, preferences });
 });
@@ -95,9 +122,9 @@ app.post('/save-preferences', authenticateJWT, (req, res) => {
 app.get('/get-preferences', authenticateJWT, (req, res) => {
   const { userId } = req.user; // Get user ID from the JWT
 
-  const preferences = preferencesDB[userId] || {}; // Retrieve preferences or return empty object
+  //const preferences = preferencesDB[userId] || {}; // Retrieve preferences or return empty object
 
-  res.json({ message: 'Preferences retrieved', userId, preferences });
+  res.json({ message: 'Preferences retrieved', userId});
 });
 
 
