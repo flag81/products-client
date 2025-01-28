@@ -24,6 +24,7 @@ import jwt from 'jsonwebtoken';
 
 import webPush from 'web-push';
 
+
 app.use(express.json());
 
 const corsOptions = {
@@ -66,42 +67,74 @@ function authenticateJWT(req, res, next) {
 app.get('/initialize', (req, res) => {
   let token = req.cookies.jwt;
 
-  
-  console.log('Token:', token);
+  if (!token) {
+    console.log('No JWT found in cookies. Generating a new token.');
 
-  if (1==1) {
-    // Create a new JWT if no token is found
-    const userId = Math.random().toString(36).substring(2); // Generate a unique user ID
-    token = jwt.sign({ userId }, SECRET_KEY, { expiresIn: '7d' }); // 7-day expiry
+    // Generate a new unique user ID
+    const userId = Math.random().toString(36).substring(2);
 
-    // insert the token into the users table for the users in the fiels jwr
-
-    const q = `INSERT INTO users (jwt) VALUES (?) ON DUPLICATE KEY UPDATE jwt = ?`;
-
-    db.query(q, [token, token], (err, result) => {
-      if (err) {
-        console.error('Error setting JWT:', err);
-        return res.status(500).json({ message: 'Failed to set JWT' });
-      }
-    }
-    );
-
-
+    // Create a new JWT
+    token = generateJwtToken({ userId });
     
 
-    res.cookie('jwt', token, {
-      httpOnly: true, // Prevent JavaScript access
-      secure: false,  // Use `true` in production (requires HTTPS)
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
-    });
+    // Insert the new JWT into the database
+    const query = `INSERT INTO users (userToken, jwt) VALUES (?, ?)`;
+    db.query(query, [userId, token], (err) => {
+      if (err) {
+        console.error('Error inserting new JWT into database:', err);
+        return res.status(500).json({ message: 'Failed to initialize user.' });
+      }
 
-    res.json({ message: 'JWT set for new user', userId });
+      // Set the JWT cookie
+      res.cookie('jwt', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      return res.json({ message: 'JWT set for new user', userId });
+    });
   } else {
-    // Decode existing token
-    const decoded = jwt.verify(token, SECRET_KEY);
-    res.json({ message: 'User identified', userId: decoded.userId });
+    // Check if the JWT exists in the database
+    const query = `SELECT * FROM users WHERE jwt = ?`;
+    db.query(query, [token], (err, results) => {
+      if (err) {
+        console.error('Error querying JWT from database:', err);
+        return res.status(500).json({ message: 'Failed to verify user.' });
+      }
+
+      if (results.length > 0) {
+        console.log('JWT found in database. Reusing token.');
+        const { userId } = jwt.verify(token, SECRET_KEY);
+        return res.json({ message: 'User identified', userId });
+      } else {
+        console.log('JWT not found in database. Treating as a new user.');
+
+        // If token isn't in the database, create a new one
+        const userId = Math.random().toString(36).substring(2);
+        token = generateJwtToken({ userId });
+
+        const insertQuery = `INSERT INTO users (userId, jwt) VALUES (?, ?)`;
+        db.query(insertQuery, [userId, token], (err) => {
+          if (err) {
+            console.error('Error inserting new JWT into database:', err);
+            return res.status(500).json({ message: 'Failed to initialize user.' });
+          }
+
+          // Set the JWT cookie
+          res.cookie('jwt', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+          });
+
+          return res.json({ message: 'JWT set for new user', userId });
+        });
+      }
+    });
   }
 });
+
 
 // Route to save user preferences
 app.post('/save-preferences', authenticateJWT, (req, res) => {
@@ -948,6 +981,7 @@ app.post('/upload', upload.single('image'), async (req, res) => {
 
   
 
+      
     // Clean up the local uploaded file
     fs.unlinkSync(imagePath);
 
