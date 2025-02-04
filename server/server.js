@@ -65,6 +65,10 @@ function authenticateJWT(req, res, next) {
 
 // Route to set JWT cookie for a new user or returning user without a token
 app.get('/initialize', (req, res) => {
+
+  console.log('Initialize endpoint hit');
+
+
   let token = req.cookies.jwt;
 
   if (!token) {
@@ -75,7 +79,7 @@ app.get('/initialize', (req, res) => {
 
     // Create a new JWT
     token = generateJwtToken({ userId });
-    
+
 
     // Insert the new JWT into the database
     const query = `INSERT INTO users (userToken, jwt) VALUES (?, ?)`;
@@ -105,8 +109,12 @@ app.get('/initialize', (req, res) => {
 
       if (results.length > 0) {
         console.log('JWT found in database. Reusing token.');
-        const { userId } = jwt.verify(token, SECRET_KEY);
-        return res.json({ message: 'User identified', userId });
+        const { userToken } = jwt.verify(token, SECRET_KEY);
+
+        // get the userId from results
+        const userId = results[0].userId;
+
+        return res.json({ message: 'User identified', userId, userToken });
       } else {
         console.log('JWT not found in database. Treating as a new user.');
 
@@ -610,11 +618,21 @@ app.put("/editProductDescription", (req, res) => {
 
 //update getProducts endpoint to order the results by keyword count matches between the keywords of the favorite products and the keywords of the products in the database descending
 
-app.get("/getProducts", (req, res) => {
+app.get("/getProducts", async (req, res) => {
   const userId = req.query.userId || null;
   let storeId = parseInt(req.query.storeId, 10);
   const isFavorite = req.query.isFavorite || null;
   const onSale = req.query.onSale || null;
+
+  const page = parseInt(req.query.page, 10) || 1;
+
+  const limit = parseInt(req.query.limit, 10) || 10;
+
+  const offset = (page - 1) * limit;
+
+  console.log('page:::', page);
+  
+
   const today = new Date().toISOString().split('T')[0];
 
   if (isNaN(storeId) || storeId <= 0) {
@@ -680,9 +698,12 @@ app.get("/getProducts", (req, res) => {
     p.productId DESC,
     productOnSale DESC , isFavorite DESC,
       keywordMatchCount DESC
+
+      LIMIT ? OFFSET ?
   `;
 
-  const params = storeId !== null ? [today, userId, userId, storeId] : [today, userId, userId];
+
+  const params = storeId !== null ? [today, userId, userId, storeId, limit, offset] : [today, userId, userId, limit, offset];
   if (onSale === 'true') {
     params.push(today);
   }
@@ -692,9 +713,14 @@ app.get("/getProducts", (req, res) => {
       console.log("getProducts error:", err);
       return res.json(err);
     }
-    return res.json(data);
+
+    const nextPage = data.length === limit ? page + 1 : null;
+
+    return res.json({data, nextPage});
   });
+  
 });
+
 
 
 
