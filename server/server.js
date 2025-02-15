@@ -399,6 +399,10 @@ app.get("/getStores", (req, res) => {
 
 app.post("/addFavorite", (req, res) => {
 
+  console.log('Add favorite endpoint hit');
+
+  console.log('Request body:', req.body);
+
   const { userId, productId } = req.body;
 
   const q = `INSERT INTO favorites (userId, productId) VALUES (?, ?)`;
@@ -619,26 +623,23 @@ app.put("/editProductDescription", (req, res) => {
 //update getProducts endpoint to order the results by keyword count matches between the keywords of the favorite products and the keywords of the products in the database descending
 
 app.get("/getProducts", async (req, res) => {
-  const userId = req.query.userId || null;
+  const userId = parseInt(req.query.userId, 10) || null;
   let storeId = parseInt(req.query.storeId, 10);
   const isFavorite = req.query.isFavorite || null;
   const onSale = req.query.onSale || null;
 
+  const keyword = req.query.keyword || null;  // Add the keyword parameter
+
   const page = parseInt(req.query.page, 10) || 1;
-
   const limit = parseInt(req.query.limit, 10) || 10;
-
   const offset = (page - 1) * limit;
-
-  console.log('page:::', page);
-  
 
   const today = new Date().toISOString().split('T')[0];
 
+  // Handle invalid storeId case
   if (isNaN(storeId) || storeId <= 0) {
     storeId = null;
   }
-  
 
   let q = `
     SELECT 
@@ -673,40 +674,73 @@ app.get("/getProducts", async (req, res) => {
       productkeywords pk ON p.productId = pk.productId
     LEFT JOIN 
       keywords k ON pk.keywordId = k.keywordId
-    LEFT JOIN 
+    LEFT JOIN
       favorites f ON p.productId = f.productId AND f.userId = ?
-      LEFT JOIN
+    LEFT JOIN
       stores s ON p.storeId = s.storeId
   `;
 
+  const params = [today, userId, userId];
+
+  // Dynamically build the WHERE clause
+  let conditions = [];
   if (storeId !== null) {
-    q += ` WHERE p.storeId = ?`;
+    conditions.push(`p.storeId = ?`);
+    params.push(storeId);
   }
 
-  if (isFavorite === 'true') {
-    q += storeId !== null ? ` AND f.userId IS NOT NULL` : ` WHERE f.userId IS NOT NULL`;
+  console.log('isFavorite::::::::::::', isFavorite);
+  console.log('isFavorite type:', typeof isFavorite);
+  console.log('isFavorite value:', isFavorite, 'Length:', isFavorite.length);
+
+
+  if (isFavorite && isFavorite.trim() === 'true') {
+
+    console.log('isFavorite condition hit');  
+
+    conditions.push(`f.userId = ?`);
+    params.push(userId);
   }
 
   if (onSale === 'true') {
-    q += (storeId !== null || isFavorite === 'true') ? ` AND p.sale_end_date >= ?` : ` WHERE p.sale_end_date >= ?`;
+    conditions.push(`p.sale_end_date >= ?`);
+    params.push(today);
+  }
+
+  if (keyword) {
+    const keywords = keyword.split(' ').map(kw => kw.trim());
+    const keywordConditions = keywords
+      .filter(kw => kw.length > 1)
+      .map(() => `k.keyword LIKE ?`)
+      .join(' OR ');
+      
+    if (keywordConditions.length > 0) {
+      conditions.push(`(${keywordConditions})`);
+      params.push(...keywords.map(kw => `%${kw}%`));
+    }
+  }
+
+  // If there are conditions, add WHERE and concatenate the conditions
+  if (conditions.length > 0) {
+    q += ' WHERE ' + conditions.join(' AND ');
   }
 
   q += `
     GROUP BY 
       p.productId
     ORDER BY 
-    p.productId DESC,
-    productOnSale DESC , isFavorite DESC,
+      p.productId DESC,
+      productOnSale DESC, 
+      isFavorite DESC,
       keywordMatchCount DESC
-
-      LIMIT ? OFFSET ?
+    LIMIT ? OFFSET ?
   `;
 
+  // Add limit and offset to the params
+  params.push(limit, offset);
 
-  const params = storeId !== null ? [today, userId, userId, storeId, limit, offset] : [today, userId, userId, limit, offset];
-  if (onSale === 'true') {
-    params.push(today);
-  }
+  //console.log("Executing Query:", q);
+  console.log("With Params:", params);
 
   db.query(q, params, (err, data) => {
     if (err) {
@@ -715,11 +749,10 @@ app.get("/getProducts", async (req, res) => {
     }
 
     const nextPage = data.length === limit ? page + 1 : null;
-
-    return res.json({data, nextPage});
+    return res.json({ data, nextPage });
   });
-  
 });
+
 
 
 

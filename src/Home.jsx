@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { use } from "react";
 
 function Home() {
   const [stores, setStores] = useState([]);
@@ -12,7 +13,22 @@ function Home() {
 
   const [userId, setUserId] = useState();
 
+  const [searchKeyword, setSearchKeyword] = useState('');
+
   const observerRef = useRef(null); // Reference for IntersectionObserver
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalImageUrl, setModalImageUrl] = useState('');
+
+  const openModal = (imageUrl) => {
+    setModalImageUrl(imageUrl);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setModalImageUrl('');
+  };
 
   // Fetch stores and users when component mounts
   useEffect(() => {
@@ -23,7 +39,9 @@ function Home() {
   
   const addProductToFavorites = async (userId, productId) => {
 
-    initializeUser();
+// how to make sure the initializeUser function is finished before calling the addProductToFavorites function
+
+    await initializeUser();
 
     console.log('Adding product to favorites...');
     console.log('userId:', userId);
@@ -69,6 +87,8 @@ function Home() {
 
         // set the user id to the state
 
+        console.log('initialize data.userId:', data.userId);
+
         setUserId(data.userId);
 
       } else {
@@ -110,6 +130,10 @@ const removeProductFromFavorites = async (userId, productId) => {
   const getAllProducts = async ({ pageParam = 1, queryKey }) => {
     const [, userId, storeId, isFavorite, onSale] = queryKey; // Extract params
 
+    if (!userId || userId === undefined) {
+      await initializeUser();
+    }
+
     try {
       console.log("Fetching products with:", { userId, storeId, isFavorite, onSale, pageParam });
 
@@ -118,7 +142,8 @@ const removeProductFromFavorites = async (userId, productId) => {
         &page=${pageParam}
         &storeId=${encodeURIComponent(storeId)}
         &isFavorite=${encodeURIComponent(isFavorite)}
-        &onSale=${encodeURIComponent(onSale)}`,
+        &onSale=${encodeURIComponent(onSale)}
+        &keyword=${encodeURIComponent(searchKeyword)}`,
         {
           method: "GET",
           headers: { "Content-Type": "application/json" },
@@ -149,7 +174,7 @@ const removeProductFromFavorites = async (userId, productId) => {
     isFetching,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["products", userId, selectedStore, isFavorite, onSale, addFavorite],
+    queryKey: ["products", userId, selectedStore, isFavorite, onSale, addFavorite, searchKeyword?.length > 2  ? searchKeyword : ""],
     queryFn: getAllProducts,
     getNextPageParam: (lastPage) => lastPage?.nextPage || undefined,
   });
@@ -164,7 +189,7 @@ const removeProductFromFavorites = async (userId, productId) => {
           fetchNextPage(); // Fetch next page when user reaches bottom
         }
       },
-      { threshold: 1.0 }
+      { threshold: 0.9 }
     );
 
     observer.observe(observerRef.current);
@@ -197,6 +222,11 @@ const removeProductFromFavorites = async (userId, productId) => {
   return (
     <div style={{ margin: "0", padding: "0", width: "90vw" }}>
       <div>
+
+      <input type="text" id="keyword_search" name="keyword_search" onKeyDown={(e) => { if (e.key === 'Enter') setSearchKeyword(e.target.value); }} />
+
+      <button onClick={() => setSearchKeyword('')}>Clear</button>
+
         <h2>Filter Products</h2>
         <select name="store" onChange={(e) => setSelectedStore(e.target.value)}>
           <option value="">All Stores</option>
@@ -207,14 +237,7 @@ const removeProductFromFavorites = async (userId, productId) => {
           ))}
         </select>
 
-        <select name="user" onChange={(e) => setSelectedUser(e.target.value)}>
-          <option value="">All Users</option>
-          {users.map((user) => (
-            <option key={user.userId} value={user.userId}>
-              {user.userName}
-            </option>
-          ))}
-        </select>
+
 
         <label>
           <input
@@ -254,7 +277,13 @@ const removeProductFromFavorites = async (userId, productId) => {
                         <img
                           src={`https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_200/uploads/${product.image_url}`}
                           alt="Product"
-                          style={{ display: 'block', margin: 'auto' }}
+                          
+                          style={{ display: 'block', margin: 'auto', cursor: 'pointer' }}
+                          onClick={() =>
+                            openModal(
+                              `https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_600/uploads/${product.image_url}`
+                            )
+                          }
                         />
                         <div>{product.product_description}</div>
                         <div>
@@ -291,6 +320,73 @@ const removeProductFromFavorites = async (userId, productId) => {
           ))}
         </tbody>
       </table>
+
+
+      {isModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+          onClick={closeModal}
+        >
+          <div
+            style={{
+              position: 'relative',
+              backgroundColor: '#fff',
+              padding: '20px',
+              borderRadius: '8px',
+              maxWidth: '90%',
+              maxHeight: '90%',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+<img
+  src={modalImageUrl}
+  alt="Product Modal"
+  style={{
+    width: '100%',
+    height: 'auto',
+    display: 'block',
+    objectFit: 'contain', // Ensures the image fits within the container without stretching
+    maxWidth: '600px',    // Limits the maximum width to 600px
+    maxHeight: '90vh',    // Ensures the image doesn't exceed the viewport height
+    transition: 'transform 0.3s ease',  // Smooth transition for zoom effect
+    cursor: 'zoom-in',   // Cursor changes to indicate zoom action
+  }}
+  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.3)'} // Zoom in on hover
+  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}  // Reset zoom on mouse leave
+/>
+            <button
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                background: 'red',
+                color: '#fff',
+                border: 'none',
+                padding: '10px',
+                borderRadius: '50%',
+                cursor: 'pointer',
+              }}
+              onClick={closeModal}
+            >
+              X
+            </button>
+          </div>
+
+          </div>
+      )}
+        
+
     </div>
 
       {/* 👇 Invisible div at the bottom to trigger fetching the next page */}
