@@ -256,10 +256,18 @@ const removeProductFromFavorites = async (userId, productId) => {
           />
           On Sale
         </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={onSale}
+            onChange={(e) => setOnSale(e.target.checked)}
+          />
+          Active
+        </label>
       </div>
 
       <div>
-      <table border="1" cellPadding="10" cellSpacing="0">
+      <table border="0" cellPadding="10" cellSpacing="0">
         <tbody>
           {data?.pages.map((page, pageIndex) => (
             <>

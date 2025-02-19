@@ -3,11 +3,14 @@ import multer from 'multer';
 import cloudinary from './cloudinaryConfig.js';
 import cors from 'cors';
 import fs from 'fs';
+
 import { format } from 'path';
 import db from './connection.js';
 
 import cookieParser from 'cookie-parser';
 import bodyParser from'body-parser';
+
+
 
 
 import OpenAI from "openai";
@@ -49,6 +52,7 @@ function generateJwtToken(payload, expiresIn = '240h') {
 // Middleware to check for JWT
 function authenticateJWT(req, res, next) {
   const token = req.cookies.jwt; // Get token from cookies
+
 
   if (!token) {
     return res.status(401).json({ message: 'Unauthorized: No token provided' });
@@ -128,6 +132,7 @@ app.get('/initialize', (req, res) => {
             console.error('Error inserting new JWT into database:', err);
             return res.status(500).json({ message: 'Failed to initialize user.' });
           }
+
 
           // Set the JWT cookie
           res.cookie('jwt', token, {
@@ -689,9 +694,9 @@ app.get("/getProducts", async (req, res) => {
     params.push(storeId);
   }
 
-  console.log('isFavorite::::::::::::', isFavorite);
-  console.log('isFavorite type:', typeof isFavorite);
-  console.log('isFavorite value:', isFavorite, 'Length:', isFavorite.length);
+  //console.log('isFavorite::::::::::::', isFavorite);
+  //console.log('isFavorite type:', typeof isFavorite);
+  //console.log('isFavorite value:', isFavorite, 'Length:', isFavorite.length);
 
 
   if (isFavorite && isFavorite.trim() === 'true') {
@@ -740,7 +745,7 @@ app.get("/getProducts", async (req, res) => {
   params.push(limit, offset);
 
   //console.log("Executing Query:", q);
-  console.log("With Params:", params);
+  //console.log("With Params:", params);
 
   db.query(q, params, (err, data) => {
     if (err) {
@@ -1051,6 +1056,9 @@ app.post('/upload', upload.single('image'), async (req, res) => {
   }
 });
 
-app.listen(3000, () => {
-  console.log('Server is running on port 3000');
+
+const port = process.env.PORT || 3000;
+
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
