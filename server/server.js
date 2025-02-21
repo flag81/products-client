@@ -13,6 +13,8 @@ import bodyParser from'body-parser';
 
 
 
+
+
 import OpenAI from "openai";
 const openai = new OpenAI();
 
@@ -158,6 +160,11 @@ app.post('/save-preferences', authenticateJWT, (req, res) => {
   // preferencesDB[userId] = preferences;
 
   // code to insers the uerId into the users table field jwt 
+
+  
+  
+  // add code for api 
+
 
 
 
