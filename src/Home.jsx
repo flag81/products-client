@@ -255,6 +255,7 @@ const removeProductFromFavorites = async (userId, productId) => {
             onChange={(e) => setOnSale(e.target.checked)}
           />
           On Sale
+          
         </label>
         <label>
           <input
