@@ -2,6 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { use } from "react";
 
+import dotenv from 'dotenv';
+
+
+
 function Home() {
   const [stores, setStores] = useState([]);
   const [users, setUsers] = useState([]);
@@ -19,6 +23,9 @@ function Home() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalImageUrl, setModalImageUrl] = useState('');
+
+  //const node_url = `http://localhost:3000`;
+  const node_url = `https://qg048c0c0wos4o40gos4k0kc.128.140.43.244.sslip.io`
 
   const openModal = (imageUrl) => {
     setModalImageUrl(imageUrl);
@@ -48,7 +55,7 @@ function Home() {
     console.log('productId:', productId);
 
     try {
-      const response = await fetch('http://localhost:3000/addFavorite', {
+      const response = await fetch(`${node_url}/addFavorite`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -79,7 +86,7 @@ function Home() {
     console.log('Initializing user...');  
 
     try {
-      const response = await fetch('http://localhost:3000/initialize', { credentials: 'include' });
+      const response = await fetch(`${node_url}/initialize`, { credentials: 'include' });
   
       if (response.ok) {
         const data = await response.json();
@@ -104,7 +111,7 @@ function Home() {
 const removeProductFromFavorites = async (userId, productId) => {
 
   try {
-    const response = await fetch('http://localhost:3000/removeFavorite', {
+    const response = await fetch(`${node_url}/removeFavorite`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -200,7 +207,7 @@ const removeProductFromFavorites = async (userId, productId) => {
   // ✅ 4. Fetch stores and users
   const getStores = async () => {
     try {
-      const response = await fetch("http://localhost:3000/getStores");
+      const response = await fetch(`${node_url}/getStores` );
       const result = await response.json();
       setStores(result);
     } catch (error) {
@@ -210,7 +217,7 @@ const removeProductFromFavorites = async (userId, productId) => {
 
   const getUsers = async () => {
     try {
-      const response = await fetch("http://localhost:3000/getUsers");
+      const response = await fetch(`${node_url}/getUsers`);
       const result = await response.json();
       setUsers(result);
     } catch (error) {
@@ -255,7 +262,7 @@ const removeProductFromFavorites = async (userId, productId) => {
             onChange={(e) => setOnSale(e.target.checked)}
           />
           On Sale
-          
+
         </label>
         <label>
           <input

@@ -382,6 +382,14 @@ app.put('/rename-image', async (req, res) => {
 });
 
 
+app.get('/test', async (req, res) => {
+
+  res.status(200).json({ message: 'Testing successfully....' });
+
+
+});
+
+
 
 
 app.get("/getStores", (req, res) => {
