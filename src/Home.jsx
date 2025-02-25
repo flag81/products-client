@@ -25,7 +25,10 @@ function Home() {
   const [modalImageUrl, setModalImageUrl] = useState('');
 
   //const node_url = `http://localhost:3000`;
-  const node_url = `https://qg048c0c0wos4o40gos4k0kc.128.140.43.244.sslip.io`
+  const node_url = process.env.NODE_URL
+
+  
+  dotenv.config();
 
   const openModal = (imageUrl) => {
     setModalImageUrl(imageUrl);
