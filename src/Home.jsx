@@ -152,7 +152,7 @@ const removeProductFromFavorites = async (userId, productId) => {
       console.log("Fetching products with:", { userId, storeId, isFavorite, onSale, pageParam });
 
       const response = await fetch(
-        `http://localhost:3000/getProducts?userId=${encodeURIComponent(userId)}
+        `${node_url}:${node_port}/getProducts?userId=${encodeURIComponent(userId)}
         &page=${pageParam}
         &storeId=${encodeURIComponent(storeId)}
         &isFavorite=${encodeURIComponent(isFavorite)}
