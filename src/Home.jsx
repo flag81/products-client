@@ -62,7 +62,7 @@ function Home() {
     console.log('productId:', productId);
 
     try {
-      const response = await fetch(`${node_url}:${node_port}/addFavorite`, {
+      const response = await fetch(`${node_url}/addFavorite`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -93,7 +93,7 @@ function Home() {
     console.log('Initializing user...');  
 
     try {
-      const response = await fetch(`${node_url}:${node_port}/initialize`, { credentials: 'include' });
+      const response = await fetch(`${node_url}/initialize`, { credentials: 'include' });
   
       if (response.ok) {
         const data = await response.json();
@@ -118,7 +118,7 @@ function Home() {
 const removeProductFromFavorites = async (userId, productId) => {
 
   try {
-    const response = await fetch(`${node_url}:${node_port}/removeFavorite`, {
+    const response = await fetch(`${node_url}/removeFavorite`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -152,7 +152,7 @@ const removeProductFromFavorites = async (userId, productId) => {
       console.log("Fetching products with:", { userId, storeId, isFavorite, onSale, pageParam });
 
       const response = await fetch(
-        `${node_url}:${node_port}/getProducts?userId=${encodeURIComponent(userId)}
+        `${node_url}/getProducts?userId=${encodeURIComponent(userId)}
         &page=${pageParam}
         &storeId=${encodeURIComponent(storeId)}
         &isFavorite=${encodeURIComponent(isFavorite)}
@@ -214,7 +214,7 @@ const removeProductFromFavorites = async (userId, productId) => {
   // ✅ 4. Fetch stores and users
   const getStores = async () => {
     try {
-      const response = await fetch(`${node_url}:${node_port}/getStores` );
+      const response = await fetch(`${node_url}/getStores` );
       const result = await response.json();
       setStores(result);
     } catch (error) {
@@ -224,7 +224,7 @@ const removeProductFromFavorites = async (userId, productId) => {
 
   const getUsers = async () => {
     try {
-      const response = await fetch(`${node_url}:${node_port}/getUsers`);
+      const response = await fetch(`${node_url}/getUsers`);
       const result = await response.json();
       setUsers(result);
     } catch (error) {
