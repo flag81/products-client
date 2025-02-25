@@ -2,8 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { use } from "react";
 
-import dotenv from 'dotenv';
-
 
 
 function Home() {
@@ -24,11 +22,17 @@ function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalImageUrl, setModalImageUrl] = useState('');
 
-  //const node_url = `http://localhost:3000`;
-  const node_url = process.env.NODE_URL
 
+  // use dotenv to get the node_url and node_port
+
+
+
+
+  const node_url = import.meta.env.VITE_NODE_URL;
+  const node_port = import.meta.env.VITE_NODE_PORT;
   
-  dotenv.config();
+  console.log(`Node URL: ${node_url}:${node_url}`);
+  console.log(`Node Port: ${node_port}`);
 
   const openModal = (imageUrl) => {
     setModalImageUrl(imageUrl);
@@ -58,7 +62,7 @@ function Home() {
     console.log('productId:', productId);
 
     try {
-      const response = await fetch(`${node_url}/addFavorite`, {
+      const response = await fetch(`${node_url}:${node_port}/addFavorite`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -89,7 +93,7 @@ function Home() {
     console.log('Initializing user...');  
 
     try {
-      const response = await fetch(`${node_url}/initialize`, { credentials: 'include' });
+      const response = await fetch(`${node_url}:${node_port}/initialize`, { credentials: 'include' });
   
       if (response.ok) {
         const data = await response.json();
@@ -114,7 +118,7 @@ function Home() {
 const removeProductFromFavorites = async (userId, productId) => {
 
   try {
-    const response = await fetch(`${node_url}/removeFavorite`, {
+    const response = await fetch(`${node_url}:${node_port}/removeFavorite`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -210,7 +214,7 @@ const removeProductFromFavorites = async (userId, productId) => {
   // ✅ 4. Fetch stores and users
   const getStores = async () => {
     try {
-      const response = await fetch(`${node_url}/getStores` );
+      const response = await fetch(`${node_url}:${node_port}/getStores` );
       const result = await response.json();
       setStores(result);
     } catch (error) {
@@ -220,7 +224,7 @@ const removeProductFromFavorites = async (userId, productId) => {
 
   const getUsers = async () => {
     try {
-      const response = await fetch(`${node_url}/getUsers`);
+      const response = await fetch(`${node_url}:${node_port}/getUsers`);
       const result = await response.json();
       setUsers(result);
     } catch (error) {
