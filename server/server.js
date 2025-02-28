@@ -33,9 +33,11 @@ import webPush from 'web-push';
 app.use(express.json());
 
 const corsOptions = {
-  origin: 'http://localhost:5173', // Replace with your frontend's origin
+  origin: [process.env.FRONTEND_URL, 'http://localhost:5173'] , // Replace with your frontend's origin
   credentials: true, // Allow cookies to be sent with requests
 };
+
+console.log('corsOptions:', corsOptions);
 
 app.use(cors(corsOptions)); // Allow all origins, especially Vite's localhost:5173
 
@@ -45,6 +47,40 @@ app.use(bodyParser.json());
 const SECRET_KEY = 'AAAA-BBBB-CCCC-DDDD-EEEE';
 
 const upload = multer({ dest: 'uploads/' }); // Define upload middleware
+
+async function listAllMediaFiles() {
+  try {
+    const result = await cloudinary.api.resources({
+      type: 'upload',
+      max_results: 100,
+    });
+
+    // Prepare an array to hold media file details
+    const mediaFiles = result.resources.map((resource) => ({
+      public_id: resource.public_id,
+      format: resource.format,
+      secure_url: resource.secure_url,
+      thumbnail_url: cloudinary.url(resource.public_id, {
+        width: 100,    // Thumbnail width
+        height: 100,   // Thumbnail height
+        crop: 'thumb', // Thumbnail crop mode
+      }),
+    }));
+
+    return mediaFiles;
+
+  } catch (error) {
+    console.error('Error fetching media files:', error);
+    return { error: 'Error fetching media files' };
+  }
+};
+
+cloudinary.config({
+  cloud_name: 'dt7a4yl1x',
+  api_key: '443112686625846',
+  api_secret: 'e9Hv5bsd2ECD17IQVOZGKuPmOA4',
+});
+
 
 
 function generateJwtToken(payload, expiresIn = '240h') {
@@ -68,6 +104,11 @@ function authenticateJWT(req, res, next) {
     res.status(403).json({ message: 'Invalid or expired token' });
   }
 }
+
+app.get('/media-library-json', async (req, res) => {
+  const mediaJson = await listAllMediaFiles();
+  res.json(mediaJson);
+});
 
 // Route to set JWT cookie for a new user or returning user without a token
 app.get('/initialize', (req, res) => {
@@ -773,6 +814,137 @@ app.get("/getProducts", async (req, res) => {
   });
 });
 
+
+app.get("/getProductsDashboard", async (req, res) => {
+  const userId = parseInt(req.query.userId, 10) || null;
+  let storeId = parseInt(req.query.storeId, 10);
+  const isFavorite = req.query.isFavorite || null;
+  const onSale = req.query.onSale || null;
+
+  const keyword = req.query.keyword || null;  // Add the keyword parameter
+
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 10;
+  const offset = (page - 1) * limit;
+
+  const today = new Date().toISOString().split('T')[0];
+
+  // Handle invalid storeId case
+  if (isNaN(storeId) || storeId <= 0) {
+    storeId = null;
+  }
+
+  let q = `
+    SELECT 
+      p.productId, 
+      p.product_description, 
+      p.old_price, 
+      p.new_price, 
+      p.discount_percentage, 
+      p.sale_end_date, 
+      p.storeId, 
+      p.image_url,
+      s.storeName,
+      GROUP_CONCAT(k.keyword) AS keywords,
+      CASE WHEN f.userId IS NOT NULL THEN TRUE ELSE FALSE END AS isFavorite,
+      CASE WHEN p.sale_end_date >= ? THEN TRUE ELSE FALSE END AS productOnSale,
+      (
+        SELECT COUNT(*)
+        FROM productkeywords pkf
+        JOIN keywords kf ON pkf.keywordId = kf.keywordId
+        WHERE pkf.productId = p.productId
+          AND kf.keyword IN (
+            SELECT k.keyword
+            FROM favorites f
+            JOIN productkeywords pk ON f.productId = pk.productId
+            JOIN keywords k ON pk.keywordId = k.keywordId
+            WHERE f.userId = ?
+          )
+      ) AS keywordMatchCount
+    FROM 
+      products p
+    LEFT JOIN 
+      productkeywords pk ON p.productId = pk.productId
+    LEFT JOIN 
+      keywords k ON pk.keywordId = k.keywordId
+    LEFT JOIN
+      favorites f ON p.productId = f.productId AND f.userId = ?
+    LEFT JOIN
+      stores s ON p.storeId = s.storeId
+  `;
+
+  const params = [today, userId, userId];
+
+  // Dynamically build the WHERE clause
+  let conditions = [];
+  if (storeId !== null) {
+    conditions.push(`p.storeId = ?`);
+    params.push(storeId);
+  }
+
+  //console.log('isFavorite::::::::::::', isFavorite);
+  //console.log('isFavorite type:', typeof isFavorite);
+  //console.log('isFavorite value:', isFavorite, 'Length:', isFavorite.length);
+
+
+  if (isFavorite && isFavorite.trim() === 'true') {
+
+    console.log('isFavorite condition hit');  
+
+    conditions.push(`f.userId = ?`);
+    params.push(userId);
+  }
+
+  if (onSale === 'true') {
+    conditions.push(`p.sale_end_date >= ?`);
+    params.push(today);
+  }
+
+  if (keyword) {
+    const keywords = keyword.split(' ').map(kw => kw.trim());
+    const keywordConditions = keywords
+      .filter(kw => kw.length > 1)
+      .map(() => `k.keyword LIKE ?`)
+      .join(' OR ');
+      
+    if (keywordConditions.length > 0) {
+      conditions.push(`(${keywordConditions})`);
+      params.push(...keywords.map(kw => `%${kw}%`));
+    }
+  }
+
+  // If there are conditions, add WHERE and concatenate the conditions
+  if (conditions.length > 0) {
+    q += ' WHERE ' + conditions.join(' AND ');
+  }
+
+  q += `
+    GROUP BY 
+      p.productId
+    ORDER BY 
+      p.productId DESC,
+      productOnSale DESC, 
+      isFavorite DESC,
+      keywordMatchCount DESC
+    LIMIT ? OFFSET ?
+  `;
+
+  // Add limit and offset to the params
+  params.push(limit, offset);
+
+  //console.log("Executing Query:", q);
+  //console.log("With Params:", params);
+
+  db.query(q, params, (err, data) => {
+    if (err) {
+      console.log("getProducts error:", err);
+      return res.json(err);
+    }
+
+    const nextPage = data.length === limit ? page + 1 : null;
+    return res.json({ data, nextPage });
+  });
+});
 
 
 

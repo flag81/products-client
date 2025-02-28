@@ -3,6 +3,7 @@ import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 import { use } from 'react';
+import Home from './Home';
 
 
 
@@ -29,6 +30,9 @@ const [users, setUsers] = useState([]);
   const CLOUD_NAME = 'dt7a4yl1x';
   const API_KEY = '443112686625846';
   const API_SECRET = 'e9Hv5bsd2ECD17IQVOZGKuPmOA4';
+
+
+  const node_url = import.meta.env.VITE_NODE_URL;
 
 
   const imageBaseUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/`;
@@ -97,7 +101,7 @@ const [users, setUsers] = useState([]);
 
 async function initializeUser() {
   try {
-    const response = await fetch('http://localhost:3000/initialize', { credentials: 'include' });
+    const response = await fetch(`${node_url}/initialize`, { credentials: 'include' });
 
     if (response.ok) {
       const data = await response.json();
@@ -206,7 +210,7 @@ function showNotification() {
 
 async function fetchUserPreferences() {
   try {
-    const response = await fetch('http://localhost:3000/get-preferences', { credentials: 'include' });
+    const response = await fetch(`${node_url}/get-preferences`, { credentials: 'include' });
 
     if (response.ok) {
       const data = await response.json();
@@ -223,7 +227,7 @@ async function fetchUserPreferences() {
 const getUsers = async () => {
   try {
 
-    const response = await fetch('http://localhost:3000/getUsers', {
+    const response = await fetch(`${node_url}/getUsers`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -248,7 +252,7 @@ const getUsers = async () => {
 
   const getStores = async () => {
     try {
-      const response = await fetch('http://localhost:3000/getStores', {
+      const response = await fetch(`${node_url}/getStores`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -275,7 +279,7 @@ const getUsers = async () => {
     initializeUser();
 
     try {
-      const response = await fetch('http://localhost:3000/addFavorite', {
+      const response = await fetch(`${node_url}/addFavorite`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -300,7 +304,7 @@ const getUsers = async () => {
 const removeProductFromFavorites = async (userId, productId) => {
 
   try {
-    const response = await fetch('http://localhost:3000/removeFavorite', {
+    const response = await fetch(`${node_url}/removeFavorite`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -325,7 +329,7 @@ const removeProductFromFavorites = async (userId, productId) => {
 
 const editProductDescription = async (productId, newDescription) => {
   try {
-    const response = await fetch('http://localhost:3000/editProductDescription', {
+    const response = await fetch(`${node_url}/editProductDescription`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -349,7 +353,7 @@ const editProductDescription = async (productId, newDescription) => {
 
   const searchProducts = async (keyword) => {
     try {
-      const response = await fetch(`http://localhost:3000/searchProducts?keyword=${encodeURIComponent(keyword)}`, {
+      const response = await fetch(`${node_url}/searchProducts?keyword=${encodeURIComponent(keyword)}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -381,7 +385,7 @@ const editProductDescription = async (productId, newDescription) => {
       console.log('getAllProducts onSale:', onSale);
 
       
-      const response = await fetch(`http://localhost:3000/getProducts?userId=${encodeURIComponent(userId)}
+      const response = await fetch(`${node_url}/getProducts?userId=${encodeURIComponent(userId)}
       &storeId=${encodeURIComponent(storeId)}
       &isFavorite=${encodeURIComponent(isFavorite)}&onSale=${encodeURIComponent(onSale)}`, {
         method: 'GET',
@@ -394,8 +398,8 @@ const editProductDescription = async (productId, newDescription) => {
       const result = await response.json();
 
       if (response.ok) {
-        setProducts(result);
-        console.log('result:', result);
+        setProducts(result.data);
+        console.log('result from getallproducts:', result.data);
       } else {
         console.error('Failed to fetch prod:', result.message);
       }
@@ -408,7 +412,7 @@ const editProductDescription = async (productId, newDescription) => {
   // Fetch media files from Cloudinary
   const fetchMediaFiles = async () => {
     try {
-      const response = await fetch('https://qg048c0c0wos4o40gos4k0kc.128.140.43.244.sslip.io/media-library-json');
+      const response = await fetch(`https://qg048c0c0wos4o40gos4k0kc.128.140.43.244.sslip.io/media-library-json`);
       if (!response.ok) {
         throw new Error('Failed to fetch media files');
       }
@@ -459,7 +463,7 @@ const editProductDescription = async (productId, newDescription) => {
     console.log('folderName:', folderName);
 
     try {
-      const response = await fetch('http://localhost:3000/upload-multiple', {
+      const response = await fetch(`${node_url}/upload-multiple`, {
         method: 'POST',
         body: formData,
       });
@@ -505,7 +509,7 @@ const editProductDescription = async (productId, newDescription) => {
     formData.append('folderName', folderName); // Send folder name in request
 
     try {
-      const response = await fetch('http://localhost:3000/upload', {
+      const response = await fetch(`${node_url}/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -540,7 +544,7 @@ const editProductDescription = async (productId, newDescription) => {
 
   const handleDeleteImage = async (public_id) => {
     try {
-      const response = await fetch('http://localhost:3000/delete-image', {
+      const response = await fetch(`${node_url}/delete-image`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -657,7 +661,7 @@ const editProductDescription = async (productId, newDescription) => {
 
 const addKeyword = async (productId, keyword) => {
   try {
-    const response = await fetch('http://localhost:3000/addKeyword', {
+    const response = await fetch(`${node_url}/addKeyword`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -692,7 +696,7 @@ if (!productId || !keyword) {
 
 
   try {
-    const response = await fetch('http://localhost:3000/removeKeyword', {
+    const response = await fetch(`${node_url}/removeKeyword`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -729,7 +733,7 @@ if (!productId || !keyword) {
       console.log('extractProducts imageUrl:', imageUrl);
 
 
-      const response = await fetch(`http://localhost:3000/chatgptExtractProducts?storeId=${storeId}&imageUrl=${imageUrl}`, {
+      const response = await fetch(`${node_url}/chatgptExtractProducts?storeId=${storeId}&imageUrl=${imageUrl}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -796,7 +800,7 @@ if (!productId || !keyword) {
       }
   
       try {
-        const response = await fetch('http://localhost:3000/insertProducts1', {
+        const response = await fetch(`${node_url}/insertProducts1`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -824,7 +828,7 @@ if (!productId || !keyword) {
       try {
 
         console.log('productId sent delete:', productId);
-        const response = await fetch(`http://localhost:3000/deleteProduct/${productId}`, {
+        const response = await fetch(`${node_url}/deleteProduct/${productId}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -851,7 +855,7 @@ if (!productId || !keyword) {
 
     const extractText = async (imageUrl) => {
       try {
-        const response = await fetch(`http://localhost:3000/extractText?imageUrl=${imageUrl}`, {
+        const response = await fetch(`${node_url}/extractText?imageUrl=${imageUrl}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -879,7 +883,7 @@ if (!productId || !keyword) {
   }
 
       try {
-        const response = await fetch('http://localhost:3000/updateProductPrices', {
+        const response = await fetch(`${node_url}/updateProductPrices`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -904,7 +908,7 @@ if (!productId || !keyword) {
 
     const renameImage = async (oldName, newName) => {
       try {
-        const response = await fetch('http://localhost:3000/rename-image', {
+        const response = await fetch(`${node_url}/rename-image`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -1089,12 +1093,18 @@ if (!productId || !keyword) {
 </div>
 
 
-<div style={{ display: 'flex',flexDirection: 'row', gap: '10px', borderColor : "black", borderWidth: 1, width: '100%' }}>
+
+
+<div style={{ display: 'flex',flexDirection: 'row', gap: '10px', borderColor : "red", borderWidth: 1, width: '100%' }}>
+
+
 
 
 
           
       <div className='scrollable-div' style={{ flexGrow:1, width: '100vw' }}>
+
+        
 
             <table name="products" border="1" cellPadding="10" cellSpacing="0" borderColor="black">
             {products.map(product => (
@@ -1244,7 +1254,7 @@ if (!productId || !keyword) {
   </div> 
 
 
-
+  <Home />
 
 
     </div>

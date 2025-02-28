@@ -31,7 +31,7 @@ function Home() {
   const node_url = import.meta.env.VITE_NODE_URL;
   const node_port = import.meta.env.VITE_NODE_PORT;
   
-  console.log(`Node URL: ${node_url}:${node_url}`);
+  console.log(`Node URL: ${node_url}`);
   console.log(`Node Port: ${node_port}`);
 
   const openModal = (imageUrl) => {
