@@ -278,7 +278,7 @@ const removeProductFromFavorites = async (userId, productId) => {
         {data?.pages.map((page, pageIndex) => (
           page.products.map((product, productIndex) => (
             <Col key={`${pageIndex}-${productIndex}`}>
-              <Card className="h-100">
+              <Card className="h-100 p-1" >
                 <Card.Img
                   variant="top"
                   src={`https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_150/uploads/${product.image_url}`}
@@ -288,7 +288,8 @@ const removeProductFromFavorites = async (userId, productId) => {
                       `https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_600/uploads/${product.image_url}`
                     )
                   }
-                  style={{ cursor: 'pointer' }}
+                  className = "p-0"
+                  style={{ cursor: 'pointer',  padding: '0.5rem'  }}
                 />
                 <Card.Body>
                   <Card.Text>{product.product_description}</Card.Text>
