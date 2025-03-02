@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { use } from "react";
 
-
+import { Card, Row, Col, Form, Button, InputGroup } from 'react-bootstrap';
 
 function Home() {
   const [stores, setStores] = useState([]);
@@ -234,117 +234,84 @@ const removeProductFromFavorites = async (userId, productId) => {
 
   // ✅ 5. Render UI
   return (
-    <div style={{ margin: "0", padding: "0", width: "90vw" }}>
-      <div>
+<div className="container">
+      <InputGroup className="mb-3">
+        <Form.Control
+          type="text"
+          placeholder="Search by keyword"
+          onKeyDown={(e) => { if (e.key === 'Enter') setSearchKeyword(e.target.value); }}
+        />
+        <Button variant="outline-secondary" onClick={() => setSearchKeyword('')}>Clear</Button>
+      </InputGroup>
 
-      <input type="text" id="keyword_search" name="keyword_search" onKeyDown={(e) => { if (e.key === 'Enter') setSearchKeyword(e.target.value); }} />
-
-      <button onClick={() => setSearchKeyword('')}>Clear</button>
-
-        <h2>Filter Products</h2>
-        <select name="store" onChange={(e) => setSelectedStore(e.target.value)}>
+      <h2>Filter Products</h2>
+      <Form.Group controlId="storeFilter" className="mb-3">
+        <Form.Select onChange={(e) => setSelectedStore(e.target.value)}>
           <option value="">All Stores</option>
           {stores.map((store) => (
             <option key={store.storeId} value={store.storeId}>
               {store.storeName}
             </option>
           ))}
-        </select>
+        </Form.Select>
+      </Form.Group>
+
+      <Form.Check
+        type="checkbox"
+        label="Favorite"
+        checked={isFavorite}
+        onChange={(e) => setIsFavorite(e.target.checked)}
+        className="mb-3"
+      />
+
+      <Form.Check
+        type="checkbox"
+        label="On Sale"
+        checked={onSale}
+        onChange={(e) => setOnSale(e.target.checked)}
+        className="mb-3"
+      />
 
 
 
-        <label>
-          <input
-            type="checkbox"
-            checked={isFavorite}
-            onChange={(e) => setIsFavorite(e.target.checked)}
-          />
-          Favorite
-        </label>
+      <Row xs={1} md={2} lg={4} className="g-4">
+        {data?.pages.map((page, pageIndex) => (
+          page.products.map((product, productIndex) => (
+            <Col key={`${pageIndex}-${productIndex}`}>
+              <Card className="h-100">
+                <Card.Img
+                  variant="top"
+                  src={`https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_200/uploads/${product.image_url}`}
+                  alt={product.product_description}
+                  onClick={() =>
+                    openModal(
+                      `https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_600/uploads/${product.image_url}`
+                    )
+                  }
+                  style={{ cursor: 'pointer' }}
+                />
+                <Card.Body>
+                  <Card.Text>{product.product_description}</Card.Text>
+                  <Form.Check
+                    type="checkbox"
+                    label="Favorite"
+                    checked={product.isFavorite}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        addProductToFavorites(userId, product.productId);
+                      } else {
+                        removeProductFromFavorites(userId, product.productId);
+                      }
+                    }}
+                  />
+                </Card.Body>
+              </Card>
+            </Col>
+          ))
+        ))}
+      </Row>
 
-        <label>
-          <input
-            type="checkbox"
-            checked={onSale}
-            onChange={(e) => setOnSale(e.target.checked)}
-          />
-          On Sale
-
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={onSale}
-            onChange={(e) => setOnSale(e.target.checked)}
-          />
-          Active
-        </label>
-      </div>
-
-      <div>
-      <table border="0" cellPadding="10" cellSpacing="0">
-        <tbody>
-          {data?.pages.map((page, pageIndex) => (
-            <>
-              {page.products
-                .reduce((rows, product, index) => {
-                  // Start a new row every 5 products
-                  if (index % 5 === 0) rows.push([]);
-                  rows[rows.length - 1].push(product);
-                  return rows;
-                }, [])
-                .map((row, rowIndex) => (
-                  <tr key={`${pageIndex}-${rowIndex}`}>
-                    {row.map((product) => (
-                      <td key={product.productId} style={{ textAlign: 'center', verticalAlign: 'top' }}>
-                        <img
-                          src={`https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_200/uploads/${product.image_url}`}
-                          alt="Product"
-                          
-                          style={{ display: 'block', margin: 'auto', cursor: 'pointer' }}
-                          onClick={() =>
-                            openModal(
-                              `https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_600/uploads/${product.image_url}`
-                            )
-                          }
-                        />
-                        <div>{product.product_description}</div>
-                        <div>
-                          {product.storeName} -{' '}
-                          {new Date(product.sale_end_date).toLocaleDateString('EN-UK')}
-                        </div>
-                        <div>
-                          {product.old_price} - {product.new_price}
-                        </div>
-                        <div>
-                          <input
-                            type="checkbox"
-                            checked={product.isFavorite}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                addProductToFavorites(userId, product.productId);
-                              } else {
-                                removeProductFromFavorites(userId, product.productId);
-                              }
-                            }}
-                          />
-                          <label>Favorite</label>
-                        </div>
-                      </td>
-                    ))}
-                    {/* Fill empty cells if row has less than 5 products */}
-                    {row.length < 5 &&
-                      [...Array(5 - row.length)].map((_, i) => (
-                        <td key={`empty-${rowIndex}-${i}`}></td>
-                      ))}
-                  </tr>
-                ))}
-            </>
-          ))}
-        </tbody>
-      </table>
-
-
+      {/* Modal logic for image preview */}
       {isModalOpen && (
         <div
           style={{
@@ -372,23 +339,22 @@ const removeProductFromFavorites = async (userId, productId) => {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-<img
-  src={modalImageUrl}
-  alt="Product Modal"
-  style={{
-    width: '100%',
-    height: 'auto',
-    display: 'block',
-    objectFit: 'contain', // Ensures the image fits within the container without stretching
-    maxWidth: '600px',    // Limits the maximum width to 600px
-    maxHeight: '90vh',    // Ensures the image doesn't exceed the viewport height
-    transition: 'transform 0.3s ease',  // Smooth transition for zoom effect
-    cursor: 'zoom-in',   // Cursor changes to indicate zoom action
-  }}
-  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.3)'} // Zoom in on hover
-  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}  // Reset zoom on mouse leave
-/>
-            <button
+            <img
+              src={modalImageUrl}
+              alt="Product Modal"
+              style={{
+                width: '100%',
+                height: 'auto',
+                display: 'block',
+                objectFit: 'contain',
+                maxWidth: '600px',
+                maxHeight: '90vh',
+                cursor: 'zoom-in',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.3)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+            />
+            <Button
               style={{
                 position: 'absolute',
                 top: '10px',
@@ -403,17 +369,12 @@ const removeProductFromFavorites = async (userId, productId) => {
               onClick={closeModal}
             >
               X
-            </button>
+            </Button>
           </div>
-
-          </div>
+        </div>
       )}
-        
 
-    </div>
-
-      {/* 👇 Invisible div at the bottom to trigger fetching the next page */}
-      <div ref={observerRef} style={{ height: "20px", margin: "10px 0" }}></div>
+      <div ref={observerRef} style={{ height: '20px', margin: '10px 0' }}></div>
 
       {isFetching && !isFetchingNextPage && <p>Loading...</p>}
     </div>
