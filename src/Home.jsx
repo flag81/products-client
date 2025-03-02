@@ -274,14 +274,14 @@ const removeProductFromFavorites = async (userId, productId) => {
 
 
 
-      <Row xs={1} md={2} lg={4} className="g-4">
+      <Row xs={2} md={2} lg={4} className="g-4">
         {data?.pages.map((page, pageIndex) => (
           page.products.map((product, productIndex) => (
             <Col key={`${pageIndex}-${productIndex}`}>
               <Card className="h-100">
                 <Card.Img
                   variant="top"
-                  src={`https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_200/uploads/${product.image_url}`}
+                  src={`https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_150/uploads/${product.image_url}`}
                   alt={product.product_description}
                   onClick={() =>
                     openModal(
@@ -332,7 +332,7 @@ const removeProductFromFavorites = async (userId, productId) => {
             style={{
               position: 'relative',
               backgroundColor: '#fff',
-              padding: '20px',
+              padding: '10px',
               borderRadius: '8px',
               maxWidth: '90%',
               maxHeight: '90%',
