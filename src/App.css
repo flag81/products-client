@@ -55,3 +55,20 @@
 .read-the-docs {
   color: #888;
 }
+
+
+.product-description {
+  font-size: 12;
+}
+
+@media (max-width: 576px) {
+  .product-description {
+    font-size: 12px; /* Minimum size on small screens */
+  }
+}
+
+@media (min-width: 1200px) {
+  .product-description {
+    font-size: 16px; /* Maximum size on large screens */
+  }
+}

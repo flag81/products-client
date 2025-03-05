@@ -238,7 +238,7 @@ const removeProductFromFavorites = async (userId, productId) => {
       <InputGroup className="mb-3">
         <Form.Control
           type="text"
-          placeholder="Search by keyword"
+          placeholder="Kerko..."
           onKeyDown={(e) => { if (e.key === 'Enter') setSearchKeyword(e.target.value); }}
         />
         <Button variant="outline-secondary" onClick={() => setSearchKeyword('')}>Clear</Button>
@@ -281,7 +281,7 @@ const removeProductFromFavorites = async (userId, productId) => {
               <Card className="h-100 p-1" >
                 <Card.Img
                   variant="top"
-                  src={`https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_150/uploads/${product.image_url}`}
+                  src={`https://res.cloudinary.com/dt7a4yl1x/image/upload/w_auto,f_auto,q_auto/uploads/${product.image_url}`}
                   alt={product.product_description}
                   onClick={() =>
                     openModal(
@@ -292,7 +292,9 @@ const removeProductFromFavorites = async (userId, productId) => {
                   style={{ cursor: 'pointer',  padding: '0.5rem'  }}
                 />
                 <Card.Body>
-                  <Card.Text>{product.product_description}</Card.Text>
+                <Card.Text className="product-description">
+  {product.product_description}
+</Card.Text>
                   <Form.Check
                     type="checkbox"
                     label="Favorite"
