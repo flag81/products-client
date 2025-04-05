@@ -296,6 +296,30 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
+"@ngrok/ngrok-win32-x64-msvc@1.4.1":
+  version "1.4.1"
+  resolved "https://registry.npmjs.org/@ngrok/ngrok-win32-x64-msvc/-/ngrok-win32-x64-msvc-1.4.1.tgz"
+  integrity sha512-Zr1Dyel4M3cA1kjT/N5ftTiCdoPnVv/VbyE6AKKemP9DDFkTlpdvMwSXikm/ypNtCNFEs/+q8CBZPhhaKktl8A==
+
+"@ngrok/ngrok@^1.4.1":
+  version "1.4.1"
+  resolved "https://registry.npmjs.org/@ngrok/ngrok/-/ngrok-1.4.1.tgz"
+  integrity sha512-KZ7/T4UOY3BqJBdweJPeebKW34YzIH+a2y4o7yqTIowoi6dw3sMj140o1Q8FvpPbH5J6lr2TWVCWdgSTYvHNgw==
+  optionalDependencies:
+    "@ngrok/ngrok-android-arm-eabi" "1.4.1"
+    "@ngrok/ngrok-android-arm64" "1.4.1"
+    "@ngrok/ngrok-darwin-arm64" "1.4.1"
+    "@ngrok/ngrok-darwin-universal" "1.4.1"
+    "@ngrok/ngrok-darwin-x64" "1.4.1"
+    "@ngrok/ngrok-freebsd-x64" "1.4.1"
+    "@ngrok/ngrok-linux-arm-gnueabihf" "1.4.1"
+    "@ngrok/ngrok-linux-arm64-gnu" "1.4.1"
+    "@ngrok/ngrok-linux-arm64-musl" "1.4.1"
+    "@ngrok/ngrok-linux-x64-gnu" "1.4.1"
+    "@ngrok/ngrok-linux-x64-musl" "1.4.1"
+    "@ngrok/ngrok-win32-ia32-msvc" "1.4.1"
+    "@ngrok/ngrok-win32-x64-msvc" "1.4.1"
+
 "@popperjs/core@^2.11.8":
   version "2.11.8"
   resolved "https://registry.npmjs.org/@popperjs/core/-/core-2.11.8.tgz"
