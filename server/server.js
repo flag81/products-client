@@ -26,10 +26,11 @@ import vision from '@google-cloud/vision';
 //keyFilename: path.join(__dirname, './vision-ai-455010-d952b6232600.json'), // Replace with your key file path
 
 
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const keyFilePath = path.join(__dirname, './vision-ai-455010-d952b6232600.json');
+const keyFilePath = path.join(__dirname, './vision-ai-455010-6d2a9944437b.json');
 
 process.env.GOOGLE_APPLICATION_CREDENTIALS = keyFilePath;
 
@@ -43,6 +44,10 @@ else {
 }
 
 const credentials = JSON.parse(fs.readFileSync(keyFilePath, 'utf8'));
+
+
+console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID);
+console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET);
 
 
 
@@ -69,8 +74,9 @@ const privateKey = fs.readFileSync(privateKeyPath, "utf8");
 //console.log('privateKey:', privateKey);
 
 const client = new vision.ImageAnnotatorClient({
-  keyFilename: path.join(__dirname, './vision-ai-455010-d952b6232600.json'), // Replace with your key file path
+  keyFilename: path.join(__dirname, './vision-ai-455010-6d2a9944437b.json'), // Replace with your key file path
 });
+
 
 
 import { format } from 'path';
@@ -631,8 +637,11 @@ const corsOptions = {
   origin: [process.env.FRONTEND_URL, process.env.FRONTEND_URL2,
     'http://localhost:5173', 
     'http://localhost:5173/dashboard', 
+    'https://www.meniven.com',
+    'https://qg048c0c0wos4o40gos4k0kc.128.140.43.244.sslip.io',
     'https://singular-catfish-deciding.ngrok-free.app'] , // Replace with your frontend's origin
   credentials: true, // Allow cookies to be sent with requests
+  origin: true, // Allow all origins (for development purposes)
   methods: ["GET", "POST", "PUT", "DELETE"], // Allow all standard methods
   allowedHeaders: ["Content-Type", "Authorization"], // Allow necessary headers
 };
