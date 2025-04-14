@@ -13,6 +13,9 @@ dist-ssr
 *.local
 *.jpg
 .env
+*.json
+*.p8
+persistent
 
 # Editor directories and files
 .vscode/*
