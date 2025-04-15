@@ -88,7 +88,8 @@ const prompt =
   '\n    * Convert the Albanian letter `ë` to `e` for all keywords.' +
   '\n    * Exclude common Albanian stop words (like articles, conjunctions, prepositions - e.g., "e", "i", "të", "për", "ose", "me").' +
   '\n    * Exclude all numbers, units, sizes, volumes, or counts (e.g., "0,33L", "400ml", "3kg", "1,5L", "10/1", "0,5L", "1,7", "3", "10", "1"). Exclude these even if they appear in the `product_description`.' +
-  '\n    * Keywords should be single, relevant nouns, adjectives, or brand names taken directly from the `product_description` text. ' +
+  '\n    * Keywords should be single, relevant nouns, adjectives in Albanian language, except for brand names, taken directly from the `product_description` text. ' +
+  '\n    * Only include the last five kewords you find following these rules. The keywords array should not include more than 5 items.' +
 
   '\n\n**Processing Instructions:**' +
   '\n- If multiple images are attached, process them sequentially. Wait 3 seconds between processing each image.' +
@@ -101,7 +102,8 @@ const prompt =
   `
 [
   {
-    "product_description": "Pije e gazuar Lemon Soda 0,33L", // Full description text from flyer
+    "product_description": "Pije e gazuar Lemon 0,33L", // Full description text from flyer
+    "product_brand_name": "Lemon", // Brand name
     "old_price": "0.69", // Original price, no symbols
     "new_price": "0.59", // Sale price, no symbols
     "discount_percentage": "14", // Discount number, no symbol
@@ -109,7 +111,7 @@ const prompt =
     "storeId": null, // Extracted number or null
     "userId": {userId}, // Provided user ID
     "image_url": "487117352_1080468107452630_830115842423760541_n.jpg", // Constructed URL or null
-    "keywords": ["pije", "gazuar", "lemon", "soda"] // Keywords STRICTLY from product_description, following rules
+    "keywords": ["pije", "gazuar", "lemon"] // Keywords STRICTLY from product_description, following rules
   }
   // ... more product objects if present
 ]
@@ -135,6 +137,7 @@ const prompt =
 
     {
       "product_description": "",
+      "productId": 1,
       "old_price": "",
       "new_price": "",
       "discount_percentage": "",
@@ -1478,9 +1481,18 @@ Search Products: <input type="text" id="keyword_search" name="keyword_search" on
             </tr>
             {products.map(product => ( 
 
+<tr
+  key={product.productId}
+  style={{ backgroundColor: selectedProduct === product.productId ? 'lightblue' : 'white' }}
+  onClick={() => {
+    const newSelectedProduct = product.productId === selectedProduct ? '' : product.productId;
+    setSelectedProduct(newSelectedProduct);
+    if (newSelectedProduct) {
+      copySelectedProduct(product); // Call copySelectedProduct after setting the selected product
+    }
+  }}
+>
 
-
-              <tr>
                 {/* //add  td with checkbox with productId value , when check is set to selectedProduct */}
 
 
@@ -1531,11 +1543,6 @@ Search Products: <input type="text" id="keyword_search" name="keyword_search" on
  //const imageUrl = product.image_url.split('/').pop();
 
  // get the full image name from the image_url and set it to the imageUrl variable as last part of the / 
-
-
-
-
-
 
 
 }
@@ -1594,18 +1601,10 @@ Search Products: <input type="text" id="keyword_search" name="keyword_search" on
             ))}
           </table></div>
           
-        
-
           <div id="prod_image" />
 
  
           <br />
-
-          
-       
-
-
-
 
   </div> 
 

@@ -30,7 +30,9 @@ import vision from '@google-cloud/vision';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const keyFilePath = path.join(__dirname, './vision-ai-455010-6d2a9944437b.json');
+const keyFilePath = path.join(__dirname, './persistent/keys/vision-ai-455010-6d2a9944437b.json');
+
+//change keyFilePath to come from variable in .env file
 
 process.env.GOOGLE_APPLICATION_CREDENTIALS = keyFilePath;
 
@@ -60,21 +62,18 @@ const vertexAI = new VertexAI({project: 'vision-ai-455010', location: 'us-centra
   console.log('✅ VertexAI client initialized in server.js'); // Add this
 
 
-
-
-
   console.log('Attempting to load key file from:', keyFilePath);
 
 
 
 // Load private key for Apple authentication
-const privateKeyPath = path.join(__dirname, "./AuthKey_6YK9NFRYH9.p8"); // Path to your .p8 key file
+const privateKeyPath = path.join(__dirname, "./persistent/keys/AuthKey_6YK9NFRYH9.p8"); // Path to your .p8 key file
 const privateKey = fs.readFileSync(privateKeyPath, "utf8");
 
 //console.log('privateKey:', privateKey);
 
 const client = new vision.ImageAnnotatorClient({
-  keyFilename: path.join(__dirname, './vision-ai-455010-6d2a9944437b.json'), // Replace with your key file path
+  keyFilename: path.join(__dirname, './persistent/keys/vision-ai-455010-6d2a9944437b.json'), // Replace with your key file path
 });
 
 
@@ -636,6 +635,7 @@ const generativeModel = vertexAI.getGenerativeModel({
 const corsOptions = {
   origin: [process.env.FRONTEND_URL, process.env.FRONTEND_URL2,
     'http://localhost:5173', 
+    'http://192.168.1.*', // Allow local network IPs
     'http://localhost:5173/dashboard', 
     'https://www.meniven.com',
     'https://qg048c0c0wos4o40gos4k0kc.128.140.43.244.sslip.io',
@@ -727,18 +727,38 @@ jsonData = jsonData.replace(/`/g, ''); // Remove backticks
       }
 
       for (const keyword of keywords) {
-        const keywordResult = await dbQuery(
-          `INSERT INTO keywords (keyword) VALUES (?) 
-          ON DUPLICATE KEY UPDATE keywordId = LAST_INSERT_ID(keywordId)`,
+        console.log('Processing keyword:', keyword);
+        // Check if the keyword exists in the database
+        const existingKeyword = await dbQuery(
+          `SELECT keywordId FROM keywords WHERE keyword = ?`,
           [keyword]
         );
 
-        const keywordId = keywordResult.insertId;
+        let keywordId; // Initialize keywordId
 
+        if (existingKeyword.length > 0) {
+          // If the keyword exists, get its keywordId
+          keywordId = existingKeyword[0].keywordId;
+        } else {
+          // If the keyword does not exist, insert it into the keywords table
+          const newKeywordResult = await dbQuery(
+            `INSERT INTO keywords (keyword) VALUES (?)`,
+            [keyword]
+          );
+          keywordId = newKeywordResult.insertId;
+        }
+
+        // Insert the productId and keywordId into the productkeywords table
         await dbQuery(
           `INSERT INTO productkeywords (productId, keywordId) VALUES (?, ?)`,
           [productId, keywordId]
         );
+
+        // write code
+
+        
+
+        // for every keyword inserted, get the keywordId and insert it into productkeywords table
       }
     }
 
@@ -874,7 +894,11 @@ app.post('/dashboardLogin', (req, res) => {
   });
 });
 
-app.get("/check-session", (req, res) => {
+app.get("/check-session",  (req, res) => {
+
+
+  //console.log("🔒 Checking session...");
+
   const token = req.cookies.jwt; // Get JWT from cookies
 
   if (!token) {
@@ -1188,7 +1212,10 @@ app.get('/initialize', (req, res) => {
           res.cookie('jwt', token, {
               httpOnly: true,
               secure: process.env.NODE_ENV === 'production',
-              maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+              //maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+              // set max age to 1 day for testing purposes
+               maxAge: 24 * 60 * 60 * 1000, // 1 day
+
           });
 
           return res.json({ message: 'JWT set for new user', userId });
@@ -1329,6 +1356,10 @@ app.get('/get-preferences', authenticateJWT, (req, res) => {
 
 
 app.delete('/deleteProduct/:productId', async (req, res) => {
+
+
+console.log('Delete product endpoint hit');
+
   const productId = req.params.productId;
 
   console.log('productId received:', productId);
@@ -1552,6 +1583,26 @@ app.get("/getStores", (req, res) => {
 });
 
 
+// write api to check if product is already in favorites for a user
+
+app.get("/isFavorite", (req, res) => {
+  const { userId, productId } = req.query;
+
+  const q = `SELECT * FROM favorites WHERE userId = ? AND productId = ?`;
+
+  db.query(q, [userId, productId], (err, result) => {
+    if (err) {
+      console.error('Error checking favorite:', err);
+      return res.status(500).json({ error: 'Failed to check favorite' });
+    }
+
+    const isFavorite = result.length > 0;
+    res.status(200).json({ isFavorite });
+  }
+  );
+});
+
+
 // write api to add a product to favorites for a user
 
 
@@ -1708,6 +1759,9 @@ app.post("/addKeyword", (req, res) => {
 
 
 app.delete("/removeKeyword", (req, res) => {
+
+  console.log('Remove keyword endpoint hit');
+  console.log('Request body:', req.body);
 
   const { productId, keyword } = req.body;
 

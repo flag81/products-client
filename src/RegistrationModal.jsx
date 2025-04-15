@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Modal, Form, Button } from "react-bootstrap";
 
-function RegistrationModal({ show, setShowRegisterModal, setUserId , setIsLoggedIn }) {
+function RegistrationModal({ show, setShowRegisterModal, setUserId , setIsLoggedIn ,setEmail }) {
 
-  const [email, setEmail] = useState("");
+  const [userEmail, setUserEmail] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [isLoginMode, setIsLoginMode] = useState(false);
@@ -11,14 +11,23 @@ function RegistrationModal({ show, setShowRegisterModal, setUserId , setIsLogged
 
   const sendVerificationCode = async () => {
 
-    console.log("Sending verification request for:", email); // ✅ Debugging log
+    console.log("Sending verification request for:", userEmail); // ✅ Debugging log
+
+    //check if email is valid
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(userEmail)) {
+        alert("Ju lutem shkruani nje email te sakte.");
+        return;
+    }
+
+
 
     try {
         const response = await fetch(`${node_url}/auth/send-verification-code`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",  // ✅ Ensures cookies/session are included
-            body: JSON.stringify({ email }),
+            body: JSON.stringify({ email: userEmail }),
         });
 
         const data = await response.json();
@@ -40,13 +49,14 @@ function RegistrationModal({ show, setShowRegisterModal, setUserId , setIsLogged
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email, code: verificationCode }),
+        body: JSON.stringify({ email: userEmail, code: verificationCode }),
       });
 
       const data = await response.json();
       if (data.success) {
         setUserId(data.userId); // Update userId in Home.jsx
         setIsLoggedIn(true); // Update isLoggedIn in Home.jsx
+        setEmail(data.email);
         setShowRegisterModal(false);
       } else {
         alert("Invalid verification code.");
@@ -59,26 +69,24 @@ function RegistrationModal({ show, setShowRegisterModal, setUserId , setIsLogged
   return (
     <Modal show={show} onHide={() => setShowRegisterModal(false)}>
       <Modal.Header closeButton>
-        <Modal.Title>{isLoginMode ? "Login" : "Register"} with Email</Modal.Title>
+        <Modal.Title>{isLoginMode ? "Login" : "Registerohu"} me Email</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {!isVerifying ? (
           <>
             <Form.Group>
-              <Form.Label>Email Address</Form.Label>
+              <Form.Label>Email Adresa</Form.Label>
               <Form.Control
                 type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Sheno email-in"
+                value={userEmail}
+                onChange={(e) => setUserEmail(e.target.value)}
               />
             </Form.Group>
-            <Button onClick={sendVerificationCode} className="mt-2">
-              {isLoginMode ? "Send Login Code" : "Send Registration Code"}
+            <Button onClick={sendVerificationCode} className="mt-2" style={{ marginRight: "10px" }}>
+              {isLoginMode ? "Dergo kod-in per Hyrje " : "Dergo Kod-in  per Regjistrim"}
             </Button>
-            <Button onClick={sendVerificationCode} className="mt-2 padding-10">
-              Google Login
-            </Button>
+
           </>
         ) : (
           <>
