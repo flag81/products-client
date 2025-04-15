@@ -1,117 +1,188 @@
-import { useState, useEffect, useRef } from "react";
-import { useInfiniteQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { use } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import RegistrationModal from "./RegistrationModal";
 
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
-import InputGroup from 'react-bootstrap/InputGroup';
-import Form from 'react-bootstrap/Form';
-import Button from 'react-bootstrap/Button';
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
+import InputGroup from "react-bootstrap/InputGroup";
+import Form from "react-bootstrap/Form";
+import Button from "react-bootstrap/Button";
+import Card from "react-bootstrap/Card";
 
-// import image in the current directory
-
-// i get error [plugin:vite:import-analysis] Failed to resolve import "./star-full.jpg" from "src/Home.jsx". Does the file exist
-
-import Card from 'react-bootstrap/Card';
-
-function Home({mode}) {
+function Home({ mode }) {
+  // ─── State & Refs ─────────────────────────────────────────────────────────────
   const [stores, setStores] = useState([]);
   const [users, setUsers] = useState([]);
   const [selectedStore, setSelectedStore] = useState("");
-  const [selectedUser, setSelectedUser] = useState("");
   const [isFavorite, setIsFavorite] = useState(false);
   const [onSale, setOnSale] = useState(false);
-  const [addFavorite, setAddFavorite] = useState();
-
-  const[isFavoriteProduct, setIsFavoriteProduct] = useState(false);
-
-  const [userId, setUserId] = useState();
-
-  const [email, setEmail] = useState('');
-
-  const [searchKeyword, setSearchKeyword] = useState('');
-
-  const observerRef = useRef(null); // Reference for IntersectionObserver
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalImageUrl, setModalImageUrl] = useState('');
-
+  const [searchKeyword, setSearchKeyword] = useState("");
   const [showRegisterModal, setShowRegisterModal] = useState(false);
-
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userId, setUserId] = useState(null);
+  const [email, setEmail] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalImageUrl, setModalImageUrl] = useState("");
+  const observerRef = useRef(null);
 
-  const [start, setStar] = useState('star-empty.jpg');
-
-  const [allProducts, setAllProducts] = useState([]); // Initialize with your product list
-
-  const CLOUD_NAME = 'dt7a4yl1x';
-
-  const width = 200;
-  const width2 = 600; // Set the width for the second image
-  var baseUrl = "https://res.cloudinary.com/dt7a4yl1x/image/upload";
-  const transformation = `w_${width},c_scale`;
-  const transformation2 = `w_${width2},c_scale`;
+  // ─── Config ───────────────────────────────────────────────────────────────────
+  const node_url = import.meta.env.VITE_NODE_URL;
+  const baseUrl = "https://res.cloudinary.com/dt7a4yl1x/image/upload";
+  const transformation = `w_200,c_scale`;
+  const transformation2 = `w_600,c_scale`;
   const directory = "uploads";
 
-  // use dotenv to get the node_url and node_port
+  // ─── React Query Setup ─────────────────────────────────────────────────────────
+  const queryClient = useQueryClient();
+  const productsQueryKey = [
+    "products",
+    userId,
+    selectedStore,
+    isFavorite,
+    onSale,
+    searchKeyword?.length > 2 ? searchKeyword : "",
+  ];
 
-  const [favoriteProductId, setFavoriteProductId] = useState(0);
+  // Infinite‐scroll query
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: productsQueryKey,
+    queryFn: getAllProducts,
+    getNextPageParam: (lastPage) => lastPage.nextPage,
+  });
 
-  const node_url = import.meta.env.VITE_NODE_URL;
-  const node_port = import.meta.env.VITE_NODE_PORT;
+  // Optimistic toggle‐favorite mutation
+  const toggleFavMutation = useMutation({
+    mutationFn: async ({ productId, isFav }) => {
+      const url = isFav ? "/removeFavorite" : "/addFavorite";
+      const method = isFav ? "DELETE" : "POST";
+      const res = await fetch(`${node_url}${url}`, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ userId, productId }),
+      });
+      if (!res.ok) throw new Error("Network error");
+      return res.json();
+    },
+    onMutate: async ({ productId, isFav }) => {
+      await queryClient.cancelQueries({ queryKey: productsQueryKey });
+      const previous = queryClient.getQueryData(productsQueryKey);
+      queryClient.setQueryData(
+        { queryKey: productsQueryKey },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              products: page.products.map((p) =>
+                p.productId === productId
+                  ? { ...p, isFavorite: !isFav }
+                  : p
+              ),
+            })),
+          };
+        }
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(
+          { queryKey: productsQueryKey },
+          context.previous
+        );
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: productsQueryKey });
+    },
+  });
 
-  console.log(`Node URL: ${node_url}`);
-  console.log(`Node Port: ${node_port}`);
+  // ─── Data‐fetchers & Helpers ───────────────────────────────────────────────────
+  async function getAllProducts({ pageParam = 1, queryKey }) {
+    const [, uId, storeId, fav, sale] = queryKey;
+    const url = `${node_url}/getProducts?userId=${encodeURIComponent(
+      uId
+    )}&page=${pageParam}&storeId=${encodeURIComponent(
+      storeId
+    )}&isFavorite=${encodeURIComponent(
+      fav
+    )}&onSale=${encodeURIComponent(sale)}&keyword=${encodeURIComponent(
+      searchKeyword
+    )}`;
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || "Failed to fetch products");
+    return {
+      products: json.data,
+      nextPage: json.data.length > 0 ? pageParam + 1 : undefined,
+    };
+  }
 
   const openModal = (imageUrl) => {
     setModalImageUrl(imageUrl);
     setIsModalOpen(true);
   };
-
   const closeModal = () => {
     setIsModalOpen(false);
-    setModalImageUrl('');
+    setModalImageUrl("");
   };
 
-  // add usereffect when the searchkeyword changes
-
-  // Fetch user session on page load
-  useEffect(() => {
-    checkUserSession();
-  }, []);
-
-  useEffect(() => {
-    console.log('Search keyword changed:', searchKeyword);
-  }
-  , [searchKeyword]);
-
-  useEffect(() => { 
-    console.log('User ID changed:', userId);
-    if (userId) {
-      getAllProducts(userId);
+  const checkUserSession = async () => {
+    try {
+      const response = await fetch(`${node_url}/check-session`, {
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (data.isLoggedIn) {
+        setUserId(data.userId);
+        setEmail(data.email);
+        setIsLoggedIn(true);
+      } else {
+        setUserId(null);
+        setIsLoggedIn(false);
+      }
+    } catch (error) {
+      console.error("Error checking session:", error);
     }
-  }, [userId]);
+  };
 
-  useEffect(() => {
-    // Check if Apple SDK is already loaded
-    if (!document.getElementById("apple-signin-sdk")) {
-        const script = document.createElement("script");
-        script.src = "https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js";
-        script.id = "apple-signin-sdk";
-        script.async = true;
-        script.onload = () => console.log("✅ Apple SDK Loaded");
-        document.body.appendChild(script);
+  const getStores = async () => {
+    try {
+      const response = await fetch(`${node_url}/getStores`);
+      const result = await response.json();
+      setStores(result);
+    } catch (error) {
+      console.error("Error fetching stores:", error);
     }
-}, []);
+  };
 
-  // Fetch stores and users when component mounts
-  useEffect(() => {
-    getStores();
-    getUsers();
-  }, []);
+  const getUsers = async () => {
+    try {
+      const response = await fetch(`${node_url}/getUsers`);
+      const result = await response.json();
+      setUsers(result);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
 
   const signInWithApple = () => {
     const params = new URLSearchParams({
@@ -121,333 +192,123 @@ function Home({mode}) {
       scope: "name email",
       response_mode: "form_post",
     });
-  
     window.location.href = `https://appleid.apple.com/auth/authorize?${params.toString()}`;
   };
 
   const handleAppleLogin = async () => {
     try {
-        // Ensure Apple SDK is loaded
-        if (!window.AppleID || !window.AppleID.auth) {
-            console.error("❌ Apple SDK is not loaded.");
-            return;
-        }
-
-        // Configure AppleID settings
-        window.AppleID.auth.init({
-            clientId: import.meta.env.VITE_APPLE_CLIENT_ID, // Ensure this matches Apple Developer Console
-            scope: "email name",
-            redirectURI: import.meta.env.VITE_APPLE_CALLBACK_URL, // Ensure it's the correct callback
-            usePopup: true, // Avoids redirection
-        });
-
-        // Start Apple login process
-        const response = await window.AppleID.auth.signIn();
-        console.log("🍏 Apple Sign-In Response:", response);
-
-        const idToken = response.authorization.id_token;
-
-        // Send ID token to backend
-        const res = await fetch(`${import.meta.env.VITE_NODE_URL}/auth/apple/callback`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id_token: idToken }),
-            credentials: "include",
-        });
-        
-        const data = await res.json();
-        console.log("✅ Apple Login Success:", data);
-        setIsLoggedIn(true);
-        window.location.href = `${import.meta.env.VITE_NODE_URL}?loginSuccess=true`;
+      if (!window.AppleID || !window.AppleID.auth) {
+        console.error("Apple SDK not loaded");
+        return;
+      }
+      window.AppleID.auth.init({
+        clientId: import.meta.env.VITE_APPLE_CLIENT_ID,
+        scope: "email name",
+        redirectURI: import.meta.env.VITE_APPLE_CALLBACK_URL,
+        usePopup: true,
+      });
+      const response = await window.AppleID.auth.signIn();
+      const idToken = response.authorization.id_token;
+      const res = await fetch(`${node_url}/auth/apple/callback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id_token: idToken }),
+        credentials: "include",
+      });
+      const data = await res.json();
+      setIsLoggedIn(true);
+      window.location.href = `${node_url}?loginSuccess=true`;
     } catch (error) {
-        console.error("❌ Apple Login Error:", error);
+      console.error("Apple Login Error:", error);
     }
   };
 
-  const checkUserSession = async () => {
-    try {
-        const response = await fetch(`${node_url}/check-session`, { credentials: "include" });
-        const data = await response.json();
-
-        if (data.isLoggedIn) {
-            setUserId(data.userId);
-            setEmail(data.email);
-            setIsLoggedIn(true);
-            console.log("✅ User session active:", data.userId);
-        } else {
-            setUserId(1000000);
-            setIsLoggedIn(false);
-            console.log("⚠️ No active session found.");
-        }
-    } catch (error) {
-        console.error("Error checking user session:", error);
-    }
-};
-
-const addProductToFavorites = async (userIs, productId, isFavorite) => {
-    console.log('Adding product to favorites...', userId, productId);
-    if (!isLoggedIn) {
-      setShowRegisterModal(true);
-      console.log('User not logged in...showing registration modal');
-      return;
-    }
-
-    try {
-      const response = await fetch(`${node_url}/addFavorite`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userId, productId }),
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        console.log("Product added to favorites:", result);
-        setFavoriteProductId(productId);
-        setIsFavoriteProduct(true);
-      }
-    } catch (error) {
-      console.error("Error adding product to favorites:", error);
-    }
-};
-
-const logout = async () => {
+  const logout = async () => {
     try {
       await fetch(`${node_url}/logout`, { credentials: "include" });
       setUserId(null);
-      console.log("User logged out");
       setIsLoggedIn(false);
     } catch (err) {
       console.error("Logout failed", err);
     }
-};
+  };
 
-const addProductToFavorites2 = async (userId, productId) => {
-    await initializeUser();
-    console.log('Adding product to favorites...');
-    console.log('userId:', userId);
-    console.log('productId:', productId);
+  // ─── Effects ─────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    checkUserSession();
+    getStores();
+    getUsers();
+  }, []);
 
-    try {
-      const response = await fetch(`${node_url}/addFavorite`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId, productId }),
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        console.log('result:', result);
-        setAddFavorite(productId);
-      }
-    }
-    catch (error) {
-      console.error('Error adding product to favorites:', error);
-    }
-};
-
-async function initializeUser() {
-    console.log('Initializing user...');  
-    try {
-      const response = await fetch(`${node_url}/initialize`, { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        console.log('User initialized:', data);
-        console.log('initialize data.userId:', data.userId);
-      } else {
-        console.error('Failed to initialize user');
-      }
-    } catch (error) {
-      console.error('Error during initialization:', error);
-    }
-}
-
-const removeProductFromFavorites = async (userId, productId) => {
-  try {
-    const response = await fetch(`${node_url}/removeFavorite`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
+  useEffect(() => {
+    if (!observerRef.current || !hasNextPage) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage) {
+          fetchNextPage();
+        }
       },
-      body: JSON.stringify({ userId, productId }),
-    });
+      { threshold: 0.9 }
+    );
+    obs.observe(observerRef.current);
+    return () => obs.disconnect();
+  }, [fetchNextPage, hasNextPage]);
 
-    const result = await response.json();
+  const handleSearch = (value) => setSearchKeyword(value);
 
-    if (response.ok) {
-      console.log('result:', result);
-      setAddFavorite(0);
-      setIsFavoriteProduct(false);
-    }
-  }
-  catch (error) {
-    console.error('Error removing product from favorites:', error);
-  }
-};
+  // ─── Render ──────────────────────────────────────────────────────────────────
+  return (
+    <div className="container">
+      {isLoggedIn ? (
+        <p>Miresevini! {email}</p>
+      ) : (
+        <Container>
+          <Row className="mb-3 justify-content-center align-items-center">
+            <Col xs={12}>
+              <InputGroup>
+                <Button
+                  className="responsive-button"
+                  onClick={() => (window.location.href = `${node_url}/auth/google`)}
+                >
+                  Login Google
+                </Button>
+                <Button className="responsive-button" onClick={signInWithApple}>
+                  Login Apple
+                </Button>
+                <Button className="responsive-button" onClick={signInWithApple}>
+                  Regjistohu
+                </Button>
+              </InputGroup>
+            </Col>
+          </Row>
+        </Container>
+      )}
 
-const getAllProducts = async ({ pageParam = 1, queryKey }) => {
-  console.log('getAllProducts called with:', queryKey);
-  const [, userId, storeId, isFavorite, onSale] = queryKey;
-  let finalUserId = userId;
-  if (!finalUserId || finalUserId === undefined) {
-      const session = await checkUserSession();
-      if (!session.loggedIn) {
-          console.warn("User not logged in, waiting for login...");
-          return { products: [], nextPage: undefined };
-      }
-      finalUserId = session.userId;
-  }
-
-  try {
-      console.log("Fetching products with:", { finalUserId, storeId, isFavorite, onSale, pageParam });
-      const response = await fetch(
-          `${node_url}/getProducts?userId=${encodeURIComponent(finalUserId)}
-          &page=${pageParam}
-          &storeId=${encodeURIComponent(storeId)}
-          &isFavorite=${encodeURIComponent(isFavorite)}
-          &onSale=${encodeURIComponent(onSale)}
-          &keyword=${encodeURIComponent(searchKeyword)}`.replace(/\s+/g, ""),
-          {
-              method: "GET",
-              headers: { "Content-Type": "application/json" },
-              credentials: "include",
-          }
-      );
-
-      const result = await response.json();
-      console.log("Products fetched:", result);
-
-      if (!response.ok) {
-          throw new Error(result.message || "Failed to fetch products");
-      }
-
-      return {
-          products: result.data,
-          nextPage: result.data.length > 0 ? pageParam + 1 : undefined,
-      };
-  } catch (error) {
-      console.error("Error fetching products:", error);
-      throw error;
-  }
-};
-
-
-
-const {
-  data,
-  fetchNextPage,
-  hasNextPage,
-  isFetching,
-  isFetchingNextPage,
-} = useInfiniteQuery({
-  queryKey: ["products", userId, selectedStore, isFavorite, onSale, addFavorite , searchKeyword?.length > 2  ? searchKeyword : ""],
-  queryFn: getAllProducts,
-  getNextPageParam: (lastPage) => lastPage?.nextPage || undefined,
-});
-
-useEffect(() => {
-  if (!observerRef.current || !hasNextPage) return;
-
-  const observer = new IntersectionObserver(
-    (entries) => {
-      if (entries[0].isIntersecting && hasNextPage) {
-        fetchNextPage();
-      }
-    },
-    { threshold: 0.9 }
-  );
-
-  observer.observe(observerRef.current);
-
-  return () => observer.disconnect();
-}, [fetchNextPage, hasNextPage]);
-
-const getStores = async () => {
-  try {
-    const response = await fetch(`${node_url}/getStores` );
-    const result = await response.json();
-    setStores(result);
-  } catch (error) {
-    console.error("Error fetching stores:", error);
-  }
-};
-
-const getUsers = async () => {
-  try {
-    const response = await fetch(`${node_url}/getUsers`);
-    const result = await response.json();
-    setUsers(result);
-  } catch (error) {
-    console.error("Error fetching users:", error);
-  }
-};
-
-const handleButtonClick = (newKeyword) => {
-  console.log('Button clicked:', newKeyword);
-  setSearchKeyword(newKeyword);
-};
-
-return (
-  <div className="container">
-    <div></div>
-
-    {isLoggedIn ? 
-      <p>Miresevini! {email}</p>           
-      :  
       <Container>
-        <Row className="mb-3 justify-content-center align-items-center">
-          <Col xs={12}>
+        {/* Search */}
+        <Row className="mb-3">
+          <Col xs={12} md={6}>
             <InputGroup>
+              <Form.Control
+                type="text"
+                placeholder="Kerko produkte..."
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSearch(e.target.value);
+                }}
+              />
               <Button
-                className="responsive-button" 
-                onClick={() =>
-                  (window.location.href = `${node_url}/auth/google`)
-                }
+                className="responsive-button"
+                onClick={(e) => handleSearch(e.target.previousSibling.value)}
               >
-                Login Google
+                Kerko
               </Button>
-              <Button className="responsive-button"  onClick={signInWithApple}>Login Apple</Button>
-              <Button className="responsive-button" onClick={signInWithApple}>Regjistohu</Button>
             </InputGroup>
           </Col>
         </Row>
-      </Container>
-    }
 
-    <Container>
-      {/* Search Input Group */}
-      <Row className="mb-3">
-        <Col xs={12} md={6}>
-          <InputGroup>
-            <Form.Control
-              type="text"
-              placeholder="Kerko produkte..."
-              className="me-2 flex-grow-1"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') setSearchKeyword(e.target.value);
-              }}
-            />
-            <Button
-              className="responsive-button"
-              onClick={(e) =>
-                handleButtonClick(e.target.previousSibling.value)
-              }
-            >
-              Kerko
-            </Button>
-          </InputGroup>
-        </Col>
-      </Row>
-
-      {/* Store Filter */}
-      <Row className="mb-3">
-        <Col xs={12} md={6}>
-          <Form.Group controlId="storeFilter">
+        {/* Store Filter */}
+        <Row className="mb-3">
+          <Col xs={12} md={6}>
             <Form.Select onChange={(e) => setSelectedStore(e.target.value)}>
               <option value="">Te gjitha dyqanet</option>
               {stores.map((store) => (
@@ -456,185 +317,178 @@ return (
                 </option>
               ))}
             </Form.Select>
-          </Form.Group>
-        </Col>
-      </Row>
+          </Col>
+        </Row>
 
-      {/* User Filter (Checkboxes) */}
-      <Row className="mb-3">
-        <Col xs={12}>
-          <Form.Group controlId="userFilter">
-            <div className="d-flex flex-row flex-md-row gap-2 justify-content-between"
-              style={{ width: '50%' }}
-            >
-              {/* Favoritet toggle */}
+        {/* Filters */}
+        <Row className="mb-3">
+          <Col xs={12}>
+            <div className="d-flex gap-2" style={{ width: "50%" }}>
               <div
                 role="button"
                 className="d-flex flex-column align-items-center"
                 onClick={() => setIsFavorite((prev) => !prev)}
               >
                 <img
-                  src={
-                    isFavorite
-                      ? "/star-fill.jpg"
-                      : "/star-empty.jpg"
-                  }
+                  src={isFavorite ? "/star-fill.jpg" : "/star-empty.jpg"}
                   alt="Favoritet"
-                  style={{ width: "32px", height: "32px", cursor: "pointer" }}
+                  style={{ width: 32, height: 32, cursor: "pointer" }}
                 />
-                <span style={{ fontSize: '10px' }}>Favoritet</span>
+                <span style={{ fontSize: 10 }}>Favoritet</span>
               </div>
-
-              {/* Ne Zbritje toggle */}
               <div
                 role="button"
                 className="d-flex flex-column align-items-center"
                 onClick={() => setOnSale((prev) => !prev)}
               >
                 <img
-                  src={
-                    onSale
-                      ? "/sale-fill.jpg"
-                      : "/sale-empty.jpg"
-                  }
+                  src={onSale ? "/sale-fill.jpg" : "/sale-empty.jpg"}
                   alt="Ne Zbritje"
-                  style={{ width: "32px", height: "32px", cursor: "pointer" }}
+                  style={{ width: 32, height: 32, cursor: "pointer" }}
                 />
-                <span style={{ fontSize: '10px' }}>Ne Zbritje</span>
+                <span style={{ fontSize: 10 }}>Ne Zbritje</span>
               </div>
             </div>
-          </Form.Group>
-        </Col>
-      </Row>
-    </Container>
-
-    <Row xs={2} md={2} lg={4} className="g-4">
-      {data?.pages.map((page, pageIndex) =>
-        page.products.map((product, productIndex) => (
-          <Col key={`${pageIndex}-${productIndex}`}>
-            <Card className="h-100 p-1">
-              <Card.Img
-                variant="top"
-                src={`${baseUrl}/${transformation}/${directory}/${product.image_url.split('/').pop()}`}
-                alt={product.product_description}
-                onClick={() =>
-                  openModal(
-                    `${baseUrl}/${transformation2}/${directory}/${product.image_url.split('/').pop()}`
-                  )
-                }
-                className="p-0"
-                style={{ cursor: 'pointer', padding: '0.5rem' }}
-              />
-              <Card.Body>
-                <Card.Text className="product-description">
-                  {product.product_description}
-                </Card.Text>
-                <Card.Text className="product-description">
-                  {product.old_price}eu - {product.new_price}eu
-                </Card.Text>
-
-                <img
-                  id={product.productId}
-                  src={product.isFavorite ? 'star-fill.jpg' : 'star-empty.jpg'}
-                  alt={product.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                  onClick={() => {
-                    if (product.isFavorite) {
-                      removeProductFromFavorites(userId, product.productId, product.isFavorite);
-                    } else {
-                      addProductToFavorites(userId, product.productId, product.isFavorite);
-                    }
-                  }}
-                  style={{ cursor: 'pointer', width: '24px', height: '24px', marginRight: '20px' }}
-                />
-
-                <img
-                  src={product.onSale ? 'sale-full.jpg' : 'sale-empty.jpg'}
-                  alt={product.onSale ? 'On sale' : 'Not on sale'}
-                  style={{ cursor: 'pointer', width: '24px', height: '24px' }}
-                />
-              </Card.Body>
-            </Card>
           </Col>
-        ))
-      )}
-    </Row>
+        </Row>
+      </Container>
 
-    {/* Modal logic for image preview */}
-    {isModalOpen && (
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-        }}
-        onClick={closeModal}
-      >
+      {/* Products */}
+      <Row xs={2} md={2} lg={4} className="g-4">
+        {data?.pages.map((page, pi) =>
+          page.products.map((product, idx) => (
+            <Col key={`${pi}-${idx}`}>
+              <Card className="h-100 p-1">
+                <Card.Img
+                  variant="top"
+                  src={`${baseUrl}/${transformation}/${directory}/${product.image_url
+                    .split("/")
+                    .pop()}`}
+                  alt={product.product_description}
+                  onClick={() =>
+                    openModal(
+                      `${baseUrl}/${transformation2}/${directory}/${product.image_url
+                        .split("/")
+                        .pop()}`
+                    )
+                  }
+                  style={{ cursor: "pointer", padding: "0.5rem" }}
+                />
+                <Card.Body>
+                  <Card.Text className="product-description">
+                    {product.product_description}
+                  </Card.Text>
+                  <Card.Text className="product-description">
+                    {product.old_price}eu - {product.new_price}eu
+                  </Card.Text>
+
+                  {/* Favorite toggle */}
+                  <img
+                    src={product.isFavorite ? "star-fill.jpg" : "star-empty.jpg"}
+                    alt={product.isFavorite ? "Unfavorite" : "Favorite"}
+                    style={{
+                      cursor: "pointer",
+                      width: 24,
+                      height: 24,
+                      marginRight: 20,
+                    }}
+                    onClick={() =>
+                      toggleFavMutation.mutate({
+                        productId: product.productId,
+                        isFav: product.isFavorite,
+                      })
+                    }
+                  />
+
+                  {/* Sale icon */}
+                  <img
+                    src={product.onSale ? "sale-full.jpg" : "sale-empty.jpg"}
+                    alt={product.onSale ? "On sale" : "Not on sale"}
+                    style={{ cursor: "pointer", width: 24, height: 24 }}
+                  />
+                </Card.Body>
+              </Card>
+            </Col>
+          ))
+        )}
+      </Row>
+
+      {/* Image Modal */}
+      {isModalOpen && (
         <div
           style={{
-            position: 'relative',
-            backgroundColor: '#fff',
-            padding: '10px',
-            borderRadius: '8px',
-            maxWidth: '95%',
-            maxHeight: '95%',
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(0,0,0,0.8)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
           }}
-          onClick={(e) => e.stopPropagation()}
+          onClick={closeModal}
         >
-          <img
-            src={modalImageUrl}
-            alt="Product Modal"
+          <div
             style={{
-              width: '100%',
-              height: 'auto',
-              display: 'block',
-              objectFit: 'contain',
-              maxWidth: '600px',
-              maxHeight: '90vh',
-              cursor: 'zoom-in',
+              position: "relative",
+              backgroundColor: "#fff",
+              padding: 10,
+              borderRadius: 8,
+              maxWidth: "95%",
+              maxHeight: "95%",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.3)')}
-            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-          />
-          <Button
-            style={{
-              position: 'absolute',
-              top: '10px',
-              right: '10px',
-              background: 'red',
-              color: '#fff',
-              border: 'none',
-              padding: '10px',
-              borderRadius: '50%',
-              cursor: 'pointer',
-            }}
-            onClick={closeModal}
+            onClick={(e) => e.stopPropagation()}
           >
-            X
-          </Button>
+            <img
+              src={modalImageUrl}
+              alt="Product Modal"
+              style={{
+                width: "100%",
+                height: "auto",
+                objectFit: "contain",
+                maxWidth: 600,
+                maxHeight: "90vh",
+                cursor: "zoom-in",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.transform = "scale(1.3)")
+              }
+              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+            />
+            <Button
+              style={{
+                position: "absolute",
+                top: 10,
+                right: 10,
+                background: "red",
+                color: "#fff",
+                border: "none",
+                padding: 10,
+                borderRadius: "50%",
+                cursor: "pointer",
+              }}
+              onClick={closeModal}
+            >
+              X
+            </Button>
+          </div>
         </div>
-      </div>
-    )}
+      )}
 
-    <div ref={observerRef} style={{ height: '20px', margin: '10px 0' }}></div>
+      <div ref={observerRef} style={{ height: 20, margin: "10px 0" }} />
+      {isFetching && !isFetchingNextPage && <p>Loading...</p>}
 
-    {isFetching && !isFetchingNextPage && <p>Loading...</p>}
-
-    <RegistrationModal
-      show={showRegisterModal}
-      setShowRegisterModal={setShowRegisterModal}
-      setUserId={setUserId}
-      setIsLoggedIn={setIsLoggedIn}
-      setEmail={setEmail}
-    />
-  </div>
-);
+      <RegistrationModal
+        show={showRegisterModal}
+        setShowRegisterModal={setShowRegisterModal}
+        setUserId={setUserId}
+        setIsLoggedIn={setIsLoggedIn}
+        setEmail={setEmail}
+      />
+    </div>
+  );
 }
 
 export default Home;

@@ -6,6 +6,7 @@ import fs from 'fs';
 import dotenv from 'dotenv';
 
 
+
 dotenv.config();
 
 import express from 'express';
@@ -1581,6 +1582,7 @@ app.get("/getStores", (req, res) => {
     return res.json(data);
   });
 });
+
 
 
 // write api to check if product is already in favorites for a user
