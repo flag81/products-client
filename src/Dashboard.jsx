@@ -90,7 +90,7 @@ const prompt =
   '\n    * Exclude all numbers, units, sizes, volumes, or counts (e.g., "0,33L", "400ml", "3kg", "1,5L", "10/1", "0,5L", "1,7", "3", "10", "1"). Exclude these even if they appear in the `product_description`.' +
   '\n    * Keywords should be single, relevant nouns, adjectives in Albanian language, except for brand names, taken directly from the `product_description` text. ' +
   '\n    * Only include the last five kewords you find following these rules. The keywords array should not include more than 5 items.' +
-
+  '\n    * If you can find a Date in the text, make sure to pick the latest Date as sale_end_date .' +
   '\n\n**Processing Instructions:**' +
   '\n- If multiple images are attached, process them sequentially. Wait 3 seconds between processing each image.' +
   '\n- Process all attached images automatically without asking for confirmation to continue.' +
@@ -107,7 +107,7 @@ const prompt =
     "old_price": "0.69", // Original price, no symbols
     "new_price": "0.59", // Sale price, no symbols
     "discount_percentage": "14", // Discount number, no symbol
-    "sale_end_date": null, // YYYY-MM-DD or null
+    "sale_end_date": 2025-03-03, // YYYY-MM-DD or null
     "storeId": null, // Extracted number or null
     "userId": {userId}, // Provided user ID
     "image_url": "487117352_1080468107452630_830115842423760541_n.jpg", // Constructed URL or null
@@ -1370,6 +1370,13 @@ if (!productId || !keyword) {
 
 </div>
 
+<div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
+
+  <input type="text" id="sale_end_date" name="sale_end_date" style={{width:150}} placeholder='0.00' />
+  <button onClick={() => updateProductSaleDate(selectedProduct, document.getElementById('sale_end_date').value, document.getElementById('newPrice').value)}>Update Date {selectedProduct}</button>
+
+</div>
+
   </div>
 
 
@@ -1503,6 +1510,7 @@ Search Products: <input type="text" id="keyword_search" name="keyword_search" on
                     copySelectedProduct(product);
                     document.getElementById('keyword').value = product.product_description;
                     document.getElementById('image_name').value = product.image_url;
+                    document.getElementById('sale_end_date').value = product.sale_end_date;
                   } else {
                     setSelectedProduct('');
                     document.getElementById('keyword').value = '';
