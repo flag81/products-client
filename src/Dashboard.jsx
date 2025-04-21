@@ -48,9 +48,9 @@ const [email, setEmail] = useState('');
 
 const [mode, setMode] = useState('dashboard');
 
-  const CLOUD_NAME = 'dt7a4yl1x';
-  const API_KEY = '443112686625846';
-  const API_SECRET = 'e9Hv5bsd2ECD17IQVOZGKuPmOA4';
+  const CLOUD_NAME = import.meta.env.CLOUDINARY_CLOUD_NAME;
+  const API_KEY = import.meta.env.CLOUDINARY_API_KEY;
+  const API_SECRET = import.meta.env.CLOUDINARY_API_SECRET;
 
 
   const node_url = import.meta.env.VITE_NODE_URL;
