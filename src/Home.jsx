@@ -31,10 +31,12 @@ function Home({ mode }) {
   const [modalImageUrl, setModalImageUrl] = useState("");
   const observerRef = useRef(null);
 
+  
+
   // ─── Config ───────────────────────────────────────────────────────────────────
   const node_url = import.meta.env.VITE_NODE_URL;
   const baseUrl = "https://res.cloudinary.com/dt7a4yl1x/image/upload";
-  const transformation = `w_200,c_scale`;
+  const transformation = `c_scale,f_auto,q_auto,dpr_auto`;
   const transformation2 = `w_600,c_scale`;
   const directory = "uploads";
 
@@ -62,8 +64,26 @@ function Home({ mode }) {
     getNextPageParam: (lastPage) => lastPage.nextPage,
   });
 
+  // add func to chech if user is logged in before toggle favorite by checking the variable isLoggedIn
+
+  // Check if user is logged in before allowing to toggle favorite
+
+  const handleToggleFavorite = (productId, isFav) => {
+    if (!isLoggedIn) {
+      setShowRegisterModal(true);
+      return;
+    }
+    toggleFavMutation.mutate({ productId, isFav });
+  }
+
+
+
+
+
   // Optimistic toggle‐favorite mutation
   const toggleFavMutation = useMutation({
+
+
     mutationFn: async ({ productId, isFav }) => {
       const url = isFav ? "/removeFavorite" : "/addFavorite";
       const method = isFav ? "DELETE" : "POST";
@@ -130,6 +150,9 @@ function Home({ mode }) {
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.message || "Failed to fetch products");
+
+    console.log("Fetched products:", json.data); // ✅ Debugging log
+
     return {
       products: json.data,
       nextPage: json.data.length > 0 ? pageParam + 1 : undefined,
@@ -259,132 +282,144 @@ function Home({ mode }) {
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="container">
-      {isLoggedIn ? (
-        <p>Miresevini! {email}</p>
-      ) : (
-        <Container>
-          <Row className="mb-3 justify-content-center align-items-center">
-            <Col xs={12}>
-              <InputGroup>
-                <Button
-                  className="responsive-button"
-                  onClick={() => (window.location.href = `${node_url}/auth/google`)}
-                >
-                  Login Google
-                </Button>
-                <Button className="responsive-button" onClick={signInWithApple}>
-                  Login Apple
-                </Button>
-                <Button className="responsive-button" onClick={signInWithApple}>
-                  Regjistohu
-                </Button>
-              </InputGroup>
-            </Col>
-          </Row>
-        </Container>
+      <Container></Container>
+
+<Container>
+  {/* Search and Store Filter */}
+  <Row className="mb-3 d-flex d-md-flex flex-column flex-md-row align-items-center">
+    {/* Search */}
+    <Col xs={12} md={6} className="mb-3 mb-md-0 d-flex align-items-center justify-content-between">
+
+    <img
+                  src={"/logo3.jpg"}
+                  alt="Meniven.com"
+                  style={{ width: 70, cursor: "pointer", marginRight: 10 }}
+                />
+
+      <InputGroup>
+        <Form.Control
+          type="text"
+          placeholder="Kerko produkte..."
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSearch(e.target.value);
+          }}
+
+          // check is the user is deleting the text and if so set the searchKeyword to empty string
+          onChange={(e) => {
+            if (e.target.value.length === 0) setSearchKeyword("");
+          }} 
+
+        />
+        <Button
+          className="responsive-button"
+          onClick={(e) => handleSearch(e.target.previousSibling.value)}
+          style={{ marginLeft: 5 }}
+        >
+          Kerko
+        </Button>
+      </InputGroup>
+    </Col>
+
+    {/* Store Filter */}
+    <Col xs={12} md={6} className="d-flex align-items-center justify-content-between">
+      <Form.Select
+        style={{ width: "50%" }}
+        onChange={(e) => setSelectedStore(e.target.value)}
+      >
+        <option value="">Te gjitha dyqanet</option>
+        {stores.map((store) => (
+          <option key={store.storeId} value={store.storeId}>
+            {store.storeName}
+          </option>
+        ))}
+      </Form.Select>
+
+      <div
+        role="button"
+        className="d-flex flex-column align-items-center"
+        style={{ width: "40%" }}
+        onClick={() => setIsFavorite((prev) => !prev)}
+      >
+        <img
+          src={isFavorite ? "/star-fill-2.png" : "/star-empty.jpg"}
+          alt="Favoritet"
+          style={{ width: 32, height: 32, cursor: "pointer" }}
+        />
+        <span style={{ fontSize: 10 }}>Favoritet</span>
+      </div>
+      <div
+        role="button"
+        className="d-flex flex-column align-items-center"
+        onClick={() => setOnSale((prev) => !prev)}
+      >
+        <img
+          src={onSale ? "/sale-fill-2.png" : "/sale-empty.jpg"}
+          alt="Ne Zbritje"
+          style={{ width: 32, height: 32, cursor: "pointer" }}
+        />
+        <span style={{ fontSize: 10 }}>Zbritje</span>
+      </div>
+    </Col>
+  </Row>
+</Container>
+
+
+      {data?.pages[0]?.products.length === 0 && (
+        <div className="text-center" style={{ margin: "20px 0" }}>  
+          <h4 style={{ color: "red" }}>Nuk u gjet asnje produkt</h4>
+          <p style={{ color: "gray" }}>
+            Provoni te ndryshoni filtrat ose kerkonin ndonje produkt tjeter.
+          </p>
+        </div>
       )}
 
-      <Container>
-        {/* Search */}
-        <Row className="mb-3">
-          <Col xs={12} md={6}>
-            <InputGroup>
-              <Form.Control
-                type="text"
-                placeholder="Kerko produkte..."
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSearch(e.target.value);
-                }}
+     
+        <Row xs={2} md={2} lg={4} className="g-4">
+          {data?.pages.map((page, pi) =>
+            page.products.map((product, idx) => (
+          <Col key={`${pi}-${idx}`}>
+            <Card className="h-100 p-1">
+              <Card.Img
+            variant="top"
+            src={`${baseUrl}/${transformation}/${directory}/${product.image_url
+              .split("/")
+              .pop()}`}
+            alt={product.product_description}
+            onClick={() =>
+              openModal(
+                `${baseUrl}/${transformation2}/${directory}/${product.image_url
+              .split("/")
+              .pop()}`
+              )
+            }
+            style={{ cursor: "pointer", padding: "0.5rem" }}
               />
-              <Button
-                className="responsive-button"
-                onClick={(e) => handleSearch(e.target.previousSibling.value)}
-              >
-                Kerko
-              </Button>
-            </InputGroup>
-          </Col>
-        </Row>
+              <Card.Body>
+            <Card.Text className="product-description">
+              {product.product_description}
+            </Card.Text>
+            <Card.Text className="product-description">
+              {product.old_price}€ - {product.new_price}€
+            </Card.Text>
+            <Card.Text className="product-description">
+              {product.sale_end_date ? (
+                <>
+              {new Date(product.sale_end_date).toLocaleDateString(
+                "en-GB",
+                {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                }
+              )}
+              <br />
+                </>
+              ) : null}
+            </Card.Text>
 
-        {/* Store Filter */}
-        <Row className="mb-3">
-          <Col xs={12} md={6}>
-            <Form.Select onChange={(e) => setSelectedStore(e.target.value)}>
-              <option value="">Te gjitha dyqanet</option>
-              {stores.map((store) => (
-                <option key={store.storeId} value={store.storeId}>
-                  {store.storeName}
-                </option>
-              ))}
-            </Form.Select>
-          </Col>
-        </Row>
-
-        {/* Filters */}
-        <Row className="mb-3">
-          <Col xs={12}>
-            <div className="d-flex gap-2" style={{ width: "50%" }}>
-              <div
-                role="button"
-                className="d-flex flex-column align-items-center"
-                onClick={() => setIsFavorite((prev) => !prev)}
-              >
-                <img
-                  src={isFavorite ? "/star-fill.jpg" : "/star-empty.jpg"}
-                  alt="Favoritet"
-                  style={{ width: 32, height: 32, cursor: "pointer" }}
-                />
-                <span style={{ fontSize: 10 }}>Favoritet</span>
-              </div>
-              <div
-                role="button"
-                className="d-flex flex-column align-items-center"
-                onClick={() => setOnSale((prev) => !prev)}
-              >
-                <img
-                  src={onSale ? "/sale-fill.jpg" : "/sale-empty.jpg"}
-                  alt="Ne Zbritje"
-                  style={{ width: 32, height: 32, cursor: "pointer" }}
-                />
-                <span style={{ fontSize: 10 }}>Ne Zbritje</span>
-              </div>
-            </div>
-          </Col>
-        </Row>
-      </Container>
-
-      {/* Products */}
-      <Row xs={2} md={2} lg={4} className="g-4">
-        {data?.pages.map((page, pi) =>
-          page.products.map((product, idx) => (
-            <Col key={`${pi}-${idx}`}>
-              <Card className="h-100 p-1">
-                <Card.Img
-                  variant="top"
-                  src={`${baseUrl}/${transformation}/${directory}/${product.image_url
-                    .split("/")
-                    .pop()}`}
-                  alt={product.product_description}
-                  onClick={() =>
-                    openModal(
-                      `${baseUrl}/${transformation2}/${directory}/${product.image_url
-                        .split("/")
-                        .pop()}`
-                    )
-                  }
-                  style={{ cursor: "pointer", padding: "0.5rem" }}
-                />
-                <Card.Body>
-                  <Card.Text className="product-description">
-                    {product.product_description}
-                  </Card.Text>
-                  <Card.Text className="product-description">
-                    {product.old_price}eu - {product.new_price}eu
-                  </Card.Text>
-
-                  {/* Favorite toggle */}
+            {/* Favorite toggle */}
                   <img
-                    src={product.isFavorite ? "star-fill.jpg" : "star-empty.jpg"}
+                    src={product.isFavorite ? "star-fill-2.png" : "star-empty.jpg"}
                     alt={product.isFavorite ? "Unfavorite" : "Favorite"}
                     style={{
                       cursor: "pointer",
@@ -393,10 +428,7 @@ function Home({ mode }) {
                       marginRight: 20,
                     }}
                     onClick={() =>
-                      toggleFavMutation.mutate({
-                        productId: product.productId,
-                        isFav: product.isFavorite,
-                      })
+                      handleToggleFavorite(product.productId, product.isFavorite)
                     }
                   />
 

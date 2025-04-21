@@ -1834,6 +1834,30 @@ app.put("/editProductDescription", (req, res) => {
 }
 );
 
+app.put("/editProductSaleDate", (req, res) => {
+  
+  const { productId, sale_end_date } = req.body;
+
+  console.log('Received sale_end_date:', sale_end_date);
+
+  // convert date to mysql date type
+  const date = new Date(sale_end_date);
+  const formattedDate = date.toISOString().slice(0, 19).replace('T', ' ');
+  console.log('Formatted date:', formattedDate);
+
+  const q = `UPDATE products SET sale_end_date = ? WHERE productId = ?`;
+
+  db.query(q, [formattedDate, productId], (err, result) => {
+    if (err) {
+      console.error('Error updating product description:', err);
+      return res.status(500).json({ error: 'Failed to update product date' });
+    }
+    res.status(200).json({ message: 'Product date updated successfully' });
+  }
+  );
+}
+);
+
 
 app.put("/editStore", (req, res) => {
   
