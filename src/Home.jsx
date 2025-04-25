@@ -74,6 +74,20 @@ function Home({ mode }) {
     toggleFavMutation.mutate({ productId, isFav });
   }
 
+ const handleLogin = () => {
+
+  // ─── Mutations ────────────────────────────────────────────────────────────────
+
+  // ─── Mutations ────────────────────────────────────────────────────────────────
+  if (!isLoggedIn) {
+    setShowRegisterModal(true);
+    return;
+  }
+
+ }
+
+
+
 
 
 
@@ -279,24 +293,47 @@ function Home({ mode }) {
 
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="container">
+
+    <div
+  className="parent-container"
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "flex-start", // Aligns child elements to the top
+    height: "100vh", // Ensures the parent takes the full viewport height
+  }}
+>
+    <div className="container" 
+    
+    style={{
+      marginTop: 0, // Ensures no extra margin at the top
+      position: "relative", // Optional: Ensures proper positioning
+      top: 0, // Aligns the container to the top
+    }}
+    
+    >
+      
       <Container>
 
       <div
         role="button" 
         
        className="d-flex flex-row align-items-center justify-content-between"
-        onClick={() => setOnSale((prev) => !prev)}
+        
       >
 
 <img
                   src={"/logo3.jpg"}
                   alt="Meniven.com"
-                  style={{ width: 50, cursor: "pointer", marginRight: 10 }}
+                  style={{ width: 50, cursor: "pointer", margin: 5 }}
                 />
 
 
-<div className="d-flex flex-column align-items-center">
+<div className="d-flex flex-column align-items-center"
+
+onClick={() => handleLogin()}
+
+>
 <img
           src={"/profile.png"}
           alt="Profile"
@@ -402,6 +439,20 @@ function Home({ mode }) {
     </Col>
   </Row>
 </Container>
+
+
+
+{data?.pages[0].products.length === 0 && (
+
+  <div className="text-center">
+
+    <h4 style={{ marginTop: 20 }}>
+      Nuk u gjenden produkte.
+    </h4>
+  </div>
+)}
+
+      {/* Products */}
 
      
         <Row xs={2} md={2} lg={4} className="g-4">
@@ -553,6 +604,8 @@ function Home({ mode }) {
         setIsLoggedIn={setIsLoggedIn}
         setEmail={setEmail}
       />
+    </div>
+
     </div>
   );
 }
