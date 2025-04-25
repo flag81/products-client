@@ -74,14 +74,27 @@
   font-size: 12;
 }
 
+.sale-date {
+  font-size: 10;
+}
+
+@media (max-width: 576px) {
+  .sale-date {
+    font-size: 10px; /* Minimum size on small screens */
+    margin: 0%;
+  }
+}
+
 @media (max-width: 576px) {
   .product-description {
     font-size: 12px; /* Minimum size on small screens */
+    margin: 0%;
   }
 }
 
 @media (min-width: 1200px) {
   .product-description {
     font-size: 16px; /* Maximum size on large screens */
+    margin: 0%;
   }
 }

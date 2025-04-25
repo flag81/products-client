@@ -48,9 +48,9 @@ const [email, setEmail] = useState('');
 
 const [mode, setMode] = useState('dashboard');
 
-  const CLOUD_NAME = 'dt7a4yl1x';
-  const API_KEY = '443112686625846';
-  const API_SECRET = 'e9Hv5bsd2ECD17IQVOZGKuPmOA4';
+  const CLOUD_NAME = import.meta.env.CLOUDINARY_CLOUD_NAME;
+  const API_KEY = import.meta.env.CLOUDINARY_API_KEY;
+  const API_SECRET = import.meta.env.CLOUDINARY_API_SECRET;
 
 
   const node_url = import.meta.env.VITE_NODE_URL;
@@ -1097,6 +1097,52 @@ if (!productId || !keyword) {
     }
 
 
+    const updateProductSaleDate= async (productId, sale_end_date) => {
+
+      console.log('updateProductSaleDate called:', productId, sale_end_date);
+
+      if(!productId || !sale_end_date) {
+        setStatus('Please enter product ID, sale date.');
+        return; 
+      }
+
+      //check if date format is correct YYYY/MM/DD or YYYY-MM-DD or YYYY.MM.DD
+
+      const dateRegex = /^\d{4}[-/.]\d{2}[-/.]\d{2}$/; // YYYY-MM-DD or YYYY/MM/DD or YYYY.MM.DD
+
+
+
+      //const dateRegex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/;
+      if (!dateRegex.test(sale_end_date)) {
+        setStatus('Please enter a valid date in the format MM/DD/YYYY.');
+        console.error('Invalid date format:', sale_end_date);
+        return;
+      }
+
+    
+          try {
+
+             console.log('updateProductSaleDate called:', productId, sale_end_date);
+            const response = await fetch(`${node_url}/editProductSaleDate`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ productId, sale_end_date }),
+            });
+        
+            const result = await response.json();
+        
+            if (response.ok) {
+              console.log('result:', result);
+              getAllProducts();
+            }
+          }
+          catch (error) {
+            console.error('Error updating product sale date:', error);
+          }
+        };
+
   const updateProductPrices = async (productId, oldPrice, newPrice) => {
 
   if(!productId || !oldPrice || !newPrice) {
@@ -1372,8 +1418,13 @@ if (!productId || !keyword) {
 
 <div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
 
-  <input type="text" id="sale_end_date" name="sale_end_date" style={{width:150}} placeholder='0.00' />
+
+  <input type="date" id="sale_end_date" name="sale_end_date" style={{width:150}} placeholder='mm/dd/yyyy' />
   <button onClick={() => updateProductSaleDate(selectedProduct, document.getElementById('sale_end_date').value, document.getElementById('newPrice').value)}>Update Date {selectedProduct}</button>
+
+
+
+  
 
 </div>
 
