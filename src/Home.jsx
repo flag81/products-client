@@ -31,12 +31,10 @@ function Home({ mode }) {
   const [modalImageUrl, setModalImageUrl] = useState("");
   const observerRef = useRef(null);
 
-  
-
   // ─── Config ───────────────────────────────────────────────────────────────────
   const node_url = import.meta.env.VITE_NODE_URL;
   const baseUrl = "https://res.cloudinary.com/dt7a4yl1x/image/upload";
-  const transformation = `c_scale,f_auto,q_auto,dpr_auto`;
+  const transformation = `w_200,c_scale`;
   const transformation2 = `w_600,c_scale`;
   const directory = "uploads";
 
@@ -282,7 +280,42 @@ function Home({ mode }) {
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="container">
-      <Container></Container>
+      <Container>
+
+      <div
+        role="button" 
+        
+       className="d-flex flex-row align-items-center justify-content-between"
+        onClick={() => setOnSale((prev) => !prev)}
+      >
+
+<img
+                  src={"/logo3.jpg"}
+                  alt="Meniven.com"
+                  style={{ width: 50, cursor: "pointer", marginRight: 10 }}
+                />
+
+
+<div className="d-flex flex-column align-items-center">
+<img
+          src={"/profile.png"}
+          alt="Profile"
+          style={{ width: 32, height: 32 }}
+        />
+
+
+   <span style={{fontSize: 10 }}>
+     { email ? email : "Hyrja" }
+    
+    </span>  
+
+</div>
+        
+
+
+      </div>
+        
+      </Container>
 
 <Container>
   {/* Search and Store Filter */}
@@ -290,25 +323,16 @@ function Home({ mode }) {
     {/* Search */}
     <Col xs={12} md={6} className="mb-3 mb-md-0 d-flex align-items-center justify-content-between">
 
-    <img
-                  src={"/logo3.jpg"}
-                  alt="Meniven.com"
-                  style={{ width: 70, cursor: "pointer", marginRight: 10 }}
-                />
+
 
       <InputGroup>
         <Form.Control
           type="text"
+          maxLength={20}
           placeholder="Kerko produkte..."
           onKeyDown={(e) => {
             if (e.key === "Enter") handleSearch(e.target.value);
           }}
-
-          // check is the user is deleting the text and if so set the searchKeyword to empty string
-          onChange={(e) => {
-            if (e.target.value.length === 0) setSearchKeyword("");
-          }} 
-
         />
         <Button
           className="responsive-button"
@@ -322,11 +346,22 @@ function Home({ mode }) {
 
     {/* Store Filter */}
     <Col xs={12} md={6} className="d-flex align-items-center justify-content-between">
+
+<br />
+                <div style={{marginRight:5, fontSize: 10}}>
+                <img
+                  src={"/filter.png"}
+                  alt="Meniven.com"
+                  style={{ width: 30, cursor: "pointer", marginRight: 0 }}
+                />
+                  
+                  Filtro </div>
+
       <Form.Select
         style={{ width: "50%" }}
         onChange={(e) => setSelectedStore(e.target.value)}
       >
-        <option value="">Te gjitha dyqanet</option>
+        <option value="">Dyqanet</option>
         {stores.map((store) => (
           <option key={store.storeId} value={store.storeId}>
             {store.storeName}
@@ -334,22 +369,24 @@ function Home({ mode }) {
         ))}
       </Form.Select>
 
-      <div
+      <div className="d-flex flex-row align-items-center justify-content-between" style={{ width: "40%" }}>
+
+      <div 
         role="button"
-        className="d-flex flex-column align-items-center"
+        className="d-flex flex-column align-items-center justify-content-between"
         style={{ width: "40%" }}
         onClick={() => setIsFavorite((prev) => !prev)}
       >
         <img
           src={isFavorite ? "/star-fill-2.png" : "/star-empty.jpg"}
           alt="Favoritet"
-          style={{ width: 32, height: 32, cursor: "pointer" }}
+          style={{ width: 32, height: 32 }}
         />
         <span style={{ fontSize: 10 }}>Favoritet</span>
       </div>
       <div
-        role="button"
-        className="d-flex flex-column align-items-center"
+        role="button" 
+        className="d-flex flex-column align-items-center "
         onClick={() => setOnSale((prev) => !prev)}
       >
         <img
@@ -357,21 +394,14 @@ function Home({ mode }) {
           alt="Ne Zbritje"
           style={{ width: 32, height: 32, cursor: "pointer" }}
         />
-        <span style={{ fontSize: 10 }}>Zbritje</span>
+        <span style={{ fontSize: 10 }}>Zbritjet</span>
+      </div>
+
+
       </div>
     </Col>
   </Row>
 </Container>
-
-
-      {data?.pages[0]?.products.length === 0 && (
-        <div className="text-center" style={{ margin: "20px 0" }}>  
-          <h4 style={{ color: "red" }}>Nuk u gjet asnje produkt</h4>
-          <p style={{ color: "gray" }}>
-            Provoni te ndryshoni filtrat ose kerkonin ndonje produkt tjeter.
-          </p>
-        </div>
-      )}
 
      
         <Row xs={2} md={2} lg={4} className="g-4">
@@ -401,15 +431,15 @@ function Home({ mode }) {
             <Card.Text className="product-description">
               {product.old_price}€ - {product.new_price}€
             </Card.Text>
-            <Card.Text className="product-description">
+            <Card.Text className="sale-date">
               {product.sale_end_date ? (
-                <>
+                <>Deri me: 
               {new Date(product.sale_end_date).toLocaleDateString(
                 "en-GB",
                 {
                   day: "2-digit",
                   month: "2-digit",
-                  year: "numeric",
+                  year: "2-digit",
                 }
               )}
               <br />
@@ -434,8 +464,8 @@ function Home({ mode }) {
 
                   {/* Sale icon */}
                   <img
-                    src={product.onSale ? "sale-full.jpg" : "sale-empty.jpg"}
-                    alt={product.onSale ? "On sale" : "Not on sale"}
+                    src={product.productOnSale ? "sale-fill-2.png" : "sale-empty.jpg"}
+                    alt={product.productOnSale ? "On sale" : "Not on sale"}
                     style={{ cursor: "pointer", width: 24, height: 24 }}
                   />
                 </Card.Body>
@@ -497,8 +527,12 @@ function Home({ mode }) {
                 background: "red",
                 color: "#fff",
                 border: "none",
-                padding: 10,
-                borderRadius: "50%",
+                width: 40, // Set a fixed width
+                height: 40, // Set a fixed height
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "50%", // Ensure it's square
                 cursor: "pointer",
               }}
               onClick={closeModal}

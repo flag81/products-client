@@ -497,121 +497,6 @@ app.post("/auth/apple/callback33", async (req, res) => {
 });
 
 
-app.post("/auth/apple/callback222", async (req, res) => {
-    try {
-        console.log("🍏 Apple OAuth Callback Triggered");
-
-        const { id_token } = req.body; // Apple sends `id_token`
-
-        if (!id_token) {
-            console.error("❌ No ID token received from Apple.");
-            return res.status(400).json({ error: "Missing ID token" });
-        }
-
-        // Fetch Apple's public keys
-        const appleKeys = await axios.get("https://appleid.apple.com/auth/keys");
-        const applePublicKeys = appleKeys.data.keys;
-
-        // Decode the JWT header to get the `kid`
-        const decodedHeader = jwt.decode(id_token, { complete: true });
-        if (!decodedHeader) {
-            console.error("❌ Failed to decode Apple ID token.");
-            return res.status(400).json({ error: "Invalid ID token" });
-        }
-
-        // Find the matching key
-        const key = applePublicKeys.find(k => k.kid === decodedHeader.header.kid);
-        if (!key) {
-            console.error("❌ Matching Apple key not found.");
-            return res.status(400).json({ error: "Invalid key" });
-        }
-
-        // Verify the ID token
-        const verifiedPayload = jwt.verify(id_token, jwt.jwkToPem(key), { algorithms: ["RS256"] });
-
-        console.log("✅ Apple ID Token Verified:", verifiedPayload);
-
-        const appleId = verifiedPayload.sub; // Apple's unique user identifier
-        let email = verifiedPayload.email || null; // Email may be missing
-
-        console.log(`🍏 Received AppleID: ${appleId}, Email: ${email || "No email provided"}`);
-
-        // Check if the user already exists
-        const checkQuery = `SELECT userId, email FROM users WHERE userId = ? OR email = ?`;
-        db.query(checkQuery, [appleId, email], (err, results) => {
-            if (err) {
-                console.error("❌ Database error:", err);
-                return res.status(500).json({ error: "Database error" });
-            }
-
-            if (results.length > 0) {
-                // ✅ Existing user found
-                const existingUser = results[0];
-                console.log(`✅ Existing user found: userId=${existingUser.userId}, email=${existingUser.email || "No email"}`);
-
-                // If email is missing, update it
-                if (!existingUser.email && email) {
-                    const updateQuery = `UPDATE users SET email = ? WHERE userId = ?`;
-                    db.query(updateQuery, [email, existingUser.userId], (updateErr) => {
-                        if (updateErr) {
-                            console.error("❌ Error updating email:", updateErr);
-                            return res.status(500).json({ error: "Failed to update email" });
-                        }
-                        console.log(`✅ Email updated for userId=${existingUser.userId}`);
-                    });
-                }
-
-                // Generate JWT for existing user
-                const token = jwt.sign(
-                    { userId: existingUser.userId, email: existingUser.email || email },
-                    process.env.TOKEN_SECRET,
-                    { expiresIn: "7d" }
-                );
-
-                res.cookie("jwt", token, {
-                    httpOnly: true,
-                    secure: true,
-                    sameSite: "None",
-                    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-                });
-
-                return res.redirect(`${process.env.FRONTEND_URL}?loginSuccess=true`);
-            } else {
-                // 🆕 New user - Insert into database
-                console.log(`🆕 New user detected, inserting: ${email || "No email provided"}`);
-
-                const insertQuery = `INSERT INTO users (userId, email) VALUES (?, ?)`;
-                db.query(insertQuery, [appleId, email], (insertErr) => {
-                    if (insertErr) {
-                        console.error("❌ Error inserting new user:", insertErr);
-                        return res.status(500).json({ error: "Failed to insert new user" });
-                    }
-
-                    console.log(`✅ New user inserted: AppleID=${appleId}, Email=${email || "No email"}`);
-
-                    // Generate JWT for new user
-                    const token = jwt.sign({ userId: appleId, email }, process.env.TOKEN_SECRET, { expiresIn: "7d" });
-
-                    res.cookie("jwt", token, {
-                        httpOnly: true,
-                        secure: true,
-                        sameSite: "None",
-                        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-                    });
-
-                    return res.redirect(`${process.env.FRONTEND_URL}?loginSuccess=true`);
-                });
-            }
-        });
-
-    } catch (error) {
-        console.error("❌ Apple OAuth Error:", error);
-        return res.status(500).json({ error: "Apple authentication failed" });
-    }
-});
-
-
-
 
 
 // Specify the model you want to use (e.g., Gemini 1.5 Pro)
@@ -978,6 +863,7 @@ app.get('/auth/google',
         return res.status(401).json({ error: "Invalid token" });
     }
 });
+
 
 
 
