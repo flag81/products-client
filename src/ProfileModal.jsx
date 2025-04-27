@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Modal, Form, Button } from "react-bootstrap";
 
-function RegistrationModal({ show, setShowRegisterModal, setUserId , setIsLoggedIn ,setEmail }) {
+function ProfileModal({ show, setShowRegisterModal, setUserId , setIsLoggedIn ,setEmail }) {
 
   const [userEmail, setUserEmail] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
@@ -109,4 +109,4 @@ function RegistrationModal({ show, setShowRegisterModal, setUserId , setIsLogged
   );
 }
 
-export default RegistrationModal;
+export default ProfileModal;

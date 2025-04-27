@@ -16,6 +16,8 @@ import path from "path";
 
 import vision from '@google-cloud/vision';
 
+import JSON5 from 'json5';
+
 //const { VertexAI } = require('@google-cloud/vertexai');
 
 // convert above to import
@@ -549,25 +551,19 @@ async function  insertProducts1(jsonData) {
 
 // resove this error with jsonData : SyntaxError: Unexpected token '`', "```json
 
-jsonData = jsonData.replace(/`/g, ''); // Remove backticks
-
-  jsonData = jsonData.replace(/```json/g, ''); // Remove code block markers
-
-  jsonData = jsonData.replace(/```/g, ''); // Remove code block markers
-
-  jsonData = jsonData.replace(/\\n/g, ''); // Remove new line characters
-
-  // how to remove parts like - ```json  ```
-  
-  jsonData = jsonData.replace(/```/g, ''); // Remove code block markers
-
-  jsonData = jsonData.replace(/json/g, ''); // Remove code block markers
+ 
+jsonData = jsonData
+  // strip ```json at the very start
+  .replace(/^```json\s*/, '')
+  // strip any trailing ```
+  .replace(/\s*```$/, '')
+  // now remove any remaining single backticks in the body
+  .replace(/`/g, '');
 
 
 
 
-
-  const products = JSON.parse(jsonData); // Parse the JSON data
+  const products = JSON5.parse(jsonData); // Parse the JSON data
 
   console.log('Products received:', products);
 
@@ -709,6 +705,7 @@ async function formatDataToJson(textData, image_url) {
 
       await insertProducts1(text); // Call the insert function with the text data
 
+
       // try {
       //     const jsonObject = JSON.parse(text);
       //     return jsonObject;
@@ -717,6 +714,13 @@ async function formatDataToJson(textData, image_url) {
       //     console.error('Failed JSON Text:', text); // Log the failed JSON string
       //     return null; // Or throw an error if you prefer
       // }
+
+      // respond with the text data to the client with res.json
+
+      return text; // Return the formatted JSON data
+
+
+
 
   } catch (error) {
       console.error('Gemini API Error:', error);
@@ -953,6 +957,9 @@ app.post('/extract-text', upload.single('image'), async (req, res) => {
 
     });
 
+    // return repose with the uploaded image url and the original file name is successfully uploaded
+
+
     console.log('✅ Image uploaded to Cloudinary:', uploadedImage.secure_url);
 
     // Send image to Google Vision API
@@ -993,6 +1000,13 @@ app.post('/extract-text', upload.single('image'), async (req, res) => {
 
     // Delete temporary uploaded file from server
     fs.unlinkSync(imagePath);
+
+        // send one response with all three pieces
+        res.json({
+          extractedText: extractedText,
+          jsonText: jsonText,
+          imageUrl: uploadedImage.secure_url
+        });
 
   } catch (error) {
     console.error('❌ Error extracting text:', error);
@@ -1764,6 +1778,7 @@ app.put("/editStore", (req, res) => {
 //update getProducts endpoint to order the results by keyword count matches between the keywords of the favorite products and the keywords of the products in the database descending
 
 app.get("/getProducts", async (req, res) => {
+
 
 
 console.log('getProducts endpoint hit');

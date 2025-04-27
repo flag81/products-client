@@ -291,6 +291,10 @@ function Home({ mode }) {
 
   const handleSearch = (value) => setSearchKeyword(value);
 
+  const allProducts = data?.pages.flatMap(p => p.products) ?? [];
+const count       = allProducts.length;
+const lgCols      = count >= 4 ? 4 : count || 1;
+
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
 
@@ -300,12 +304,16 @@ function Home({ mode }) {
     display: "flex",
     flexDirection: "column",
     justifyContent: "flex-start", // Aligns child elements to the top
+    alignItems: "center", // Centers the content horizontally
     height: "100vh", // Ensures the parent takes the full viewport height
+    padding: "1rem", // Adds padding for better spacing
   }}
 >
     <div className="container" 
     
     style={{
+      width: "100%", // Ensures the container takes the full width
+      maxWidth: "1200px", // Limits the maximum width for better readability
       marginTop: 0, // Ensures no extra margin at the top
       position: "relative", // Optional: Ensures proper positioning
       top: 0, // Aligns the container to the top
@@ -452,14 +460,26 @@ onClick={() => handleLogin()}
   </div>
 )}
 
+
       {/* Products */}
 
      
-        <Row xs={2} md={2} lg={4} className="g-4">
+        <Row 
+
+xs={2}
+sm={2}
+md={2}
+lg={lgCols}
+        
+        
+        
+        
+        className="g-4 justify-content-start">
           {data?.pages.map((page, pi) =>
             page.products.map((product, idx) => (
-          <Col key={`${pi}-${idx}`}>
+          <Col key={`${pi}-${idx}`} className="d-flex">
             <Card className="h-100 p-1">
+            <div style={{ position: "relative", display: "inline-block" }}>
               <Card.Img
             variant="top"
             src={`${baseUrl}/${transformation}/${directory}/${product.image_url
@@ -475,6 +495,19 @@ onClick={() => handleLogin()}
             }
             style={{ cursor: "pointer", padding: "0.5rem" }}
               />
+                <img
+    src="/loop.png" // Replace with your overlay image path
+    alt="Overlay"
+    style={{
+      position: "absolute",
+      top: "10px", // Adjust as needed
+      right: "10px", // Adjust as needed
+
+      cursor: "pointer",
+    }}
+    onClick={() => console.log("Overlay clicked")} // Optional: Add click functionality
+  />
+              </div>
               <Card.Body>
             <Card.Text className="product-description">
               {product.product_description}
@@ -522,8 +555,15 @@ onClick={() => handleLogin()}
                 </Card.Body>
               </Card>
             </Col>
+
+
+
+
           ))
         )}
+
+
+
       </Row>
 
       {/* Image Modal */}
@@ -595,7 +635,7 @@ onClick={() => handleLogin()}
       )}
 
       <div ref={observerRef} style={{ height: 20, margin: "10px 0" }} />
-      {isFetching && !isFetchingNextPage && <p>Loading...</p>}
+      {isFetching && !isFetchingNextPage && <p>Duke ngarkuar...</p>}
 
       <RegistrationModal
         show={showRegisterModal}

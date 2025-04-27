@@ -48,6 +48,8 @@ const [email, setEmail] = useState('');
 
 const [mode, setMode] = useState('dashboard');
 
+const [responseMessage, setResponseMessage ] = useState('');
+
   const CLOUD_NAME = import.meta.env.CLOUDINARY_CLOUD_NAME;
   const API_KEY = import.meta.env.CLOUDINARY_API_KEY;
   const API_SECRET = import.meta.env.CLOUDINARY_API_SECRET;
@@ -148,6 +150,7 @@ const prompt =
       "keywords": ["keyword1", "keyword2"]
 }]` +
 ' Replace the placeholder data in the example with extracted and given data. \n' +
+' Do not include any comments in JSON return data that you return. like :   "old_price": 1.85,  // Assumed same as Euroblini due to proximity and similar discount.  Double check. \n' +
 
  ` The image url is the first text on top of the image starting with # sign. Do not include the # sign , but add .jpg at the end of string \n 
  
@@ -166,6 +169,8 @@ const prompt =
 const handleUploadImage = async () => {
   const file = selectedFile;
 
+  setStatus('');
+
   if (!file) {
     alert('Please select an image.');
     return;
@@ -179,7 +184,7 @@ const handleUploadImage = async () => {
   const formData = new FormData();
   formData.append('image', file);
 
-  console.log('Uploading image...');
+  console.log('Uploading image....................................');
 
   try {
     const response = await fetch(`${node_url}/extract-text`, {
@@ -190,12 +195,29 @@ const handleUploadImage = async () => {
     if (!response.ok) {
       const error = await response.json();
       setExtractedText(`Error: ${error.message || 'Failed to extract text'}`);
+      console.log('Error response from extract-text:', error);
       return;
     }
 
+    console.log('Image uploaded successfully!');
+
     const data = await response.json();
+
+    const {
+      extractedText,
+      jsonText,
+     imageUrl
+    } = data;
+  
+    console.log(extractedText);            // "success"         // "Image uploaded successfully"
+    console.log(jsonText);          // your parsed JSON from the server
+    console.log(imageUrl);          // the cloudinary URL
+
+  
     
     // Set extracted text and image URL to display on UI
+    setStatus('');
+    setStatus(<font style={{color:'green'}}><b>Te gjitha produket ne aksion jane futur me sukses. </b></font>);
     setExtractedText(data.text);
     setUploadedImageUrl(data.imageUrl);
   } catch (error) {
@@ -614,6 +636,7 @@ console.log('editStore called:', productId, storeId);
       if (response.ok) {
         setProducts(result.data);
         console.log('result from getallproducts:', result.data);
+       
       } else {
         console.error('Failed to fetch prod:', result.message);
       }
@@ -1500,6 +1523,13 @@ if (!productId || !keyword) {
 
 <div>
 
+
+<div style={{ display: 'flex', flexDirection: 'row', gap: '10px', margin : '10px', justifyContent: 'center', alignItems: 'center' }}>
+
+
+  {responseMessage}
+
+</div>
 
 
 <div style={{ display: 'flex', flexDirection: 'row', gap: '10px', margin : '10px', justifyContent: 'center', alignItems: 'center' }}>
