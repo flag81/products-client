@@ -5,6 +5,12 @@ import './App.css'
 import { use } from 'react';
 import Home from './Home';
 
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
+
 
 
 function Dashboard() {
@@ -14,12 +20,15 @@ function Dashboard() {
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [loginError, setLoginError] = useState('');
 
-  const [selectedFile, setSelectedFile] = useState(null);
+
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [extractedText, setExtractedText] = useState('');
 const [uploadedImageUrl, setUploadedImageUrl] = useState('');
 
   const resultDivRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  const [currentPage, setCurrentPage] = useState(0);
 
 
   console.log("starting...");
@@ -65,6 +74,8 @@ const [responseMessage, setResponseMessage ] = useState('');
   const [selectedProduct , setSelectedProduct] = useState('');
   const [selectedProductDescription , setSelectedProductDescription] = useState('');
 
+  const [uploadedImageUrls, setUploadedImageUrls] = useState([]);
+
   
 
 const width = 200;
@@ -73,7 +84,7 @@ const transformation = `w_${width},c_scale`;
 const directory = "uploads";
 
 const prompt =
-  'Your task is to analyze the attached sales flyer image(s) and extract specific information for each product presented. Focus ONLY on the text provided within the flyer layout, not text appearing solely on product packaging imagery.' +
+  'Your task is to analyze the attached sales flyers image(s) and extract specific information for each product presented. Focus ONLY on the text provided within the flyer layout, not text appearing solely on product packaging imagery.' +
   '\n\nThe flyer language is Albanian and the response should be in Albanian.'+
   '\n\n**Extraction Requirements for Each Product:**' +
   '\n1.  **Product Description (`product_description`):** Extract the complete Albanian descriptive text located next to or associated with the product image within the flyer layout. Include any size/volume information (e.g., 0,33L, 400ml, 3kg, 10/1, 1.7L) found in this specific text block.' +
@@ -161,9 +172,97 @@ const prompt =
  ;
 
 
- const handleFileChange = (event) => {
+ const handleFileChange2 = (event) => {
   setSelectedFile(event.target.files[0]);
 };
+
+const handleFileChange = (e) => {
+  // turn FileList → Array<File>
+  const files = Array.from(e.target.files);
+
+   setSelectedFiles(files);
+  console.log('Picked files:', files);
+};
+
+
+// Bulk “upload & extract” handler
+const handleUploadImages = async () => {
+  // 1️⃣ Ensure at least one file is selected
+  if (selectedFiles.length === 0) {
+    alert('Please select at least one image.');
+    return;
+  }
+
+  // 2️⃣ Filter out non-image files
+  const imageFiles = selectedFiles.filter(f => f.type.startsWith('image/'));
+  if (imageFiles.length === 0) {
+    alert('Please select valid image files.');
+    return;
+  }
+
+  // 3️⃣ Kick off status
+  setStatus('Uploading images and extracting text…');
+
+  // Arrays to collect results
+  const allTexts = [];
+  const allUrls = [];
+
+  // 4️⃣ Loop over each image file
+  for (let i = 0; i < imageFiles.length; i++) {
+    const file = imageFiles[i];
+    console.log(`▶️ [${i + 1}/${imageFiles.length}] Processing "${file.name}"…`);
+
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('folderName', folderName);
+
+    try {
+      const res = await fetch(`${node_url}/extract-text`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        console.error(`⚠️ Extraction failed for "${file.name}":`, err);
+        allTexts.push(`Error (${file.name}): ${err.message || 'unknown'}`);
+      } else {
+        const data = await res.json();
+        console.log(`✅ Extracted from "${file.name}":`, data);
+
+        // adapt these keys if your API uses different names
+        const text = data.extractedText ?? data.text ?? '';
+        const imageUrl = data.imageUrl;
+        allTexts.push(text);
+        allUrls.push(imageUrl);
+      }
+    } catch (networkErr) {
+      console.error(`❌ Network error for "${file.name}":`, networkErr);
+      allTexts.push(`Error (${file.name}): ${networkErr.message}`);
+    }
+
+    // 5️⃣ Pause 3s between requests (optional, but avoids rate‐limit issues)
+    //    Remove or adjust the delay if not needed.
+    // eslint-disable-next-line no-await-in-loop
+    await new Promise(r => setTimeout(r, 3000));
+  }
+
+  // 6️⃣ Update state with aggregated results
+  setExtractedText(allTexts.join('\n\n'));
+  setUploadedImageUrls(allUrls);
+
+  // 7️⃣ Final success status
+  setStatus(
+    <font style={{ color: 'green' }}>
+      <b>Te gjitha produket ne aksion jane futur me sukses.</b>
+    </font>
+  );
+
+  // 8️⃣ Clear file input
+  setSelectedFiles([]);
+  if (fileInputRef.current) fileInputRef.current.value = '';
+};
+
 
 
 const handleUploadImage = async () => {
@@ -226,47 +325,7 @@ const handleUploadImage = async () => {
   }
 };
 
-const handleUploadImage2 = async () => {
-  const file = selectedFile;
 
-  if (!file) {
-    alert('Please select an image.');
-    return;
-  }
-
-
-  // how to check if ist a valid image file
-
-  if (!file.type.startsWith('image/')) {
-    alert('Please select an image file.');
-    return;
-  }
-
-
-  const formData = new FormData();
-  formData.append('image', file);
-
-  console.log('formData:', formData);
-
-  try {
-    const response = await fetch(`${node_url}/extract-text`, { // Replace with your backend API endpoint
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      setExtractedText(`Error: ${error.message || 'Failed to extract text'}`);
-      return;
-    }
-
-    const data = await response.json();
-    setExtractedText(`Extracted Text: ${data.text}`);
-  } catch (error) {
-    console.error('Error uploading image:', error);
-    setExtractedText('Error uploading image or processing request.');
-  }
-};
 
 
 
@@ -308,6 +367,8 @@ const handleUploadImage2 = async () => {
  // storeId = document.querySelector('select[name="store"]').value;
   //getAllProducts();
 }, []);
+
+
 
 async function initializeUser() {
   try {
@@ -612,7 +673,7 @@ console.log('editStore called:', productId, storeId);
   //change getAllProducts to include a keyword sent to the server to filter products
 
 
-  const getAllProducts = async (userId, storeId, isFavorite, onSale) => {
+  const getAllProducts = async (page = 1, userId, storeId, isFavorite, onSale) => {
     try {
 
       console.log('getAllProducts userId:', userId);
@@ -621,9 +682,12 @@ console.log('editStore called:', productId, storeId);
       console.log('getAllProducts onSale:', onSale);
 
       
-      const response = await fetch(`${node_url}/getProducts?userId=${encodeURIComponent(userId)}
+      const response = await fetch(`${node_url}/getProducts?
+      userId=${encodeURIComponent(userId)}
       &storeId=${encodeURIComponent(storeId)}
-      &isFavorite=${encodeURIComponent(isFavorite)}&onSale=${encodeURIComponent(onSale)}`, {
+      &isFavorite=${encodeURIComponent(isFavorite)}
+      &page=${page}
+      &onSale=${encodeURIComponent(onSale)}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -633,16 +697,20 @@ console.log('editStore called:', productId, storeId);
 
       const result = await response.json();
 
-      if (response.ok) {
-        setProducts(result.data);
-        console.log('result from getallproducts:', result.data);
-       
-      } else {
-        console.error('Failed to fetch prod:', result.message);
-      }
-    } catch (error) {
-      console.error('Error fetching prod:', error);
-    }
+            if (!response.ok) throw new Error(result.message);
+      
+            // on page 1 replace, otherwise append
+            if (page === 1) {
+              setProducts(result.data);
+            } else {
+              setProducts(prev => [...prev, ...result.data]);
+            }
+           } catch (error) {
+             console.error('Error fetching prod:', error);
+           }
+
+
+
   };
   
 
@@ -1271,10 +1339,12 @@ if (!productId || !keyword) {
         type="file"
         id="imageUpload"
         accept="image/*"
+        name="images" 
+        multiple // Allows selecting multiple images
         onChange={handleFileChange}
         ref={fileInputRef}
       />
-      <button onClick={handleUploadImage}>Extract Text</button>
+      <button onClick={handleUploadImages}>Upload & Process Images</button>
       <div id="result" ref={resultDivRef}>
         {extractedText && <p>{extractedText}</p>}
       </div>
@@ -1409,9 +1479,47 @@ if (!productId || !keyword) {
 
 
 
-  Favorite:<input type="checkbox" id="favorites" name="favorites" />
 
-  On Sale:<input type="checkbox" id="onSale" name="onSale" />
+
+  Favorite:
+      <input
+        type="checkbox"
+        id="favorites"
+        name="favorites"
+        onChange={() => {
+          setCurrentPage(1);
+          getAllProducts(
+            1,
+            loggedInUser,
+            document.getElementById('store').value,
+            document.getElementById('favorites').checked,
+            document.getElementById('onSale').checked
+          );
+        }}
+      />
+
+
+
+
+
+  On Sale:
+      <input
+        type="checkbox"
+        id="onSale"
+        name="onSale"
+        onChange={() => {
+          setCurrentPage(1);
+          getAllProducts(
+            1,
+            loggedInUser,
+            document.getElementById('store').value,
+            document.getElementById('favorites').checked,
+            document.getElementById('onSale').checked
+          );
+        }}
+      />
+
+  
 
   </div>
 
@@ -1537,7 +1645,26 @@ if (!productId || !keyword) {
 Search Products: <input type="text" id="keyword_search" name="keyword_search" onKeyDown={(e) => { if (e.key === 'Enter') searchProducts(e.target.value); }} />
 
   <button onClick={() => document.getElementById('keyword_search').value = ''}>Clear</button>
-  <button onClick={()=>getAllProducts(1 , document.querySelector('select[name="store"]').value, document.getElementById('favorites').checked, document.getElementById('onSale').checked ) }>Get Products</button>
+  
+  
+
+
+  <button
+      onClick={() => {
+        const next = currentPage + 1;
+        setCurrentPage(next);
+        getAllProducts(
+          next,
+          loggedInUser,
+          document.querySelector('select[name="store"]').value,
+          document.getElementById('favorites').checked,
+          document.getElementById('onSale').checked
+        );
+      }}
+    >
+      Get Products (page {currentPage + 1})
+    </button>
+  
     
 </div>      
 
@@ -1698,7 +1825,7 @@ Search Products: <input type="text" id="keyword_search" name="keyword_search" on
   </div> 
 
 
-  <Home mode={mode}/>
+ 
 
 
     </div>

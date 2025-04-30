@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 
 
 
+
 dotenv.config();
 
 import express from 'express';
@@ -935,7 +936,61 @@ const SECRET_KEY = 'AAAA-BBBB-CCCC-DDDD-EEEE';
 const upload = multer({ dest: 'uploads/' }); // Define upload middleware
 
 
+// Single‐file extract‐text route
 app.post('/extract-text', upload.single('image'), async (req, res) => {
+  console.log('🔍 Extracting text from image…');
+
+  try {
+    // 1️⃣ Validate
+    if (!req.file) {
+      console.error('❌ No image file provided.');
+      return res.status(400).json({ message: 'No image file provided.' });
+    }
+
+    const imagePath = req.file.path;
+    console.log(`🛣️  Local path: ${imagePath}`);
+
+    // 2️⃣ Upload to Cloudinary
+    console.log('▶️  Uploading to Cloudinary…');
+    const uploadedImage = await cloudinary.uploader.upload(imagePath, {
+      folder: 'uploads',
+      public_id: req.file.originalname.split('.')[0],
+      resource_type: 'image',
+      overwrite: true,
+    });
+    const imageUrl = uploadedImage.secure_url;
+    console.log('✅ Uploaded URL:', imageUrl);
+
+    // 3️⃣ OCR with Google Vision
+    console.log('▶️  Running textDetection on Google Vision…');
+    const [visionResult] = await client.textDetection(imageUrl);
+    const detections = visionResult.textAnnotations;
+    const extractedText = detections?.[0]?.description || '';
+    console.log('✅ Extracted text:', extractedText);
+
+    // 4️⃣ Format to JSON
+    console.log('▶️  Formatting text to JSON…');
+    const jsonText = await formatDataToJson(extractedText, imageUrl);
+    console.log('✅ Formatted JSON:', jsonText);
+
+    // 5️⃣ Cleanup
+    fs.unlinkSync(imagePath);
+    console.log('✅ Deleted temp file');
+
+    // 6️⃣ Respond
+    return res.json({ extractedText, jsonText, imageUrl });
+
+  } catch (err) {
+    console.error('❌ Error in /extract-text route:', err);
+    return res.status(500).json({
+      message: 'Failed to extract text from image.',
+      error: err.message
+    });
+  }
+});
+
+
+app.post('/extract-text2', upload.single('image'), async (req, res) => {
   console.log('🔍 Extracting text from image...');
 
   try {
@@ -2256,112 +2311,111 @@ console.log(productList);
   
 
 
-
+//upload.array('images', 10)
 
 
 
 
 // Function to upload an image to a specific folder in Cloudinary
-app.post('/upload', upload.single('image'), async (req, res) => {
-  const imagePath = req.file.path;
-  const { folderName } = req.body; // Get folder name from request body
-
-
-  console.log('folderName:', folderName);
-
+app.post('/upload', upload.array('images', 10), async (req, res) => {
   try {
-    const result = await cloudinary.uploader.upload(imagePath, {
-      folder: folderName || 'default-folder', // If no folder is specified, use 'default-folder'
-      use_filename: true,                       // Keep the original filename
-      unique_filename: false,    
-      
-    });
+    const uploadPromises = req.files.map(async (file) => {
+      const imagePath = file.path;
+      //const imagePath = req.file.path;
+      const { folderName } = req.body; // Get folder name from request body
 
-    console.log('result from upload:', result.public_id);
+      console.log('folderName:', folderName);
 
-    const publicId = result.public_id;
+      const result = await cloudinary.uploader.upload(imagePath, {
+        folder: folderName || 'default-folder', // If no folder is specified, use 'default-folder'
+        use_filename: true,                       // Keep the original filename
+        unique_filename: false,
+      });
 
-    // split the public_id with forward slash / and get the last part of the string
+      console.log('result from upload:', result.public_id);
 
-    const imageName = publicId.split('/').pop();
-      
-    // can you add option to add text overlay at the bottom also
+      const publicId = result.public_id;
+      // split the public_id with forward slash / and get the last part of the string
+      const imageName = publicId.split('/').pop();
 
+      // can you add option to add text overlay at the bottom also
 
+      const transformationResult = await cloudinary.uploader.upload(result.secure_url, {
+        type: 'upload',
+        overwrite: true, // Ensure the image is replaced
+        transformation: [
+          {
+            overlay: {
+              font_family: 'Arial',
+              font_size: 30,
+              padding: 10,
+              text: '#' + imageName,
+            },
+            gravity: 'north',
+            y: -30,
+            x: 10
+          }
+        ],
+      });
 
-    const transformationResult = await cloudinary.uploader.upload(publicId, {
-      type: 'upload',
-      overwrite: true, // Ensure the image is replaced
-      transformation: [
-        {
-          overlay: {
-            font_family: 'Arial',
-            font_size: 30,
-            padding: 10,
-            text: '#'+ imageName,
-          },
-          gravity: 'north',
-          y: -30,
-          x: 10
+      console.log('Transformed image URL:', transformationResult.secure_url);
+
+      // add code to download the image from the transformed image url and save it to the local folder using cloudinary
+
+      const options = {
+        url: transformationResult.secure_url,
+        dest: '../../Downloads/',
+      };
+
+      download.image(options)
+        .then(({ filename }) => {
+          console.log('Saved to', filename);  // saved to /path/to/dest/image.jpg
+        })
+        .catch((err) => console.error(err));
+
+      // can you add a way to save images locally using cloudinary
+
+      // can you add a way to save images locally using cloudinary
+
+      const saveLocally = async (url, destination) => {
+        try {
+          const opts = { url, dest: destination };
+          const { filename } = await download.image(opts);
+          console.log('Saved to locally:', filename);
+        } catch (error) {
+          console.error(error);
         }
+      };
 
-        
-      ],
+      // Usage:
+      const transformedImageUrl = transformationResult.secure_url;
+      const localDestination = '../../Downloads/';
+      await saveLocally(transformedImageUrl, localDestination);
+
+      // Clean up the local uploaded file
+      fs.unlinkSync(imagePath);
+
+      // Return the Cloudinary URL and public ID of the uploaded image
+      return {
+        success: true,
+        url: result.secure_url,
+        public_id: result.public_id,
+        format: result.format
+      };
     });
 
-    console.log('Transformed image URL:', transformationResult.secure_url);
-  
-    // add code to download the image from the transformed image url and save it to the local folder using cloudinary
+    // Wait for all uploads/transforms/downloads to finish
+    const images = await Promise.all(uploadPromises);
 
+    // Send a single response with all results
+    res.json({ success: true, images });
 
-
-
-    const options = {
-      url: transformationResult.secure_url,
-      dest: '../../Downloads/',
-    };
-
-
-    download.image(options)
-      .then(({ filename }) => {
-        console.log('Saved to', filename);  // saved to /path/to/dest/image.jpg
-      })
-      .catch((err) => console.error(err));
-
-
-// can you add a way to save images locally using cloudinary
-
-
-// can you add a way to save images locally using cloudinary
-
-const saveLocally = async (url, destination) => {
-  try {
-    const options = {
-      url,
-      dest: destination,
-    };
-
-    const { filename } = await download.image(options);
-    console.log('Saved to locally:', filename);
   } catch (error) {
     console.error(error);
-  }
-};
-
-// Usage:
-const transformedImageUrl = transformationResult.secure_url;
-const localDestination = '../../Downloads/';
-await saveLocally(transformedImageUrl, localDestination);
-      
-    // Clean up the local uploaded file
-    fs.unlinkSync(imagePath);
-
-    // Return the Cloudinary URL and public ID of the uploaded image
-    res.json({ success: true, url: result.secure_url, public_id: result.public_id , format: result.format});
-  } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to upload image' });
   }
 });
+
 
 
 
