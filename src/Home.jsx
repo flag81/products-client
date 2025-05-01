@@ -14,6 +14,10 @@ import InputGroup from "react-bootstrap/InputGroup";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
+import Placeholder from "react-bootstrap/Placeholder";
+
+
+
 
 function Home({ mode }) {
   // ─── State & Refs ─────────────────────────────────────────────────────────────
@@ -31,10 +35,14 @@ function Home({ mode }) {
   const [modalImageUrl, setModalImageUrl] = useState("");
   const observerRef = useRef(null);
 
+
+
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+
   // ─── Config ───────────────────────────────────────────────────────────────────
   const node_url = import.meta.env.VITE_NODE_URL;
   const baseUrl = "https://res.cloudinary.com/dt7a4yl1x/image/upload";
-  const transformation = `w_200,c_scale`;
+  const transformation = `w_300,c_scale`;
   const transformation2 = `w_600,c_scale`;
   const directory = "uploads";
 
@@ -73,6 +81,14 @@ function Home({ mode }) {
     }
     toggleFavMutation.mutate({ productId, isFav });
   }
+
+
+  // DEBUG: log whenever modal opens, URL changes or load flag changes
+useEffect(() => {
+  console.log("[DEBUG] Modal Open:", isModalOpen);
+  console.log("[DEBUG] Modal image URL:", modalImageUrl);
+  console.log("[DEBUG] isImageLoaded:", isImageLoaded);
+}, [isModalOpen, modalImageUrl, isImageLoaded]);
 
  const handleLogin = () => {
 
@@ -172,12 +188,19 @@ function Home({ mode }) {
   }
 
   const openModal = (imageUrl) => {
+    console.log("[DEBUG] openModal()", imageUrl);
+    console.log("[DEBUG] setModalImageUrl()", modalImageUrl);
+    setModalImageUrl(false);
+    setIsImageLoaded(false); // Reset the loaded state when opening the modal
+    console.log("[DEBUG] setModalImageUrl()", modalImageUrl);
     setModalImageUrl(imageUrl);
     setIsModalOpen(true);
+
+
   };
   const closeModal = () => {
     setIsModalOpen(false);
-    setModalImageUrl("");
+    setModalImageUrl(false);
   };
 
   const checkUserSession = async () => {
@@ -294,6 +317,45 @@ function Home({ mode }) {
   const allProducts = data?.pages.flatMap(p => p.products) ?? [];
 const count       = allProducts.length;
 const lgCols      = count >= 4 ? 4 : count || 1;
+
+
+
+function ImageWithSkeleton({ src, alt, onClick, height = 200 }) {
+  const [loaded, setLoaded] = useState(false);
+
+  return (
+    <div style={{ position: "relative", width: "100%" }}>
+      {/*
+        1) Show a grey glow skeleton
+        2) as big as your final image box
+      */}
+      {!loaded && (
+        <Placeholder as="div" animation="glow">
+          <Placeholder
+            style={{ width: "100%", height: `${height}px` }}
+          />
+        </Placeholder>
+      )}
+
+      {/*
+        1) Hide the real <Card.Img> until it has loaded
+        2) Then flip loaded=true and it will appear
+      */}
+      <Card.Img
+        variant="top"
+        src={src}
+        alt={alt}
+        onClick={onClick}
+        onLoad={() => setLoaded(true)}
+        style={{
+          display: loaded ? "block" : "none",
+          cursor: "pointer",
+        }}
+        className="product-image"
+      />
+    </div>
+  );
+}
 
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
@@ -474,26 +536,32 @@ lg={lgCols}
         
         
         
-        className="g-4 justify-content-start">
+        className="g-4 justify-content-start ">
           {data?.pages.map((page, pi) =>
             page.products.map((product, idx) => (
-          <Col key={`${pi}-${idx}`} className="d-flex">
-            <Card className="h-100 p-1">
-            <div style={{ position: "relative", display: "inline-block" }}>
+          <Col key={`${pi}-${idx}`} className="d-flex " style={{ borderColor: "red" }}>
+            <Card className="h-100 p-1  product-card" >
+            <div >
+
+
               <Card.Img
-            variant="top"
-            src={`${baseUrl}/${transformation}/${directory}/${product.image_url
-              .split("/")
-              .pop()}`}
-            alt={product.product_description}
-            onClick={() =>
-              openModal(
-                `${baseUrl}/${transformation2}/${directory}/${product.image_url
-              .split("/")
-              .pop()}`
-              )
-            }
-            style={{ cursor: "pointer", padding: "0.5rem" }}
+
+
+                    variant="top"
+                    className="product-image "
+                  
+                    src={`${baseUrl}/${transformation}/${directory}/${product.image_url
+                      .split("/")
+                      .pop()}`}
+                    alt={product.product_description}
+                    onClick={() =>
+                      openModal(
+                        `${baseUrl}/${transformation2}/${directory}/${product.image_url
+                      .split("/")
+                      .pop()}`
+                      )
+                    }
+          
               />
                 <img
     src="/loop.png" // Replace with your overlay image path
@@ -505,7 +573,13 @@ lg={lgCols}
 
       cursor: "pointer",
     }}
-    onClick={() => console.log("Overlay clicked")} // Optional: Add click functionality
+    onClick={() =>
+      openModal(
+        `${baseUrl}/${transformation2}/${directory}/${product.image_url
+      .split("/")
+      .pop()}`
+      )
+    }
   />
               </div>
               <Card.Body>
@@ -594,22 +668,42 @@ lg={lgCols}
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <img
-              src={modalImageUrl}
-              alt="Product Modal"
-              style={{
-                width: "100%",
-                height: "auto",
-                objectFit: "contain",
-                maxWidth: 600,
-                maxHeight: "90vh",
-                cursor: "zoom-in",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.transform = "scale(1.3)")
-              }
-              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-            />
+
+{!isImageLoaded && (
+<>
+{console.log("[DEBUG] Rendering Placeholder")}
+
+  <Placeholder as="div" animation="glow">
+    <Placeholder
+      style={{
+        width: 300,
+        maxWidth: 300,
+        height: "60vh",    // match your maxHeight
+      }}
+    />
+  </Placeholder>
+  </>
+)}
+ {console.log("[DEBUG] Rendering Placeholder")}
+      <img
+          src={modalImageUrl}
+          alt="Product Modal"
+          onLoad={() => setIsImageLoaded(true)} // Set loaded to true when the image loads
+
+          style={{
+            display: isImageLoaded ? "block" : "none",
+            width: "100%",
+            height: "auto",
+            objectFit: "contain",
+            maxWidth: 600,
+            maxHeight: "90vh",
+            cursor: "zoom-in",
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.transform = "scale(1.3)")
+          }
+          onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+/>
             <Button
               style={{
                 position: "absolute",
