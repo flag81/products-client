@@ -214,15 +214,40 @@ const handleUploadImages = async () => {
 
   // conver to a date object and then to a string in the format YYYY-MM-DD
 
-  // check if saleEndDate is valid date and not empty from sale_end_date input element in format MM/DD/YYYY
+  // check if saleEndDate is valid date and not empty from sale_end_date input element in format YYYY-MM-DD
 
-  const dateParts = saleEndDate.split('/');
-  const month = parseInt(dateParts[0], 10) - 1; // Months are zero-based in JS
+  const dateParts = saleEndDate.split('-');
+  //const month = parseInt(dateParts[1], 10) - 1; // Months are zero-based in JS
 
-  const day = parseInt(dateParts[1], 10);
-  const year = parseInt(dateParts[2], 10);
+
+  // day and month can have zero in front of them, so we need to parse them as int with base 10 for date in format YYYY-MM-DD
+
+  const month = parseInt(dateParts[1], 10) - 1; // Months are zero-based in JS
+
+  const day = parseInt(dateParts[1], 10); // Day is first in the date string
+
+
+  //console.log('dateParts:', dateParts[1], dateParts[0], dateParts[2]);
+
+  const year = parseInt(dateParts[0], 10); // Year is last in the date string
+
+
+  //const day = parseInt(dateParts[2], 10);
+  //const year = parseInt(dateParts[0], 10);
+
+
+
+  console.log('dateParts:', year, month, day);
 
   const date = new Date(year, month, day);
+
+
+  // check id year, day and month are valid numbers and not NaN
+
+  if (isNaN(year) || isNaN(month) || isNaN(day)) {
+    setStatus(<font style={{color:'red'}}><b>Please select a valid date</b></font>);
+    return;
+  }
 
 
   //console.log('formattedDate:', formattedDate);
@@ -256,6 +281,10 @@ const handleUploadImages = async () => {
     const formData = new FormData();
     formData.append('image', file);
     formData.append('folderName', folderName);
+
+    // add saleEndDate to formData as sale_end_date field
+    formData.append('saleEndDate', saleEndDate);
+    formData.append('storeId', storeId); // Send storeId in request
 
     try {
       const res = await fetch(`${node_url}/extract-text`, {

@@ -691,18 +691,17 @@ onClick={() => handleLogin()}
                   />
 
                   <span className="icon-description">
-                      {product.productOnSale ? "" : "Shto favorit"}
+                      {product.isFavorite ? "" : "Shto favorit"}
                     </span>
               </div>
-
-                  {/* Sale icon */}
+                 {/* Sale icon */}
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "right" }}>
   <img
     src={product.productOnSale ? "sale-fill-2.png" : "sale-empty.jpg"}
     alt={product.productOnSale ? "On sale" : "Not on sale"}
     style={{ cursor: "pointer", width: 24, height: 24 }}
   />
-  <span className="icon-description" style={{ marginTop: "5px", color: "red" }}>
+  <span className="icon-description" style={{ color: "red" }}>
     {product.productOnSale ? "" : "Skaduar"}
   </span>
 </div>
