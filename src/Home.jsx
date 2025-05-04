@@ -7,6 +7,7 @@ import {
 
 import RegistrationModal from "./RegistrationModal";
 
+
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -176,6 +177,7 @@ useEffect(() => {
       headers: { "Content-Type": "application/json" },
       credentials: "include",
     });
+    
     const json = await res.json();
     if (!res.ok) throw new Error(json.message || "Failed to fetch products");
 
@@ -393,9 +395,9 @@ function ImageWithSkeleton({ src, alt, onClick, height = 200 }) {
       >
 
 <img
-                  src={"/logo3.jpg"}
+                  src={"/logo.png"}
                   alt="Meniven.com"
-                  style={{ width: 50, cursor: "pointer", margin: 5 }}
+                  style={{ width: 150, cursor: "pointer", margin: 5 }}
                 />
 
 
@@ -411,7 +413,7 @@ onClick={() => handleLogin()}
         />
 
 
-   <span style={{fontSize: 10 }}>
+   <span className="icon-description">
      { email ? email : "Hyrja" }
     
     </span>  
@@ -436,10 +438,17 @@ onClick={() => handleLogin()}
         <Form.Control
           type="text"
           maxLength={20}
-          placeholder="Kerko produkte..."
+          placeholder="Kerko produkte ne zbritje..."
           onKeyDown={(e) => {
-            if (e.key === "Enter") handleSearch(e.target.value);
+
+            // add condition if the field value is going from 1 to 0 to call the search function
+
+            if (e.key === "Backspace" && e.target.value.length === 1) {
+              handleSearch("");
+            } else if (e.key === "Enter") handleSearch(e.target.value);
           }}
+
+        
         />
         <Button
           className="responsive-button"
@@ -516,9 +525,24 @@ onClick={() => handleLogin()}
 
   <div className="text-center">
 
-    <h4 style={{ marginTop: 20 }}>
-      Nuk u gjenden produkte.
-    </h4>
+<h4 style={{ marginTop: 20 }}>
+  Nuk u gjenden produkte  
+  {(() => {
+    if (isFavorite && onSale) {
+      return " per te Favoritet e tua ne zbritje aktive per momentin";
+    } else if (isFavorite) {
+      return " per te Favoritet e tua";
+    } else if (onSale) {
+      return " ne zbritje aktive per momentin";
+    } else if (searchKeyword) {
+      return ` per "${searchKeyword}"`;
+    }
+    else {
+      return "";
+    }
+  })()}
+</h4>
+
   </div>
 )}
 
@@ -528,23 +552,48 @@ onClick={() => handleLogin()}
      
         <Row 
 
-xs={2}
-sm={2}
-md={2}
-lg={lgCols}
+            xs={2}
+            sm={2}
+            md={2}
+            lg={lgCols}
         
         
-        
-        
+         
         className="g-4 justify-content-start ">
           {data?.pages.map((page, pi) =>
             page.products.map((product, idx) => (
-          <Col key={`${pi}-${idx}`} className="d-flex " style={{ borderColor: "red" }}>
-            <Card className="h-100 p-1  product-card" >
+          <Col key={`${pi}-${idx}`} className="d-flex ">
+            <Card className="h-100 p-1  product-card"        
+            
+                // if product.productOnSale make card border red else make it white
+                style={{ borderColor: product.productOnSale ? "green" : null }}
+                
+                >
             <div >
 
 
               <Card.Img
+
+// add a graysclale filter to the image if product.productOnSale is false
+// and add a hover effect to the image to make it grayscale when hovered
+                // style={{  
+                //   filter: product.productOnSale ? "none" : "grayscale(90%)",
+
+                //   transition: "filter 0.1s",
+                //   cursor: "pointer",
+                //   width: "100%",
+                //   height: "auto",
+
+  
+                //   objectFit: "cover",
+                //   objectPosition: "center",
+
+                // }}
+
+
+         
+
+
 
 
                     variant="top"
@@ -563,24 +612,40 @@ lg={lgCols}
                     }
           
               />
-                <img
-    src="/loop.png" // Replace with your overlay image path
-    alt="Overlay"
-    style={{
-      position: "absolute",
-      top: "10px", // Adjust as needed
-      right: "10px", // Adjust as needed
 
-      cursor: "pointer",
-    }}
-    onClick={() =>
-      openModal(
-        `${baseUrl}/${transformation2}/${directory}/${product.image_url
-      .split("/")
-      .pop()}`
-      )
-    }
-  />
+            <div
+            className="overlay-container"
+              style={{
+                position: "absolute",
+                top: "5px", // Same position as the image
+                right: "5px", // Same position as the image
+                backgroundColor: "rgba(0, 0, 0, 0.2)", // Semi-transparent background
+                padding: "15px", // Optional: Add padding around the image
+                
+              }}
+            >
+
+                <img
+                  src="/loop.png" // Replace with your overlay image path
+                  alt="Overlay"
+                  style={{
+                    position: "absolute",
+                    top: "0px", // Adjust as needed
+                    right: "0px", // Adjust as needed
+
+                    cursor: "pointer",
+                  }}
+                  onClick={() =>
+                    openModal(
+                      `${baseUrl}/${transformation2}/${directory}/${product.image_url
+                    .split("/")
+                    .pop()}`
+                    )
+                  }
+                />
+
+</div>
+
               </div>
               <Card.Body>
             <Card.Text className="product-description">
@@ -606,6 +671,11 @@ lg={lgCols}
             </Card.Text>
 
             {/* Favorite toggle */}
+            <div style={{ display: "flex", width:"100%",
+               flexDirection: "row", alignItems: "center", 
+                padding: 5, borderRadius: 5,justifyContent: "space-between"  }}>
+
+            <div style={{ display: "flex", flexDirection: "column", }}>
                   <img
                     src={product.isFavorite ? "star-fill-2.png" : "star-empty.jpg"}
                     alt={product.isFavorite ? "Unfavorite" : "Favorite"}
@@ -620,12 +690,23 @@ lg={lgCols}
                     }
                   />
 
+                  <span className="icon-description">
+                      {product.productOnSale ? "" : "Shto favorit"}
+                    </span>
+              </div>
+
                   {/* Sale icon */}
-                  <img
-                    src={product.productOnSale ? "sale-fill-2.png" : "sale-empty.jpg"}
-                    alt={product.productOnSale ? "On sale" : "Not on sale"}
-                    style={{ cursor: "pointer", width: 24, height: 24 }}
-                  />
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "right" }}>
+  <img
+    src={product.productOnSale ? "sale-fill-2.png" : "sale-empty.jpg"}
+    alt={product.productOnSale ? "On sale" : "Not on sale"}
+    style={{ cursor: "pointer", width: 24, height: 24 }}
+  />
+  <span className="icon-description" style={{ marginTop: "5px", color: "red" }}>
+    {product.productOnSale ? "" : "Skaduar"}
+  </span>
+</div>
+</div>
                 </Card.Body>
               </Card>
             </Col>

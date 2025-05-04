@@ -203,6 +203,47 @@ const handleUploadImages = async () => {
   // 3️⃣ Kick off status
   setStatus('Uploading images and extracting text…');
 
+  // get the date from the date picker input element and and convert it to YYYY-MM-DD format for the sale_end_date field
+
+  const saleEndDate = document.getElementById('sale_end_date').value;
+  const storeId = document.querySelector('select[name="store"]').value;
+
+
+
+  console.log('saleEndDate from picker:', saleEndDate);
+
+  // conver to a date object and then to a string in the format YYYY-MM-DD
+
+  // check if saleEndDate is valid date and not empty from sale_end_date input element in format MM/DD/YYYY
+
+  const dateParts = saleEndDate.split('/');
+  const month = parseInt(dateParts[0], 10) - 1; // Months are zero-based in JS
+
+  const day = parseInt(dateParts[1], 10);
+  const year = parseInt(dateParts[2], 10);
+
+  const date = new Date(year, month, day);
+
+
+  //console.log('formattedDate:', formattedDate);
+
+  // check if storeId is selected and not empty from store select element
+
+  if (!storeId || storeId === '0') {
+    setStatus(<font style={{color:'red'}}><b>Please select a store</b></font>);
+    return;
+  }
+
+
+
+
+
+
+
+
+
+ 
+
   // Arrays to collect results
   const allTexts = [];
   const allUrls = [];
@@ -924,38 +965,7 @@ console.log('copySelectedProduct product:', product);
 
 
     // NEW: Copy the list of selected public_id values to the clipboard
-    const copyPrompt = () => {
-      const selectedIdsString = selectedImages.join(', ');
-  
-      // GET THE CONTENT OF THE TEXTAREA AND COPY IT TO THE CLIPBOARD
 
-      // replace {storeId} text with the value of the store select element and {userId} with the value of the user select element in the promt variable 
-      // and then copy the prompt and the selectedIdsString to the clipboard
-
-      const storeId = document.querySelector('select[name="store"]').value;
-      const userId = document.querySelector('select[name="user"]').value;
-
-      const imageUrl = document.getElementById('selectedImages').value;
-
-      
-   
-      let modifiedPrompt = prompt.replace('{storeId}', storeId).replace('{userId}', userId).replace('{imageUrl}', imageUrl);
-
-       
-
-  
-      navigator.clipboard.writeText(modifiedPrompt + selectedIdsString).then(
-  
-        () => {
-          setStatus('Copied selected image IDs to clipboard!');
-          setTimeout(() => setCopySuccess(''), 2000); // Clear message after 2 seconds
-        },
-        () => {
-          setStatus('Failed to copy');
-          setTimeout(() => setCopySuccess(''), 2000); // Clear message after 2 seconds
-        }
-      );
-    };
 
 
 // add a new function to call the server api addKeyword to add a keyword to a product
