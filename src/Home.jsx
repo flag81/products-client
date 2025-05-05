@@ -16,6 +16,7 @@ import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Placeholder from "react-bootstrap/Placeholder";
+import Toast from 'react-bootstrap/Toast';
 
 
 
@@ -435,7 +436,7 @@ onClick={() => handleLogin()}
 
 
       <InputGroup>
-        <Form.Control
+        <Form.Control className="select-description" 
           type="text"
           maxLength={20}
           placeholder="Kerko produkte ne zbritje..."
@@ -473,11 +474,11 @@ onClick={() => handleLogin()}
                   
                   Filtro </div>
 
-      <Form.Select
+      <Form.Select  className="select-description" 
         style={{ width: "50%" }}
         onChange={(e) => setSelectedStore(e.target.value)}
       >
-        <option value="">Dyqanet</option>
+        <option value="" >Dyqanet</option>
         {stores.map((store) => (
           <option key={store.storeId} value={store.storeId}>
             {store.storeName}
@@ -498,7 +499,8 @@ onClick={() => handleLogin()}
           alt="Favoritet"
           style={{ width: 32, height: 32 }}
         />
-        <span style={{ fontSize: 10 }}>Favoritet</span>
+        <span  className="icon-description" >Favoritet</span>
+
       </div>
       <div
         role="button" 
@@ -510,7 +512,7 @@ onClick={() => handleLogin()}
           alt="Ne Zbritje"
           style={{ width: 32, height: 32, cursor: "pointer" }}
         />
-        <span style={{ fontSize: 10 }}>Zbritjet</span>
+        <span  className="icon-description" >Zbritjet</span>
       </div>
 
 
@@ -523,9 +525,9 @@ onClick={() => handleLogin()}
 
 {data?.pages[0].products.length === 0 && (
 
-  <div className="text-center">
+  <div className="select-description">
 
-<h4 style={{ marginTop: 20 }}>
+
   Nuk u gjenden produkte  
   {(() => {
     if (isFavorite && onSale) {
@@ -541,7 +543,7 @@ onClick={() => handleLogin()}
       return "";
     }
   })()}
-</h4>
+
 
   </div>
 )}
@@ -597,7 +599,7 @@ onClick={() => handleLogin()}
 
 
                     variant="top"
-                    className="product-image "
+                    className="product-image"
                   
                     src={`${baseUrl}/${transformation}/${directory}/${product.image_url
                       .split("/")
@@ -615,6 +617,7 @@ onClick={() => handleLogin()}
 
             <div
             className="overlay-container"
+            role="button"
               style={{
                 position: "absolute",
                 top: "5px", // Same position as the image
@@ -633,7 +636,7 @@ onClick={() => handleLogin()}
                     top: "0px", // Adjust as needed
                     right: "0px", // Adjust as needed
 
-                    cursor: "pointer",
+                    
                   }}
                   onClick={() =>
                     openModal(
@@ -654,6 +657,9 @@ onClick={() => handleLogin()}
             <Card.Text className="product-description">
               {product.old_price}€ - {product.new_price}€
             </Card.Text>
+            <Card.Text className="product-description">
+               {product.storeName}
+            </Card.Text>
             <Card.Text className="sale-date">
               {product.sale_end_date ? (
                 <>Deri me: 
@@ -672,15 +678,15 @@ onClick={() => handleLogin()}
 
             {/* Favorite toggle */}
             <div style={{ display: "flex", width:"100%",
-               flexDirection: "row", alignItems: "center", 
-                padding: 5, borderRadius: 5,justifyContent: "space-between"  }}>
+               flexDirection: "row", alignItems: "center",   alignItems: "flex-start", 
+                padding: 5,  borderRadius: 5,justifyContent: "space-between"  }}>
 
-            <div style={{ display: "flex", flexDirection: "column", }}>
+            <div style={{ display: "flex", flexDirection: "column", }} role="button">
                   <img
                     src={product.isFavorite ? "star-fill-2.png" : "star-empty.jpg"}
                     alt={product.isFavorite ? "Unfavorite" : "Favorite"}
                     style={{
-                      cursor: "pointer",
+                     
                       width: 24,
                       height: 24,
                       marginRight: 20,
@@ -695,17 +701,17 @@ onClick={() => handleLogin()}
                     </span>
               </div>
                  {/* Sale icon */}
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "right" }}>
-  <img
-    src={product.productOnSale ? "sale-fill-2.png" : "sale-empty.jpg"}
-    alt={product.productOnSale ? "On sale" : "Not on sale"}
-    style={{ cursor: "pointer", width: 24, height: 24 }}
-  />
-  <span className="icon-description" style={{ color: "red" }}>
-    {product.productOnSale ? "" : "Skaduar"}
-  </span>
-</div>
-</div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "right" }} role="button">
+                  <img
+                    src={product.productOnSale ? "sale-fill-2.png" : "sale-empty.jpg"}
+                    alt={product.productOnSale ? "On sale" : "Not on sale"}
+                    style={{ cursor: "hand", width: 24, height: 24 }}
+                  />
+                  <span className="icon-description" style={{ color: "red" }}>
+                    {product.productOnSale ? "" : "Skaduar"}
+                  </span>
+                </div>
+              </div>  
                 </Card.Body>
               </Card>
             </Col>

@@ -1703,6 +1703,22 @@ Search Products: <input type="text" id="keyword_search" name="keyword_search" on
     >
       Get Products (page {currentPage + 1})
     </button>
+
+    <button
+      onClick={() => {
+        const next = 1;
+        setCurrentPage(next);
+        getAllProducts(
+          next,
+          loggedInUser,
+          document.querySelector('select[name="store"]').value,
+          document.getElementById('favorites').checked,
+          document.getElementById('onSale').checked
+        );
+      }}
+    >
+      Refresh Products
+    </button>
   
     
 </div>      

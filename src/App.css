@@ -150,3 +150,18 @@
     margin: 0%;
   }
 }
+
+
+@media (max-width: 576px) {
+  .select-description {
+    font-size: 10px; /* Minimum size on small screens */
+    margin: 0%;
+  }
+}
+
+@media (min-width: 1200px) {
+  .select-description {
+    font-size: 12px; /* Maximum size on large screens */
+    margin: 0%;
+  }
+}
