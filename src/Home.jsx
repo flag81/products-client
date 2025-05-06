@@ -482,14 +482,14 @@ onClick={() => handleLogin()}
     <Col xs={12} md={6} className="d-flex align-items-center justify-content-between">
 
 <br />
-                <div style={{marginRight:5, fontSize: 10}}>
+                {/* <div style={{marginRight:5, fontSize: 10}}>
                 <img
                   src={"/filter.png"}
                   alt="Meniven.com"
                   style={{ width: 30, cursor: "pointer", marginRight: 0 }}
                 />
                   
-                  Filtro </div>
+                  Filtro </div> */}
 
       <Form.Select  className="select-description" 
         style={{ width: "50%" }}
@@ -664,9 +664,12 @@ onClick={() => handleLogin()}
             <Card.Text className="product-description">
               {product.product_description}
             </Card.Text>
+
+            
             <Card.Text className="product-description">
              <span style={{color:"red"}}>{product.old_price}€</span> - <span style={{color:"green"}}>{product.new_price}€</span>
             </Card.Text>
+
             <Card.Text className="product-description">
                {product.storeName}
             </Card.Text>
@@ -707,7 +710,14 @@ onClick={() => handleLogin()}
                flexDirection: "row", alignItems: "center",   alignItems: "flex-start", 
                 padding: 5,  borderRadius: 5,justifyContent: "space-between"  }}>
 
-            <div style={{ display: "flex", flexDirection: "column", }} role="button">
+            <div style={{ display: "flex", flexDirection: "column",  alignItems: "center", // Centers items horizontally
+    justifyContent: "center", borderColor: "red", 
+    //borderWidth: 1, // Border width
+   // borderStyle: "solid", // Solid border style
+
+
+
+     }} role="button">
                   <img
                     src={product.isFavorite ? "star-fill-2.png" : "star-empty.jpg"}
                     alt={product.isFavorite ? "Unfavorite" : "Favorite"}
@@ -715,7 +725,7 @@ onClick={() => handleLogin()}
                      
                       width: 24,
                       height: 24,
-                      marginRight: 20,
+                      
                     }}
                     onClick={() =>
                       handleToggleFavorite(product.productId, product.isFavorite)
@@ -727,7 +737,7 @@ onClick={() => handleLogin()}
                     </span>
               </div>
                  {/* Sale icon */}
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "right" }} role="button">
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }} role="button">
                   <img
                     src={product.productOnSale ? "sale-fill-2.png" : "sale-empty.jpg"}
                     alt={product.productOnSale ? "On sale" : "Not on sale"}
