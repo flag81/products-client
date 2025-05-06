@@ -41,6 +41,8 @@ function Home({ mode }) {
 
   const [isImageLoaded, setIsImageLoaded] = useState(false);
 
+  const [isCardImageLoaded, setIsCardImageLoaded ] = useState(false);
+
   // ─── Config ───────────────────────────────────────────────────────────────────
   const node_url = import.meta.env.VITE_NODE_URL;
   const baseUrl = "https://res.cloudinary.com/dt7a4yl1x/image/upload";
@@ -371,7 +373,11 @@ function ImageWithSkeleton({ src, alt, onClick, height = 200 }) {
     justifyContent: "flex-start", // Aligns child elements to the top
     alignItems: "center", // Centers the content horizontally
     height: "100vh", // Ensures the parent takes the full viewport height
-    padding: "1rem", // Adds padding for better spacing
+    //padding: "1rem", // Adds padding for better spacing
+    //border: "1px solid #ccc", // Optional: Adds a border for better visibility
+    flexShrink: 0, // Prevents the container from shrinking
+    minWidth: "100%", // Ensures the container takes the full width
+    boxSizing: "border-box", // Includes padding and border in width calculation
   }}
 >
     <div className="container" 
@@ -382,6 +388,12 @@ function ImageWithSkeleton({ src, alt, onClick, height = 200 }) {
       marginTop: 0, // Ensures no extra margin at the top
       position: "relative", // Optional: Ensures proper positioning
       top: 0, // Aligns the container to the top
+      // add border to this div 
+      //border: "1px solid #ccc", // Optional: Adds a border for better visibility
+      flexShrink: 0, // Prevents the container from shrinking
+      minWidth: "100%",
+      boxSizing: "border-box",
+
     }}
     
     >
@@ -429,14 +441,17 @@ onClick={() => handleLogin()}
 
 <Container>
   {/* Search and Store Filter */}
-  <Row className="mb-3 d-flex d-md-flex flex-column flex-md-row align-items-center">
+  <Row className="mb-3 d-flex d-md-flex flex-column flex-md-row align-items-center"
+ style={{ flexWrap: "wrap", minWidth: "100%" }}
+  >
     {/* Search */}
-    <Col xs={12} md={6} className="mb-3 mb-md-0 d-flex align-items-center justify-content-between">
+    <Col xs={12} md={6} 
+    className="mb-3 mb-md-0 d-flex align-items-center justify-content-between">
 
 
 
-      <InputGroup>
-        <Form.Control className="select-description" 
+      <InputGroup className="w-100">
+        <Form.Control className="select-description flex-grow-1" 
           type="text"
           maxLength={20}
           placeholder="Kerko produkte ne zbritje..."
@@ -448,6 +463,8 @@ onClick={() => handleLogin()}
               handleSearch("");
             } else if (e.key === "Enter") handleSearch(e.target.value);
           }}
+
+          
 
         
         />
@@ -478,7 +495,7 @@ onClick={() => handleLogin()}
         style={{ width: "50%" }}
         onChange={(e) => setSelectedStore(e.target.value)}
       >
-        <option value="" >Dyqanet</option>
+        
         {stores.map((store) => (
           <option key={store.storeId} value={store.storeId}>
             {store.storeName}
@@ -497,7 +514,8 @@ onClick={() => handleLogin()}
         <img
           src={isFavorite ? "/star-fill-2.png" : "/star-empty.jpg"}
           alt="Favoritet"
-          style={{ width: 32, height: 32 }}
+          className="icon-image"
+          
         />
         <span  className="icon-description" >Favoritet</span>
 
@@ -510,7 +528,7 @@ onClick={() => handleLogin()}
         <img
           src={onSale ? "/sale-fill-2.png" : "/sale-empty.jpg"}
           alt="Ne Zbritje"
-          style={{ width: 32, height: 32, cursor: "pointer" }}
+          className="icon-image"
         />
         <span  className="icon-description" >Zbritjet</span>
       </div>
@@ -573,30 +591,20 @@ onClick={() => handleLogin()}
                 >
             <div >
 
+            {!isCardImageLoaded && (
+              <Placeholder as="div" animation="glow">
+                <Placeholder
+                  style={{
+                    width: "100%",
+                    height: "200px", // Adjust to match the image dimensions
+                  }}
+                  className="rounded" // Optional: Add rounded corners
+                />
+              </Placeholder>
+            )}
+
 
               <Card.Img
-
-// add a graysclale filter to the image if product.productOnSale is false
-// and add a hover effect to the image to make it grayscale when hovered
-                // style={{  
-                //   filter: product.productOnSale ? "none" : "grayscale(90%)",
-
-                //   transition: "filter 0.1s",
-                //   cursor: "pointer",
-                //   width: "100%",
-                //   height: "auto",
-
-  
-                //   objectFit: "cover",
-                //   objectPosition: "center",
-
-                // }}
-
-
-         
-
-
-
 
                     variant="top"
                     className="product-image"
@@ -605,6 +613,7 @@ onClick={() => handleLogin()}
                       .split("/")
                       .pop()}`}
                     alt={product.product_description}
+                    onLoad={() => setIsCardImageLoaded(true)} // Set loaded to true when the image loads
                     onClick={() =>
                       openModal(
                         `${baseUrl}/${transformation2}/${directory}/${product.image_url
@@ -624,6 +633,7 @@ onClick={() => handleLogin()}
                 right: "5px", // Same position as the image
                 backgroundColor: "rgba(0, 0, 0, 0.2)", // Semi-transparent background
                 padding: "15px", // Optional: Add padding around the image
+                borderRadius: "20%", // Optional: Make it circular
                 
               }}
             >
@@ -655,14 +665,22 @@ onClick={() => handleLogin()}
               {product.product_description}
             </Card.Text>
             <Card.Text className="product-description">
-              {product.old_price}€ - {product.new_price}€
+             <span style={{color:"red"}}>{product.old_price}€</span> - <span style={{color:"green"}}>{product.new_price}€</span>
             </Card.Text>
             <Card.Text className="product-description">
                {product.storeName}
             </Card.Text>
             <Card.Text className="sale-date">
               {product.sale_end_date ? (
-                <>Deri me: 
+                
+
+                <>Deri me: <span style={{ color: product.productOnSale ? "green" : "red" }}>
+
+
+
+                  
+               
+
               {new Date(product.sale_end_date).toLocaleDateString(
                 "en-GB",
                 {
@@ -671,9 +689,17 @@ onClick={() => handleLogin()}
                   year: "2-digit",
                 }
               )}
+
+
               <br />
+              </span>
                 </>
-              ) : null}
+              ) 
+              
+              : null}
+
+              
+              
             </Card.Text>
 
             {/* Favorite toggle */}
