@@ -457,6 +457,12 @@ onClick={() => handleLogin()}
           placeholder="Kerko produkte ne zbritje..."
           onKeyDown={(e) => {
 
+                  // Allow only alphanumeric characters, Backspace, and Enter
+      const isAlphanumeric = /^[a-zA-Z0-9\s-]$/.test(e.key);
+      if (!isAlphanumeric && e.key !== "Backspace" && e.key !== "Enter") {
+        e.preventDefault();
+      }
+
             // add condition if the field value is going from 1 to 0 to call the search function
 
             if (e.key === "Backspace" && e.target.value.length === 1) {
@@ -743,8 +749,8 @@ onClick={() => handleLogin()}
                     alt={product.productOnSale ? "On sale" : "Not on sale"}
                     style={{ cursor: "hand", width: 24, height: 24 }}
                   />
-                  <span className="icon-description" style={{ color: "red" }}>
-                    {product.productOnSale ? "" : "Skaduar"}
+                  <span className="icon-description" style={{ color:product.productOnSale ? "green" : "red" }}>
+                    {product.productOnSale ? "Aktive" : "Skaduar"}
                   </span>
                 </div>
               </div>  
