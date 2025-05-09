@@ -26,6 +26,7 @@ function Home({ mode }) {
   const [stores, setStores] = useState([]);
   const [users, setUsers] = useState([]);
   const [selectedStore, setSelectedStore] = useState("");
+  const [selectedStoreName, setSelectedStoreName] = useState("");
   const [isFavorite, setIsFavorite] = useState(false);
   const [onSale, setOnSale] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -37,6 +38,8 @@ function Home({ mode }) {
   const [modalImageUrl, setModalImageUrl] = useState("");
   const observerRef = useRef(null);
 
+
+  const [activeFilters, setActiveFilters] = useState([]);
 
 
   const [isImageLoaded, setIsImageLoaded] = useState(false);
@@ -110,7 +113,69 @@ useEffect(() => {
 
 
 
+ const addOrReplaceFilter = (filter) => {
+  const filterType = filter.split(":")[0].trim(); // Extract the filter type (e.g., "Keyword", "Store")
+  setActiveFilters((prevFilters) => {
+    // Remove existing filter of the same type
+    const updatedFilters = prevFilters.filter((f) => !f.startsWith(filterType));
+    // Add the new filter
+    return [...updatedFilters, filter];
+  });
+};
 
+
+    // Function to remove a filter
+    const removeFilter = (filter) => {
+      setActiveFilters(activeFilters.filter((f) => f !== filter));
+      // Reset the corresponding filter logic
+      if (filter === `Keyword: "${searchKeyword}"`) {
+        setSearchKeyword(""); // Reset keyword
+        // clear the input field search id
+        document.getElementById("search").value = "";
+      } else if (filter === "Favorites") {
+        setIsFavorite(false); // Reset favorites
+      } else if (filter === "On Sale") {
+        setOnSale(false); // Reset on sale
+      } else if (filter.startsWith("Store: ")) {
+        setSelectedStore(0); // Reset store dropdown
+        //set the store dropdown to the first option
+        document.getElementById("store").value = 0;
+      }
+    };
+
+
+    useEffect(() => {
+      if (isFavorite === true) {
+        addOrReplaceFilter("Favorites");
+        console.log("[DEBUG] Favorites filter added");
+      } else if (isFavorite === false) {
+        removeFilter("Favorites");
+        console.log("[DEBUG] Favorites filter removed");
+      }
+    
+      if (onSale === true) {
+        addOrReplaceFilter("On Sale");
+        console.log("[DEBUG] On Sale filter added");
+      } else if (onSale === false) {
+        removeFilter("On Sale");
+        console.log("[DEBUG] On Sale filter removed");
+      }
+    
+      if (selectedStore) {
+        addOrReplaceFilter("Store");
+        console.log("[DEBUG] Store filter added");
+      } else {
+        removeFilter("Store");
+        console.log("[DEBUG] Store filter removed");
+      }
+    }, [isFavorite, onSale, selectedStore]);
+
+
+useEffect(() => {
+
+console.log("[DEBUG] Active Filters:", activeFilters);
+
+}, [activeFilters]);
 
   // Optimistic toggle‐favorite mutation
   const toggleFavMutation = useMutation({
@@ -362,8 +427,16 @@ function ImageWithSkeleton({ src, alt, onClick, height = 200 }) {
   );
 }
 
+
+
+
+
+
+
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
+
+    
 
     <div
   className="parent-container"
@@ -453,15 +526,16 @@ onClick={() => handleLogin()}
       <InputGroup className="w-100">
         <Form.Control className="select-description flex-grow-1" 
           type="text"
+          id="search"
           maxLength={20}
           placeholder="Kerko produkte ne zbritje..."
           onKeyDown={(e) => {
 
                   // Allow only alphanumeric characters, Backspace, and Enter
-      const isAlphanumeric = /^[a-zA-Z0-9\s-]$/.test(e.key);
-      if (!isAlphanumeric && e.key !== "Backspace" && e.key !== "Enter") {
-        e.preventDefault();
-      }
+                const isAlphanumeric = /^[a-zA-Z0-9\s-]$/.test(e.key);
+                if (!isAlphanumeric && e.key !== "Backspace" && e.key !== "Enter") {
+                  e.preventDefault();
+                }
 
             // add condition if the field value is going from 1 to 0 to call the search function
 
@@ -498,8 +572,25 @@ onClick={() => handleLogin()}
                   Filtro </div> */}
 
       <Form.Select  className="select-description" 
+      id="store"
         style={{ width: "50%" }}
-        onChange={(e) => setSelectedStore(e.target.value)}
+        onChange={(e) => {
+          const selectedStoreId = e.target.value;
+          const selectedStoreName = e.target.options[e.target.selectedIndex].text;
+
+
+          //console.log("[DEBUG] Selected Store ID:", selectedStoreId);
+          //console.log("[DEBUG] Selected Store Name:", selectedStoreName);
+
+          setSelectedStore(selectedStoreId);
+      
+          // Set the selected store name
+          const store = stores.find((store) => store.storeId === selectedStoreId);
+
+         
+
+          setSelectedStoreName(selectedStoreName);
+        }}
       >
         
         {stores.map((store) => (
@@ -543,34 +634,101 @@ onClick={() => handleLogin()}
       </div>
     </Col>
   </Row>
+
+
+
 </Container>
 
 
+
+
+<div className="d-flex flex-row align-items-center " style={{ width: "100%" }}>
+
+{ searchKeyword.length > 2 || selectedStore > 0 || isFavorite || onSale ? (
+
+<span>
+
+  Filtrot:
+
+  </span>
+
+
+
+) : ""}
+
+
+{searchKeyword.length > 2 && (
+
+<div className="select-description" 
+  style={{ marginLeft: 5, marginRight: 5, 
+    
+    border: searchKeyword.length > 2 ? "1px solid #ccc" : "",
+   padding:3 , borderRadius: 5 , marginBottom: 3 }}>
+{searchKeyword.length > 2 ? "" + searchKeyword  : "" }</div>
+
+)}
+
+{selectedStore > 0  && (
+<div className="select-description"
+
+style={{ marginLeft: 5, marginRight: 5, 
+
+border: selectedStore > 0 ? "1px solid #ccc" : "", padding:3 ,borderRadius: 5 }}
+>
+  
+  {selectedStore > 0 ? `${selectedStoreName}` : ""}
+  
+  </div>
+
+)}
+
+{ isFavorite  && (
+<div className="select-description"
+
+style={{ marginLeft: 5, marginRight: 5, border: isFavorite ? "1px solid #ccc" : "", padding:3 ,borderRadius: 5 }}>
+{isFavorite ? "Favorit " : "" }</div>
+
+)}
+
+
+{onSale  && (
+
+
+<div className="select-description"
+
+style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,borderRadius: 5 }}>
+
+{onSale ? " Ne zbritje" : "" }</div>
+
+)}
+
+
+
+</div>
 
 {data?.pages[0].products.length === 0 && (
 
   <div className="select-description">
 
 
-  Nuk u gjenden produkte  
-  {(() => {
-    if (isFavorite && onSale) {
-      return " per te Favoritet e tua ne zbritje aktive per momentin";
-    } else if (isFavorite) {
-      return " per te Favoritet e tua";
-    } else if (onSale) {
-      return " ne zbritje aktive per momentin";
-    } else if (searchKeyword) {
-      return ` per "${searchKeyword}"`;
-    }
-    else {
-      return "";
-    }
-  })()}
+  Nuk u gjenden produkte me keta filtra 
+
 
 
   </div>
-)}
+)
+
+
+
+
+
+
+
+
+}
+
+
+
 
 
       {/* Products */}
@@ -637,7 +795,8 @@ onClick={() => handleLogin()}
                 position: "absolute",
                 top: "5px", // Same position as the image
                 right: "5px", // Same position as the image
-                backgroundColor: "rgba(0, 0, 0, 0.2)", // Semi-transparent background
+                //
+                backgroundColor: "rgb(249, 245, 245)", // Semi-transparent background
                 padding: "15px", // Optional: Add padding around the image
                 borderRadius: "20%", // Optional: Make it circular
                 
@@ -671,9 +830,16 @@ onClick={() => handleLogin()}
               {product.product_description}
             </Card.Text>
 
+
             
             <Card.Text className="product-description">
-             <span style={{color:"red"}}>{product.old_price}€</span> - <span style={{color:"green"}}>{product.new_price}€</span>
+              <span style={{ color: "red" }}>{product.old_price && product.old_price > 0 ? product.old_price + "€ - " : ""}</span>
+              <span style={{ color: "green" }}>
+                {product.new_price}€ 
+                {product.old_price > 0 && product.new_price && (
+                  <> (-{Math.round(((product.old_price - product.new_price) / product.old_price) * 100)}%)</>
+                )}
+              </span>
             </Card.Text>
 
             <Card.Text className="product-description">
@@ -713,7 +879,7 @@ onClick={() => handleLogin()}
 
             {/* Favorite toggle */}
             <div style={{ display: "flex", width:"100%",
-               flexDirection: "row", alignItems: "center",   alignItems: "flex-start", 
+               flexDirection: "row", alignItems: "center", 
                 padding: 5,  borderRadius: 5,justifyContent: "space-between"  }}>
 
             <div style={{ display: "flex", flexDirection: "column",  alignItems: "center", // Centers items horizontally
@@ -799,7 +965,7 @@ onClick={() => handleLogin()}
 
 {!isImageLoaded && (
 <>
-{console.log("[DEBUG] Rendering Placeholder")}
+
 
   <Placeholder as="div" animation="glow">
     <Placeholder
@@ -812,7 +978,7 @@ onClick={() => handleLogin()}
   </Placeholder>
   </>
 )}
- {console.log("[DEBUG] Rendering Placeholder")}
+
       <img
           src={modalImageUrl}
           alt="Product Modal"

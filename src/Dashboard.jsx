@@ -320,6 +320,8 @@ const handleUploadImages = async () => {
   // 6️⃣ Update state with aggregated results
   setExtractedText(allTexts.join('\n\n'));
   setUploadedImageUrls(allUrls);
+  
+  
 
   // 7️⃣ Final success status
   setStatus(
@@ -328,6 +330,13 @@ const handleUploadImages = async () => {
     </font>
   );
 
+  // set the store element to the first store in the list of stores
+  const storeSelect = document.querySelector('select[name="store"]');
+
+  if (storeSelect && stores.length > 0) {
+    storeSelect.value = stores[0].storeId;
+  }
+
   // 8️⃣ Clear file input
   setSelectedFiles([]);
   if (fileInputRef.current) fileInputRef.current.value = '';
@@ -335,65 +344,6 @@ const handleUploadImages = async () => {
 
 
 
-const handleUploadImage = async () => {
-  const file = selectedFile;
-
-  setStatus('');
-
-  if (!file) {
-    alert('Please select an image.');
-    return;
-  }
-
-  if (!file.type.startsWith('image/')) {
-    alert('Please select a valid image file.');
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append('image', file);
-
-  console.log('Uploading image....................................');
-
-  try {
-    const response = await fetch(`${node_url}/extract-text`, {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      setExtractedText(`Error: ${error.message || 'Failed to extract text'}`);
-      console.log('Error response from extract-text:', error);
-      return;
-    }
-
-    console.log('Image uploaded successfully!');
-
-    const data = await response.json();
-
-    const {
-      extractedText,
-      jsonText,
-     imageUrl
-    } = data;
-  
-    console.log(extractedText);            // "success"         // "Image uploaded successfully"
-    console.log(jsonText);          // your parsed JSON from the server
-    console.log(imageUrl);          // the cloudinary URL
-
-  
-    
-    // Set extracted text and image URL to display on UI
-    setStatus('');
-    setStatus(<font style={{color:'green'}}><b>Te gjitha produket ne aksion jane futur me sukses. </b></font>);
-    setExtractedText(data.text);
-    setUploadedImageUrl(data.imageUrl);
-  } catch (error) {
-    console.error('Error uploading image:', error);
-    setExtractedText('Error uploading image or processing request.');
-  }
-};
 
 
 
