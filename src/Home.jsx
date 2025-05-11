@@ -38,6 +38,8 @@ function Home({ mode }) {
   const [modalImageUrl, setModalImageUrl] = useState("");
   const observerRef = useRef(null);
 
+  const [modalProduct, setModalProduct] = useState({});
+
 
   const [activeFilters, setActiveFilters] = useState([]);
 
@@ -45,6 +47,8 @@ function Home({ mode }) {
   const [isImageLoaded, setIsImageLoaded] = useState(false);
 
   const [isCardImageLoaded, setIsCardImageLoaded ] = useState(false);
+
+  const autoTransformation = "f_auto,q_auto,dpr_auto";
 
   // ─── Config ───────────────────────────────────────────────────────────────────
   const node_url = import.meta.env.VITE_NODE_URL;
@@ -257,7 +261,7 @@ console.log("[DEBUG] Active Filters:", activeFilters);
     };
   }
 
-  const openModal = (imageUrl) => {
+  const openModal = (imageUrl, product) => {
     console.log("[DEBUG] openModal()", imageUrl);
     console.log("[DEBUG] setModalImageUrl()", modalImageUrl);
     setModalImageUrl(false);
@@ -266,6 +270,8 @@ console.log("[DEBUG] Active Filters:", activeFilters);
     setModalImageUrl(imageUrl);
     setIsModalOpen(true);
 
+    setModalProduct(product);
+    console.log("[DEBUG] setModalProduct()", product);
 
   };
   const closeModal = () => {
@@ -439,7 +445,7 @@ function ImageWithSkeleton({ src, alt, onClick, height = 200 }) {
     
 
     <div
-  className="parent-container"
+ 
   style={{
     display: "flex",
     flexDirection: "column",
@@ -451,6 +457,9 @@ function ImageWithSkeleton({ src, alt, onClick, height = 200 }) {
     flexShrink: 0, // Prevents the container from shrinking
     minWidth: "100%", // Ensures the container takes the full width
     boxSizing: "border-box", // Includes padding and border in width calculation
+    //border: "1px solid #ccc",
+
+
   }}
 >
     <div className="container" 
@@ -528,7 +537,7 @@ onClick={() => handleLogin()}
           type="text"
           id="search"
           maxLength={20}
-          placeholder="Kerko produkte ne zbritje..."
+          placeholder="Kerko produkte ne zbritje"
           onKeyDown={(e) => {
 
                   // Allow only alphanumeric characters, Backspace, and Enter
@@ -642,7 +651,8 @@ onClick={() => handleLogin()}
 
 
 
-<div className="d-flex flex-row align-items-center " style={{ width: "100%" }}>
+<div className="d-flex flex-row align-items-center " 
+style={{ width: "100%" }}>
 
 { searchKeyword.length > 2 || selectedStore > 0 || isFavorite || onSale ? (
 
@@ -743,7 +753,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
         
         
          
-        className="g-4 justify-content-start ">
+        className="g-2 justify-content-start ">
           {data?.pages.map((page, pi) =>
             page.products.map((product, idx) => (
           <Col key={`${pi}-${idx}`} className="d-flex ">
@@ -768,7 +778,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
             )}
 
 
-              <Card.Img
+              {/* <Card.Img
 
                     variant="top"
                     className="product-image"
@@ -782,11 +792,30 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
                       openModal(
                         `${baseUrl}/${transformation2}/${directory}/${product.image_url
                       .split("/")
-                      .pop()}`
+                      .pop()}`, product
                       )
                     }
           
-              />
+              /> */}
+
+
+      {(() => {
+        const filename = product.image_url.split("/").pop();
+        // use single, auto-format/DPR transformation for max resolution
+        const imgUrl = `${baseUrl}/${autoTransformation}/${directory}/${filename}`;
+
+        return (
+          <img
+            className="card-img-top product-image"
+            src={imgUrl}
+            alt={product.product_description}
+            loading="lazy"
+            onLoad={() => setIsCardImageLoaded(true)}
+            onClick={() => openModal(imgUrl, product)}
+            style={{ cursor: "pointer", width: "100%", height: "auto" }}
+          />
+        );
+     })()}
 
             <div
             className="overlay-container"
@@ -815,7 +844,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
                   }}
                   onClick={() =>
                     openModal(
-                      `${baseUrl}/${transformation2}/${directory}/${product.image_url
+                      `${baseUrl}/${directory}/${product.image_url
                     .split("/")
                     .pop()}`
                     )
@@ -998,6 +1027,141 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
           }
           onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
 />
+
+
+<span style={{ fontSize: 16, fontWeight: "bold", marginTop: 10 }}>
+{modalProduct.product_description}:
+  </span>
+
+{modalProduct.old_price && modalProduct.old_price > 0 ? (
+  <span style={{ color: "red" }}>
+    {modalProduct.old_price}€ -
+  </span>
+) : (
+  <span style={{ color: "red" }}></span>
+)}
+<span style={{ color: "green" }}>
+  {modalProduct.new_price}€
+  {modalProduct.old_price > 0 && modalProduct.new_price && (
+    <> (-{Math.round(((modalProduct.old_price - modalProduct.new_price) / modalProduct.old_price) * 100)}%)</>
+  )}
+
+
+
+</span>
+
+<span style={{ color: "black" }}>
+    <br />
+    {modalProduct.storeName}
+
+  </span>
+  <span style={{ color: "black" }}>
+
+    <br />
+    {
+    
+    // check is products sale_end_date is not null and if it is in the future
+    modalProduct.sale_end_date && new Date(modalProduct.sale_end_date) > new Date()
+    ? (
+      <>
+
+        <span style={{ color: "green" }}>
+          Deri me:{" "}
+          {new Date(modalProduct.sale_end_date).toLocaleDateString(
+            "en-GB",
+            {
+              day: "2-digit",
+              month: "2-digit",
+              year: "2-digit",
+            }
+          )}
+        </span>
+      </>
+    ) : (
+      ""
+    )}
+  </span>
+
+  <div
+    style={{
+      display: "flex",
+      flexDirection: "row",
+      alignItems: "center",
+
+      justifyContent: "space-between",
+      marginTop: 10,
+      padding: 5,
+      borderRadius: 5,
+    }}
+  >
+    <div
+
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer",
+      }}
+      onClick={() =>
+        handleToggleFavorite(modalProduct.productId, modalProduct.isFavorite)
+      }
+    >
+      <img
+
+        src={
+          modalProduct.isFavorite
+
+            ? "/star-fill-2.png"
+            : "/star-empty.jpg"
+        }
+        alt={modalProduct.isFavorite ? "Unfavorite" : "Favorite"}
+        style={{
+          width: 24,
+          height: 24,
+        }}
+      />
+      <span className="icon-description">
+        {modalProduct.isFavorite ? "Hiq favorit" : "Shto favorit"}
+      </span>
+    </div>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer",
+      }}
+    >
+      <img
+
+        src={
+          modalProduct.productOnSale
+            ? "/sale-fill-2.png"
+            : "/sale-empty.jpg"
+        }
+        alt={
+          modalProduct.productOnSale ? "On sale" : "Not on sale"
+        }
+        style={{ width: 24, height: 24 }}
+      />
+      <span className="icon-description"
+      
+      style={{
+        color: modalProduct.productOnSale ? "green" : "red",
+      }}
+      
+      
+      >
+        {modalProduct.productOnSale ? "Aktive" : "Skaduar"}
+      </span>
+    </div>
+  </div>
+  {/* Close button */}
+
+
+
             <Button
               style={{
                 position: "absolute",
