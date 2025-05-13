@@ -32,6 +32,7 @@ function Home({ mode }) {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isRegistered, setIsRegistered] = useState(false); // NEW: Track registration status  
   const [userId, setUserId] = useState(null);
   const [email, setEmail] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -68,30 +69,72 @@ function Home({ mode }) {
     searchKeyword?.length > 2 ? searchKeyword : "",
   ];
 
-  // Infinite‐scroll query
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetching,
-    isFetchingNextPage,
-  } = useInfiniteQuery({
-    queryKey: productsQueryKey,
-    queryFn: getAllProducts,
-    getNextPageParam: (lastPage) => lastPage.nextPage,
-  });
+  
+
+  // // Infinite‐scroll query
+  // const {
+  //   data,
+  //   fetchNextPage,
+  //   hasNextPage,
+  //   isFetching,
+  //   isFetchingNextPage,
+  // } = useInfiniteQuery({
+  //   queryKey: productsQueryKey,
+  //   queryFn: getAllProducts,
+  //   getNextPageParam: (lastPage) => lastPage.nextPage,
+  // });
+
+    // --- Data Fetching ---
+    const {
+      data,
+      fetchNextPage,
+      hasNextPage,
+      isFetching,
+      isFetchingNextPage,
+      isLoading, // Added for initial load state
+      error, // Added for error handling
+    } = useInfiniteQuery({
+      queryKey: productsQueryKey,
+      queryFn: getAllProducts,
+      getNextPageParam: (lastPage) => lastPage.nextPage,
+      enabled: !!userId || userId === null, // Fetch initially even if userId is null (for truly anon), refetch when userId changes
+      // Consider staletime if needed
+    });
 
   // add func to chech if user is logged in before toggle favorite by checking the variable isLoggedIn
 
   // Check if user is logged in before allowing to toggle favorite
 
-  const handleToggleFavorite = (productId, isFav) => {
-    if (!isLoggedIn) {
-      setShowRegisterModal(true);
-      return;
+  // MODIFIED: Handle favorite toggle click
+  const handleToggleFavorite = async (productId, productIsCurrentlyFavorite) => {
+
+
+
+
+    console.log("[DEBUG] handleToggleFavorite called, " + productId + " " + productIsCurrentlyFavorite);
+
+    if (!userId) {
+      // If no userId (neither anonymous nor registered), prompt to register/initialize
+      console.log("[DEBUG] No userId, initializing anonymous session...");
+      //setShowRegisterModal(true); // Or trigger initialization first?
+      //return;
+      await initializeAnonymousSession();
     }
-    toggleFavMutation.mutate({ productId, isFav });
-  }
+    // If userId exists (anonymous or registered), proceed with mutation
+    console.log(`[DEBUG] User ${userId} attempting to toggle favorite for product ${productId}`);
+    toggleFavMutation.mutate({ productId, productIsCurrentlyFavorite });
+  };
+
+    // MODIFIED: Handle actions requiring registration
+    const handleLoginOrRegisterPrompt = () => {
+      if (!isRegistered) { // Prompt only if not fully registered
+           console.log("[DEBUG] User not registered, showing registration modal.");
+           setShowRegisterModal(true);
+      } else {
+          console.log("[DEBUG] User is already registered.");
+          // Optionally navigate to profile or perform another action
+      }
+  };
 
 
   // DEBUG: log whenever modal opens, URL changes or load flag changes
@@ -184,10 +227,23 @@ console.log("[DEBUG] Active Filters:", activeFilters);
   // Optimistic toggle‐favorite mutation
   const toggleFavMutation = useMutation({
 
+  
 
-    mutationFn: async ({ productId, isFav }) => {
-      const url = isFav ? "/removeFavorite" : "/addFavorite";
-      const method = isFav ? "DELETE" : "POST";
+
+    mutationFn: async ({ productId, productIsCurrentlyFavorite }) => {
+
+      
+      const url = productIsCurrentlyFavorite ? "/removeFavorite" : "/addFavorite";
+
+      console.log("[DEBUG] Toggle favorite mutation called");
+
+      console.log("[DEBUG] function called:", url);
+
+      console.log("[DEBUG] isFav:", productIsCurrentlyFavorite);
+      console.log("[DEBUG] productId:", productId);
+  
+
+      const method = productIsCurrentlyFavorite ? "DELETE" : "POST";
       const res = await fetch(`${node_url}${url}`, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -197,7 +253,7 @@ console.log("[DEBUG] Active Filters:", activeFilters);
       if (!res.ok) throw new Error("Network error");
       return res.json();
     },
-    onMutate: async ({ productId, isFav }) => {
+    onMutate: async ({ productId, productIsCurrentlyFavorite }) => {
       await queryClient.cancelQueries({ queryKey: productsQueryKey });
       const previous = queryClient.getQueryData(productsQueryKey);
       queryClient.setQueryData(
@@ -210,7 +266,7 @@ console.log("[DEBUG] Active Filters:", activeFilters);
               ...page,
               products: page.products.map((p) =>
                 p.productId === productId
-                  ? { ...p, isFavorite: !isFav }
+                  ? { ...p, isFavorite: !productIsCurrentlyFavorite }
                   : p
               ),
             })),
@@ -233,7 +289,7 @@ console.log("[DEBUG] Active Filters:", activeFilters);
   });
 
   // ─── Data‐fetchers & Helpers ───────────────────────────────────────────────────
-  async function getAllProducts({ pageParam = 1, queryKey }) {
+  async function getAllProducts0({ pageParam = 1, queryKey }) {
     const [, uId, storeId, fav, sale] = queryKey;
     const url = `${node_url}/getProducts?userId=${encodeURIComponent(
       uId
@@ -261,6 +317,52 @@ console.log("[DEBUG] Active Filters:", activeFilters);
     };
   }
 
+    // Fetch products function (pass all query key parts for clarity)
+    async function getAllProducts({ pageParam = 1, queryKey }) {
+      const [, currentUserId, storeId, favFilter, saleFilter, keyword] = queryKey;
+      // Construct URL, pass userId if available
+      const url = new URL(`${node_url}/getProducts`);
+      url.searchParams.append('page', pageParam);
+      if (currentUserId) {
+          url.searchParams.append('userId', currentUserId);
+      }
+      if (storeId) {
+          url.searchParams.append('storeId', storeId);
+      }
+      if (favFilter) { // Send the favorite filter parameter only if it's true
+          url.searchParams.append('isFavorite', 'true');
+      }
+       if (saleFilter) {
+          url.searchParams.append('onSale', 'true');
+      }
+      if (keyword) {
+          url.searchParams.append('keyword', keyword);
+      }
+  
+      console.log(`[DEBUG] Fetching products with URL: ${url.toString()}`);
+  
+      const res = await fetch(url.toString(), {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include", // Important to send the jwt cookie
+      });
+  
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Failed to fetch products" }));
+        console.error("[ERROR] Fetching products failed:", res.status, errorData);
+        throw new Error(errorData.message || `HTTP error ${res.status}`);
+      }
+  
+      const json = await res.json();
+      console.log("[DEBUG] Fetched products:", json);
+      console.log("[DEBUG] Fetched products page", pageParam, ":", json.data?.length);
+  
+      return {
+        products: json.data || [], // Ensure products is always an array
+        nextPage: json.nextPage, // Use nextPage directly from backend
+      };
+    }
+
   const openModal = (imageUrl, product) => {
     console.log("[DEBUG] openModal()", imageUrl);
     console.log("[DEBUG] setModalImageUrl()", modalImageUrl);
@@ -279,7 +381,67 @@ console.log("[DEBUG] Active Filters:", activeFilters);
     setModalImageUrl(false);
   };
 
-  const checkUserSession = async () => {
+    // --- Check User Session ---
+    const checkUserSession = async () => {
+      console.log("[DEBUG] checkUserSession called");
+      try {
+        // Use the /auth/check-session endpoint
+        const response = await fetch(`${node_url}/check-session`, {
+          credentials: "include", // Send cookies
+        });
+        const data = await response.json();
+        console.log("[DEBUG] /check-session response:", data);
+  
+        if (data.isLoggedIn) { // isLoggedIn means a valid userId exists
+          setUserId(data.userId); // Set userId (can be anonymous or registered)
+          setIsRegistered(!!data.isRegistered); // Update registration status
+          setEmail(data.email || ""); // Set email if available
+        } else {
+          // No valid session, potentially first visit or expired token
+          setUserId(null);
+          setIsRegistered(false);
+          setEmail("");
+          // Attempt to initialize an anonymous session if no userId yet
+          if (!userId) { // Avoid loop if already tried initializing
+              console.log("[DEBUG] No user ID found, calling /initialize...");
+              initializeAnonymousSession();
+          }
+        }
+      } catch (error) {
+        console.error("Error checking session:", error);
+        setUserId(null); // Reset on error
+        setIsRegistered(false);
+        setEmail("");
+      }
+    };
+
+
+
+       // --- Initialize Anonymous Session ---
+   const initializeAnonymousSession = async () => {
+    try {
+        const response = await fetch(`${node_url}/initialize`, {
+             method: 'GET', // Or POST if needed
+             credentials: 'include'
+         });
+         const data = await response.json();
+         if (response.ok && data.userId) {
+             console.log("[DEBUG] Anonymous session initialized, userId:", data.userId);
+             // Set the user ID, but mark as not registered
+             setUserId(data.userId);
+             //setIsRegistered(false);
+             //setEmail("");
+             // Optionally refetch data if needed now that userId is set
+             // queryClient.invalidateQueries({ queryKey: ['products'] });
+         } else {
+             console.error("[ERROR] Failed to initialize anonymous session:", data.message);
+         }
+     } catch (error) {
+         console.error("Error initializing anonymous session:", error);
+     }
+ };
+
+  const checkUserSession0 = async () => {
     try {
       const response = await fetch(`${node_url}/check-session`, {
         credentials: "include",
@@ -371,7 +533,7 @@ console.log("[DEBUG] Active Filters:", activeFilters);
   useEffect(() => {
     checkUserSession();
     getStores();
-    getUsers();
+    //getUsers();
   }, []);
 
   useEffect(() => {
@@ -391,6 +553,7 @@ console.log("[DEBUG] Active Filters:", activeFilters);
   const handleSearch = (value) => setSearchKeyword(value);
 
   const allProducts = data?.pages.flatMap(p => p.products) ?? [];
+
 const count       = allProducts.length;
 const lgCols      = count >= 4 ? 4 : count || 1;
 
@@ -435,6 +598,13 @@ function ImageWithSkeleton({ src, alt, onClick, height = 200 }) {
 
 
 
+const handleFavoriteFilterToggle = () => {
+  if (!userId) { // Need some ID (anon or reg) to have personal favorites
+    setShowRegisterModal(true);
+    return;
+  }
+  setIsFavoriteFilter((prev) => !prev);
+};
 
 
 
@@ -501,7 +671,7 @@ function ImageWithSkeleton({ src, alt, onClick, height = 200 }) {
 onClick={() => handleLogin()}
 
 >
-<img
+{/* <img
           src={"/profile.png"}
           alt="Profile"
           style={{ width: 32, height: 32 }}
@@ -509,9 +679,10 @@ onClick={() => handleLogin()}
 
 
    <span className="icon-description">
-     { email ? email : "Hyrja" }
     
-    </span>  
+     {isRegistered && email ? email : "Hyrja"}
+    
+    </span>   */}
 
 </div>
         
@@ -654,17 +825,6 @@ onClick={() => handleLogin()}
 <div className="d-flex flex-row align-items-center " 
 style={{ width: "100%" }}>
 
-{ searchKeyword.length > 2 || selectedStore > 0 || isFavorite || onSale ? (
-
-<span>
-
-  Filtrot:
-
-  </span>
-
-
-
-) : ""}
 
 
 {searchKeyword.length > 2 && (
@@ -673,8 +833,22 @@ style={{ width: "100%" }}>
   style={{ marginLeft: 5, marginRight: 5, 
     
     border: searchKeyword.length > 2 ? "1px solid #ccc" : "",
-   padding:3 , borderRadius: 5 , marginBottom: 3 }}>
-{searchKeyword.length > 2 ? "" + searchKeyword  : "" }</div>
+   padding:3 , borderRadius: 5 , marginBottom: 5 }}>
+{searchKeyword.length > 2 ? "" + searchKeyword  : "" }
+
+
+<span
+  onClick={() => {
+    setSearchKeyword("");
+    document.getElementById("search").value = "";
+  }}
+  style={{ marginLeft: 5, marginRight:5 , cursor: "pointer", color: "red" }}
+>
+  X
+
+</span>
+
+</div>
 
 )}
 
@@ -683,10 +857,23 @@ style={{ width: "100%" }}>
 
 style={{ marginLeft: 5, marginRight: 5, 
 
-border: selectedStore > 0 ? "1px solid #ccc" : "", padding:3 ,borderRadius: 5 }}
+border: selectedStore > 0 ? "1px solid #ccc" : "", padding:3 ,borderRadius: 5, marginBottom: 5 }}
 >
   
   {selectedStore > 0 ? `${selectedStoreName}` : ""}
+
+
+
+  <span
+  onClick={() => {
+    setSelectedStore(0);
+    document.getElementById("store").value = 0;
+  }}
+  style={{ marginLeft: 5, marginRight:5 , cursor: "pointer", color: "red" }}
+>
+  X
+</span>
+
   
   </div>
 
@@ -695,8 +882,22 @@ border: selectedStore > 0 ? "1px solid #ccc" : "", padding:3 ,borderRadius: 5 }}
 { isFavorite  && (
 <div className="select-description"
 
-style={{ marginLeft: 5, marginRight: 5, border: isFavorite ? "1px solid #ccc" : "", padding:3 ,borderRadius: 5 }}>
-{isFavorite ? "Favorit " : "" }</div>
+style={{ marginLeft: 5, marginRight: 5, border: isFavorite ? "1px solid #ccc" : "", padding:3 ,borderRadius: 5, marginBottom: 5 }}>
+{isFavorite ? "Favorit " : "" }
+
+
+<span
+  onClick={() => {
+    setIsFavorite(false);
+  }}
+  style={{ marginLeft: 5, marginRight:5 , cursor: "pointer", color: "red" }}
+>
+  X
+</span>
+
+
+
+</div>
 
 )}
 
@@ -706,9 +907,25 @@ style={{ marginLeft: 5, marginRight: 5, border: isFavorite ? "1px solid #ccc" : 
 
 <div className="select-description"
 
-style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,borderRadius: 5 }}>
+style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,borderRadius: 5 , marginBottom: 5}}>
 
-{onSale ? " Ne zbritje" : "" }</div>
+{onSale ? " Zbritje" : "" }
+
+
+
+<span
+
+  onClick={() => {
+    setOnSale(false);
+  }}
+  style={{ marginLeft: 5, marginRight:5 , cursor: "pointer", color: "red" }}
+>
+  X
+</span>
+
+
+
+</div>
 
 )}
 
