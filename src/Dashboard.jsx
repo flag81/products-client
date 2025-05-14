@@ -363,7 +363,9 @@ const handleUploadImages = async () => {
     console.log('user result:', result);
 
     if (response.ok) {
-      setLoggedInUser(result.user.userId);
+
+      console.log('Login successful:', result.user);
+      setLoggedInUser(true);
       //setEmail(result.user.email);
       setUserName(result.user.userName);
       setLoginError('');
