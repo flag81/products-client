@@ -123,6 +123,24 @@ function Home({ mode }) {
     // If userId exists (anonymous or registered), proceed with mutation
     console.log(`[DEBUG] User ${userId} attempting to toggle favorite for product ${productId}`);
     toggleFavMutation.mutate({ productId, productIsCurrentlyFavorite });
+
+
+    console.log("[DEBUG] Toggling favorite for product:", productId, modalProduct.productId);
+
+      // Refetch the updated product data and update the modal
+  if (modalProduct.productId === productId) {
+
+    console.log("[DEBUG] Modal product ID matches, refetching product data...");
+
+ 
+    setModalProduct((prev) => ({
+      ...prev,
+      isFavorite: !prev.isFavorite,
+    }));
+
+
+
+  }
   };
 
     // MODIFIED: Handle actions requiring registration
@@ -289,33 +307,7 @@ console.log("[DEBUG] Active Filters:", activeFilters);
   });
 
   // ─── Data‐fetchers & Helpers ───────────────────────────────────────────────────
-  async function getAllProducts0({ pageParam = 1, queryKey }) {
-    const [, uId, storeId, fav, sale] = queryKey;
-    const url = `${node_url}/getProducts?userId=${encodeURIComponent(
-      uId
-    )}&page=${pageParam}&storeId=${encodeURIComponent(
-      storeId
-    )}&isFavorite=${encodeURIComponent(
-      fav
-    )}&onSale=${encodeURIComponent(sale)}&keyword=${encodeURIComponent(
-      searchKeyword
-    )}`;
-    const res = await fetch(url, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-    });
-    
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to fetch products");
 
-    console.log("Fetched products:", json.data); // ✅ Debugging log
-
-    return {
-      products: json.data,
-      nextPage: json.data.length > 0 ? pageParam + 1 : undefined,
-    };
-  }
 
     // Fetch products function (pass all query key parts for clarity)
     async function getAllProducts({ pageParam = 1, queryKey }) {
@@ -441,24 +433,7 @@ console.log("[DEBUG] Active Filters:", activeFilters);
      }
  };
 
-  const checkUserSession0 = async () => {
-    try {
-      const response = await fetch(`${node_url}/check-session`, {
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (data.isLoggedIn) {
-        setUserId(data.userId);
-        setEmail(data.email);
-        setIsLoggedIn(true);
-      } else {
-        setUserId(null);
-        setIsLoggedIn(false);
-      }
-    } catch (error) {
-      console.error("Error checking session:", error);
-    }
-  };
+
 
   const getStores = async () => {
     try {
@@ -470,15 +445,7 @@ console.log("[DEBUG] Active Filters:", activeFilters);
     }
   };
 
-  const getUsers = async () => {
-    try {
-      const response = await fetch(`${node_url}/getUsers`);
-      const result = await response.json();
-      setUsers(result);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    }
-  };
+
 
   const signInWithApple = () => {
     const params = new URLSearchParams({
@@ -559,52 +526,9 @@ const lgCols      = count >= 4 ? 4 : count || 1;
 
 
 
-function ImageWithSkeleton({ src, alt, onClick, height = 200 }) {
-  const [loaded, setLoaded] = useState(false);
-
-  return (
-    <div style={{ position: "relative", width: "100%" }}>
-      {/*
-        1) Show a grey glow skeleton
-        2) as big as your final image box
-      */}
-      {!loaded && (
-        <Placeholder as="div" animation="glow">
-          <Placeholder
-            style={{ width: "100%", height: `${height}px` }}
-          />
-        </Placeholder>
-      )}
-
-      {/*
-        1) Hide the real <Card.Img> until it has loaded
-        2) Then flip loaded=true and it will appear
-      */}
-      <Card.Img
-        variant="top"
-        src={src}
-        alt={alt}
-        onClick={onClick}
-        onLoad={() => setLoaded(true)}
-        style={{
-          display: loaded ? "block" : "none",
-          cursor: "pointer",
-        }}
-        className="product-image"
-      />
-    </div>
-  );
-}
 
 
 
-const handleFavoriteFilterToggle = () => {
-  if (!userId) { // Need some ID (anon or reg) to have personal favorites
-    setShowRegisterModal(true);
-    return;
-  }
-  setIsFavoriteFilter((prev) => !prev);
-};
 
 
 
@@ -1322,6 +1246,11 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
       }}
       onClick={() =>
         handleToggleFavorite(modalProduct.productId, modalProduct.isFavorite)
+        // setModalProduct((prev) => ({
+        //   ...prev,
+        //   isFavorite: !prev.isFavorite,
+        // }))
+
       }
     >
       <img
