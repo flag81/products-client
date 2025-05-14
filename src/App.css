@@ -151,11 +151,25 @@
   }
 }
 
+@media (min-width: 1200px) {
+  .overlay-container2 {
+    display: none;
+
+  
+  }
+}
+
 @media (max-width: 768px) {
   .overlay-container {
     display: none;
+
+
+
   }
 }
+/* create a @media class  to display a different image on mobile */
+
+
 
 @media (max-width: 576px) {
   .icon-description {

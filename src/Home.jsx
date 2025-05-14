@@ -974,7 +974,14 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
             >
 
                 <img
-                  src="/loop.png" // Replace with your overlay image path
+
+                
+
+                // check screen size for mobile or desktop USING @MEDIA CSS
+                // if screen size is less than 768px use smaller image
+
+                  src={"/loop.png"} // Replace with your overlay image path
+                  
                   alt="Overlay"
                   style={{
                     position: "absolute",
@@ -991,6 +998,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
                     )
                   }
                 />
+
 
 </div>
 
@@ -1313,7 +1321,40 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
                 position: "absolute",
                 top: 10,
                 right: 10,
-                background: "red",
+                background: "white",
+                color: "black",
+                border: "none",
+                width: 40, // Set a fixed width
+                height: 40, // Set a fixed height
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "30%", // Ensure it's square
+                cursor: "pointer",
+                //make font color black
+
+             
+
+              }}
+              onClick={closeModal}
+            >
+              X
+
+            </Button>
+
+            <Button
+              style={{
+                position: "absolute",
+
+                // position the button in the center of the image
+                top: "50%",
+                left: "50%",
+
+
+                
+                // make background transparent
+
+                background: "rgba(255, 255, 255, 0.2)",
                 color: "#fff",
                 border: "none",
                 width: 40, // Set a fixed width
@@ -1321,13 +1362,29 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                borderRadius: "50%", // Ensure it's square
+                borderRadius: "30%", // Ensure it's square
                 cursor: "pointer",
               }}
-              onClick={closeModal}
+              
             >
-              X
+
+                      <img
+
+                      src={
+
+
+                          "/zoom.png"
+
+                      }
+
+                      style={{
+                        width: 24,
+                        height: 24,
+                      }}
+                      />
+              
             </Button>
+
           </div>
         </div>
       )}
