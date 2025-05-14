@@ -1354,7 +1354,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
                 
                 // make background transparent
 
-                background: "rgba(255, 255, 255, 0.2)",
+                background: "rgba(255, 255, 255, 0.5)",
                 color: "#fff",
                 border: "none",
                 width: 40, // Set a fixed width
