@@ -331,7 +331,7 @@ console.log("[DEBUG] Active Filters:", activeFilters);
           url.searchParams.append('keyword', keyword);
       }
   
-      console.log(`[DEBUG] Fetching products with URL: ${url.toString()}`);
+      // console.log(`[DEBUG] Fetching products with URL: ${url.toString()}`);
   
       const res = await fetch(url.toString(), {
         method: "GET",
@@ -346,8 +346,8 @@ console.log("[DEBUG] Active Filters:", activeFilters);
       }
   
       const json = await res.json();
-      console.log("[DEBUG] Fetched products:", json);
-      console.log("[DEBUG] Fetched products page", pageParam, ":", json.data?.length);
+     // console.log("[DEBUG] Fetched products:", json);
+     // console.log("[DEBUG] Fetched products page", pageParam, ":", json.data?.length);
   
       return {
         products: json.data || [], // Ensure products is always an array
@@ -628,7 +628,7 @@ onClick={() => handleLogin()}
 
 
       <InputGroup className="w-100">
-        <Form.Control className="select-description flex-grow-1" 
+        <Form.Control className="select-description flex-grow-1 form-control-lg" 
           type="text"
           id="search"
           maxLength={20}
@@ -675,7 +675,7 @@ onClick={() => handleLogin()}
                   
                   Filtro </div> */}
 
-      <Form.Select  className="select-description" 
+      <Form.Select  className="select-description form-control-lg" 
       id="store"
         style={{ width: "50%" }}
         onChange={(e) => {
@@ -958,7 +958,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
         );
      })()}
 
-            <div
+          <div
             className="overlay-container"
             role="button"
               style={{
@@ -997,6 +997,46 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
                     .pop()}`
                     )
                   }
+                />
+
+
+</div>
+
+<div
+            
+            role="button"
+              style={{
+                position: "absolute",
+
+                top: "5px",
+                left: "5px",
+                //
+                background: "rgba(0, 0, 0, 0.2)",
+                padding: "15px", // Optional: Add padding around the image
+                borderRadius: "20%", // Optional: Make it circular
+                
+              }}
+            >
+
+                <img
+
+                
+
+                // check screen size for mobile or desktop USING @MEDIA CSS
+                // if screen size is less than 768px use smaller image
+
+                  src={"/click.png"} // Replace with your overlay image path
+                  
+                  alt="Overlay"
+                  style={{
+                    position: "absolute",
+                    top: "0px", // Adjust as needed
+                    left: "0px", // Adjust as needed
+                    width: 24,
+
+                    
+                  }}
+                 
                 />
 
 
@@ -1061,13 +1101,11 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
                 padding: 5,  borderRadius: 5,justifyContent: "space-between"  }}>
 
             <div style={{ display: "flex", flexDirection: "column",  alignItems: "center", // Centers items horizontally
-    justifyContent: "center", borderColor: "red", 
-    //borderWidth: 1, // Border width
-   // borderStyle: "solid", // Solid border style
+                justifyContent: "center", borderColor: "red", 
+                //borderWidth: 1, // Border width
+              // borderStyle: "solid", // Solid border style
 
-
-
-     }} role="button">
+            }} role="button">
                   <img
                     src={product.isFavorite ? "star-fill-2.png" : "star-empty.jpg"}
                     alt={product.isFavorite ? "Unfavorite" : "Favorite"}
@@ -1082,9 +1120,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
                     }
                   />
 
-                  <span className="icon-description">
-                      {product.isFavorite ? "" : "Shto favorit"}
-                    </span>
+             
               </div>
                  {/* Sale icon */}
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }} role="button">
@@ -1093,9 +1129,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
                     alt={product.productOnSale ? "On sale" : "Not on sale"}
                     style={{ cursor: "hand", width: 24, height: 24 }}
                   />
-                  <span className="icon-description" style={{ color:product.productOnSale ? "green" : "red" }}>
-                    {product.productOnSale ? "Aktive" : "Skaduar"}
-                  </span>
+                
                 </div>
               </div>  
                 </Card.Body>
@@ -1171,10 +1205,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
             maxHeight: "90vh",
             cursor: "zoom-in",
           }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.transform = "scale(1.3)")
-          }
-          onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+
 />
 
 
@@ -1279,6 +1310,9 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
         {modalProduct.isFavorite ? "Hiq favorit" : "Shto favorit"}
       </span>
     </div>
+
+
+
     <div
       style={{
         display: "flex",
@@ -1354,7 +1388,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
                 
                 // make background transparent
 
-                background: "rgba(255, 255, 255, 0.5)",
+                background: "rgba(0, 0, 0, 0.5)",
                 color: "#fff",
                 border: "none",
                 width: 40, // Set a fixed width
