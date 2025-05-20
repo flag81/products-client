@@ -898,7 +898,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
           {data?.pages.map((page, pi) =>
             page.products.map((product, idx) => (
           <Col key={`${pi}-${idx}`} className="d-flex ">
-            <Card className="h-100 p-1  product-card"        
+            <Card className="h-100 p-1  product-card d-flex flex-column"        
             
                 // if product.productOnSale make card border red else make it white
                 style={{ borderColor: product.productOnSale ? "green" : null }}
@@ -1003,16 +1003,18 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
 </div>
 
 <div
+            className="overlay-container2"
             
-            role="button"
               style={{
                 position: "absolute",
 
                 top: "5px",
                 left: "5px",
                 //
-                background: "rgba(0, 0, 0, 0.2)",
-                padding: "15px", // Optional: Add padding around the image
+                //background: "rgba(0, 0, 0, 0.2)",
+               
+                backgroundColor: "rgba(255, 255, 255, 0.9)", // Semi-transparent white background 
+                padding: "12px", // Optional: Add padding around the image
                 borderRadius: "20%", // Optional: Make it circular
                 
               }}
@@ -1042,8 +1044,39 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
 
 </div>
 
+
+<div
+            className="overlay-container3"
+            
+              style={{
+                position: "absolute",
+
+                top: "30%",
+                right: "5px",
+                
+                //background: "rgba(0, 0, 0, 0.2)",
+                backgroundColor: "rgba(255, 255, 255, 0.9)", // Semi-transparent white background 
+               
+                borderRadius: "20%", // Optional: Make it circular
+                
+              }}
+            >
+
+              <span style={{ color: "green", fontWeight: "bold"}}>
+                {product.old_price > 0 && product.new_price && (
+                  <> -{Math.round(((product.old_price - product.new_price) / product.old_price) * 100)}%</>
+                )}
+              </span>
+
+
+</div>
+
               </div>
-              <Card.Body>
+              <Card.Body   style={{
+                display: "flex",
+                flexDirection: "column",
+                flex: 1,             // <-- body now expands to fill the card
+              }}>
             <Card.Text className="product-description">
               {product.product_description}
             </Card.Text>
@@ -1054,9 +1087,6 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
               <span style={{ color: "red" }}>{product.old_price && product.old_price > 0 ? product.old_price + "€ - " : ""}</span>
               <span style={{ color: "green" }}>
                 {product.new_price}€ 
-                {product.old_price > 0 && product.new_price && (
-                  <> (-{Math.round(((product.old_price - product.new_price) / product.old_price) * 100)}%)</>
-                )}
               </span>
             </Card.Text>
 
@@ -1095,10 +1125,23 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
               
             </Card.Text>
 
+
+<div  
+
+// make this div take the rest of the space vertically
+
+style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
+
+
+>
+  {/* ...existing code... */}
             {/* Favorite toggle */}
-            <div style={{ display: "flex", width:"100%",
-               flexDirection: "row", alignItems: "center", 
-                padding: 5,  borderRadius: 5,justifyContent: "space-between"  }}>
+            <div id="bottom-menu" style={{ display: "flex", width:"100%",
+               flexDirection: "row", alignItems: "center", // add vertical alignment to bottom
+               //border: "1px solid #ccc", // Optional: Add a border to separate the footer
+                alignItems: "flex-end", 
+                justifyContent: "space-between", // horizontal alignment to left
+                 borderRadius: 5,justifyContent: "space-between" }}>
 
             <div style={{ display: "flex", flexDirection: "column",  alignItems: "center", // Centers items horizontally
                 justifyContent: "center", borderColor: "red", 
@@ -1132,6 +1175,8 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
                 
                 </div>
               </div>  
+</div>
+
                 </Card.Body>
               </Card>
             </Col>
@@ -1211,7 +1256,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
 
 <span style={{ fontSize: 16, fontWeight: "bold", marginTop: 10 }}>
 {modalProduct.product_description}:
-  </span>
+  </span><br />
 
 {modalProduct.old_price && modalProduct.old_price > 0 ? (
   <span style={{ color: "red" }}>
@@ -1386,9 +1431,13 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
 
 
                 
-                // make background transparent
+                // make background transparent 
+                //backgroundColor: "rgb(0, 0, 0.5)", // Semi-transparent background
+                //background: "rgba(0, 0, 0, 0.5)",
+                // make background white semi transparent
+                //backgroundColor: "white", // Semi-transparent white background with rgba
+                backgroundColor: "rgba(255, 255, 255, 0.5)", // Semi-transparent white background 
 
-                background: "rgba(0, 0, 0, 0.5)",
                 color: "#fff",
                 border: "none",
                 width: 40, // Set a fixed width
