@@ -261,13 +261,15 @@ const handleUploadImages = async () => {
 
 
 
+// generate a randon 6 digit number to use as flyer book id
+
+const flyerBookId = Math.floor(100000 + Math.random() * 900000);
+
+console.log('flyerBookId:', flyerBookId);
 
 
 
 
-
-
- 
 
   // Arrays to collect results
   const allTexts = [];
@@ -285,6 +287,7 @@ const handleUploadImages = async () => {
     // add saleEndDate to formData as sale_end_date field
     formData.append('saleEndDate', saleEndDate);
     formData.append('storeId', storeId); // Send storeId in request
+    formData.append('flyerBookId', flyerBookId ); // Send storeId in request
 
     try {
       const res = await fetch(`${node_url}/extract-text`, {

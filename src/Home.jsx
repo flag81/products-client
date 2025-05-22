@@ -5,6 +5,8 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
+
+import FlyerSlider from "./FlyerSlider";
 import RegistrationModal from "./RegistrationModal";
 
 
@@ -17,6 +19,11 @@ import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Placeholder from "react-bootstrap/Placeholder";
 import Toast from 'react-bootstrap/Toast';
+import Slider from "react-slick";
+import { Spinner } from "react-bootstrap";
+
+
+
 
 
 
@@ -24,6 +31,7 @@ import Toast from 'react-bootstrap/Toast';
 function Home({ mode }) {
   // ─── State & Refs ─────────────────────────────────────────────────────────────
   const [stores, setStores] = useState([]);
+  const [flyerBook, setFlyerBook] = useState([]);
   const [users, setUsers] = useState([]);
   const [selectedStore, setSelectedStore] = useState("");
   const [selectedStoreName, setSelectedStoreName] = useState("");
@@ -36,6 +44,7 @@ function Home({ mode }) {
   const [userId, setUserId] = useState(null);
   const [email, setEmail] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFlyerModalOpen, setIsFlyerModalOpen ] = useState(false);
   const [modalImageUrl, setModalImageUrl] = useState("");
   const observerRef = useRef(null);
 
@@ -144,16 +153,19 @@ function Home({ mode }) {
   };
 
     // MODIFIED: Handle actions requiring registration
-    const handleLoginOrRegisterPrompt = () => {
-      if (!isRegistered) { // Prompt only if not fully registered
-           console.log("[DEBUG] User not registered, showing registration modal.");
-           setShowRegisterModal(true);
-      } else {
-          console.log("[DEBUG] User is already registered.");
-          // Optionally navigate to profile or perform another action
-      }
-  };
+     const handleFlyerModal = async (flyerBookId) => {
+         console.log("[DEBUG] loading flyer images for", flyerBookId);
+         const imgs = await getFlyerBook(flyerBookId);
+         if (imgs?.length)
+          {
 
+
+            console.log("[DEBUG] FlyerBook images loaded:", imgs);
+            setFlyerBook(imgs);
+            setIsModalOpen(false);
+            setIsFlyerModalOpen(true);
+          } 
+       };
 
   // DEBUG: log whenever modal opens, URL changes or load flag changes
 useEffect(() => {
@@ -161,6 +173,14 @@ useEffect(() => {
   console.log("[DEBUG] Modal image URL:", modalImageUrl);
   console.log("[DEBUG] isImageLoaded:", isImageLoaded);
 }, [isModalOpen, modalImageUrl, isImageLoaded]);
+
+
+useEffect(() => {
+
+  console.log("[DEBUG] Flyer Modal Open:", isFlyerModalOpen);
+  console.log("[DEBUG] FlyerBook CHANGED:", flyerBook);
+}, [isFlyerModalOpen,  flyerBook]);
+
 
  const handleLogin = () => {
 
@@ -346,7 +366,7 @@ console.log("[DEBUG] Active Filters:", activeFilters);
       }
   
       const json = await res.json();
-     // console.log("[DEBUG] Fetched products:", json);
+      console.log("[DEBUG] Fetched products:", json);
      // console.log("[DEBUG] Fetched products page", pageParam, ":", json.data?.length);
   
       return {
@@ -356,6 +376,27 @@ console.log("[DEBUG] Active Filters:", activeFilters);
     }
 
   const openModal = (imageUrl, product) => {
+    console.log("[DEBUG] openModal()", product);
+    console.log("[DEBUG] setModalImageUrl()", modalImageUrl);
+    setModalImageUrl(false);
+    setIsImageLoaded(false); // Reset the loaded state when opening the modal
+    console.log("[DEBUG] setModalImageUrl()", modalImageUrl);
+    setModalImageUrl(imageUrl);
+    setIsModalOpen(true);
+
+    setModalProduct(product);
+    console.log("[DEBUG] setModalProduct()", product);
+
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setModalImageUrl(false);
+  };
+
+
+
+  const openFlyerModal = (imageUrl, product) => {
     console.log("[DEBUG] openModal()", imageUrl);
     console.log("[DEBUG] setModalImageUrl()", modalImageUrl);
     setModalImageUrl(false);
@@ -368,9 +409,10 @@ console.log("[DEBUG] Active Filters:", activeFilters);
     console.log("[DEBUG] setModalProduct()", product);
 
   };
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setModalImageUrl(false);
+  
+  const closeFlyerModal = () => {
+    setIsFlyerModalOpen(false);
+    //setImageUrl(false);
   };
 
     // --- Check User Session ---
@@ -442,6 +484,26 @@ console.log("[DEBUG] Active Filters:", activeFilters);
       setStores(result);
     } catch (error) {
       console.error("Error fetching stores:", error);
+    }
+  };
+
+  const getFlyerBook = async (flyerBookId) => {
+    try {
+
+
+      console.log("[DEBUG] getFlyerBook called with flyerBookId:", flyerBookId);
+
+      // add the flyerBookId to the url as req.query.flyerBookId
+      const response = await fetch(`${node_url}/getImagesByFlyerBookId?flyerBookId=${flyerBookId}`);
+
+      const result = await response.json();
+      //setFlyerBook(result);
+
+      return result;
+
+      console.log("[DEBUG] FlyerBook fetched:", result);
+    } catch (error) {
+      console.error("Error fetching FlyerBook:", error);
     }
   };
 
@@ -526,7 +588,14 @@ const lgCols      = count >= 4 ? 4 : count || 1;
 
 
 
-
+const settings = {
+  dots: true,
+  infinite: true,
+  speed: 300,
+  slidesToShow: 1,
+  slidesToScroll: 1,
+  adaptiveHeight: true, 
+};
 
 
 
@@ -945,6 +1014,11 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
         // use single, auto-format/DPR transformation for max resolution
         const imgUrl = `${baseUrl}/${autoTransformation}/${directory}/${filename}`;
 
+  
+
+
+
+
         return (
           <img
             className="card-img-top product-image"
@@ -979,6 +1053,10 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
 
                 // check screen size for mobile or desktop USING @MEDIA CSS
                 // if screen size is less than 768px use smaller image
+
+
+                // how to place this overlay image to botton right corner of the image , but the image height may vary
+
 
                   src={"/loop.png"} // Replace with your overlay image path
                   
@@ -1097,11 +1175,11 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
               {product.sale_end_date ? (
                 
 
-                <>Deri me: <span style={{ color: product.productOnSale ? "green" : "red" }}>
+                <><span style={{ color: product.productOnSale ? "green" : "red" }}>
 
 
 
-                  
+{product.productOnSale ? "Deri" : "Skaduar" } :  
                
 
               {new Date(product.sale_end_date).toLocaleDateString(
@@ -1163,6 +1241,9 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
                     }
                   />
 
+
+                  
+
              
               </div>
                  {/* Sale icon */}
@@ -1193,7 +1274,7 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
 
       {/* Image Modal */}
       {isModalOpen && (
-        <div
+        <div id="product-modal"
           style={{
             position: "fixed",
             top: 0,
@@ -1212,7 +1293,7 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
             style={{
               position: "relative",
               backgroundColor: "#fff",
-              padding: 10,
+              padding: 2,
               borderRadius: 8,
               maxWidth: "95%",
               maxHeight: "95%",
@@ -1244,11 +1325,12 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
           style={{
             display: isImageLoaded ? "block" : "none",
             width: "100%",
-            height: "auto",
+            height: "100%",
             objectFit: "contain",
-            maxWidth: 600,
-            maxHeight: "90vh",
+            maxWidth: 500,
+            maxHeight: "95vh",
             cursor: "zoom-in",
+            borderRadius: 5,
           }}
 
 />
@@ -1275,14 +1357,14 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
 
 </span>
 
-<span style={{ color: "black" }}>
+<span style={{ color: "black", marginRight:5 }}>
     <br />
     {modalProduct.storeName}
 
   </span>
   <span style={{ color: "black" }}>
 
-    <br />
+
     {
     
     // check is products sale_end_date is not null and if it is in the future
@@ -1291,7 +1373,7 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
       <>
 
         <span style={{ color: "green" }}>
-          Deri me:{" "}
+          Deri:{" "}
           {new Date(modalProduct.sale_end_date).toLocaleDateString(
             "en-GB",
             {
@@ -1330,10 +1412,7 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
       }}
       onClick={() =>
         handleToggleFavorite(modalProduct.productId, modalProduct.isFavorite)
-        // setModalProduct((prev) => ({
-        //   ...prev,
-        //   isFavorite: !prev.isFavorite,
-        // }))
+
 
       }
     >
@@ -1353,10 +1432,47 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
       />
       <span className="icon-description">
         {modalProduct.isFavorite ? "Hiq favorit" : "Shto favorit"}
+      
       </span>
     </div>
 
 
+{modalProduct.flyer_book_id > 0 && (
+    <div
+
+style={{
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  cursor: "pointer",
+}}
+onClick={() =>
+  handleFlyerModal(modalProduct.flyer_book_id)
+
+
+}
+>
+<img
+
+  src={
+    modalProduct.isFavorite
+
+      ? "/flyer.png"
+      : "/flyer.png"
+  }
+  alt={modalProduct.isFavorite ? "Unfavorite" : "Favorite"}
+  style={{
+    width: 24,
+    height: 24,
+  }}
+/>
+<span className="icon-description">
+  Fletushka
+</span>
+</div>
+
+)}
 
     <div
       style={{
@@ -1390,6 +1506,28 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
         {modalProduct.productOnSale ? "Aktive" : "Skaduar"}
       </span>
     </div>
+  </div>
+
+
+  
+  <div
+    style={{
+      display: "flex",
+      flexDirection: "row",
+      alignItems: "center",
+
+      justifyContent: "space-between",
+      marginTop: 10,
+      padding: 5,
+      borderRadius: 5,
+    }}
+  >
+  
+
+
+
+
+
   </div>
   {/* Close button */}
 
@@ -1472,8 +1610,24 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
         </div>
       )}
 
+
+{/* your existing modal wrapper */}
+{isFlyerModalOpen && (
+  <FlyerSlider
+    flyerBook={flyerBook}
+    baseUrl={baseUrl}
+    isFlyerModalOpen={isFlyerModalOpen}
+    closeFlyerModal={closeFlyerModal}
+  />
+)}
+
       <div ref={observerRef} style={{ height: 20, margin: "10px 0" }} />
-      {isFetching && !isFetchingNextPage && <p>Duke ngarkuar...</p>}
+      {
+      isFetching && !isFetchingNextPage && <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+      
+      }
 
       <RegistrationModal
         show={showRegisterModal}
