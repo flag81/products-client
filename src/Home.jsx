@@ -1295,8 +1295,8 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
               backgroundColor: "#fff",
               padding: 2,
               borderRadius: 8,
-              maxWidth: "95%",
-              maxHeight: "95%",
+              maxWidth: "100%",
+              maxHeight: "100%",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1324,13 +1324,14 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
 
           style={{
             display: isImageLoaded ? "block" : "none",
-            width: "100%",
+            width: "97%",
             height: "100%",
             objectFit: "contain",
             maxWidth: 500,
             maxHeight: "95vh",
             cursor: "zoom-in",
             borderRadius: 5,
+            alignContent: "center",
           }}
 
 />
@@ -1357,11 +1358,12 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
 
 </span>
 
-<span style={{ color: "black", marginRight:5 }}>
+{ <span style={{ color: "black", marginRight:5 }}>
     <br />
     {modalProduct.storeName}
 
-  </span>
+  </span> }
+
   <span style={{ color: "black" }}>
 
 
