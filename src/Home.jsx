@@ -1293,7 +1293,7 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
             style={{
               position: "relative",
               backgroundColor: "#fff",
-              padding: 2,
+             
               borderRadius: 8,
               maxWidth: "100%",
               maxHeight: "100%",
@@ -1324,21 +1324,50 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
 
           style={{
             display: isImageLoaded ? "block" : "none",
-            width: "97%",
+            width: "100%",
             height: "100%",
             objectFit: "contain",
             maxWidth: 500,
-            maxHeight: "95vh",
+            maxHeight: "100vh",
             cursor: "zoom-in",
             borderRadius: 5,
-            alignContent: "center",
+            marginLeft: 'auto',    // Added to center the image horizontally
+            marginRight: 'auto',   // Added to center the image horizontally
+ 
           }}
 
 />
 
 
-<span style={{ fontSize: 16, fontWeight: "bold", marginTop: 10 }}>
-{modalProduct.product_description}:
+<span style={{ fontSize: 16, 
+  fontWeight: "bold", marginTop: 10, 
+  whiteSpace: "pre-wrap", 
+    wordBreak: "break-word", // Forces long words to wrap
+    overflowWrap: "break-word",
+    width: "100%",           // Ensures it doesn't overflow
+    lineHeight: 1.3,
+  }}>
+
+
+
+
+
+{modalProduct.product_description.length > 50
+  ? modalProduct.product_description.substring(0, 40) + "\n" + modalProduct.product_description.substring(40)
+  : modalProduct.product_description}
+
+
+
+
+
+
+
+
+  
+
+
+
+
   </span><br />
 
 {modalProduct.old_price && modalProduct.old_price > 0 ? (
@@ -1433,8 +1462,7 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
         }}
       />
       <span className="icon-description">
-        {modalProduct.isFavorite ? "Hiq favorit" : "Shto favorit"}
-      
+        {modalProduct.isFavorite ? "Hiq favorit" : "Shto favorit"}      
       </span>
     </div>
 
