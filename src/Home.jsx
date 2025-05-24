@@ -3,11 +3,13 @@ import {
   useInfiniteQuery,
   useMutation,
   useQueryClient,
+  useQuery
 } from "@tanstack/react-query";
 
 
 import FlyerSlider from "./FlyerSlider";
 import RegistrationModal from "./RegistrationModal";
+import ProductModal from "./ProductModal";
 
 
 import Container from "react-bootstrap/Container";
@@ -47,6 +49,8 @@ function Home({ mode }) {
   const [isFlyerModalOpen, setIsFlyerModalOpen ] = useState(false);
   const [modalImageUrl, setModalImageUrl] = useState("");
   const observerRef = useRef(null);
+
+  const [flyerBookId, setFlyerBookId] = useState(null);
 
   const [modalProduct, setModalProduct] = useState({});
 
@@ -152,20 +156,22 @@ function Home({ mode }) {
   }
   };
 
-    // MODIFIED: Handle actions requiring registration
-     const handleFlyerModal = async (flyerBookId) => {
-         console.log("[DEBUG] loading flyer images for", flyerBookId);
-         const imgs = await getFlyerBook(flyerBookId);
-         if (imgs?.length)
-          {
 
+  const handleFlyerModal = (id) => {
+  setFlyerBookId(id);
+  setIsFlyerModalOpen(true);
+};
 
-            console.log("[DEBUG] FlyerBook images loaded:", imgs);
-            setFlyerBook(imgs);
-            setIsModalOpen(false);
-            setIsFlyerModalOpen(true);
-          } 
-       };
+const {
+  data: flyerBookData,
+  isLoading: isFlyerLoading,
+  error: flyerBookError,
+} = useQuery({
+  queryKey: ['flyerBook', flyerBookId],
+  queryFn: () => getFlyerBook(flyerBookId),
+  enabled: !!flyerBookId && isFlyerModalOpen,
+});
+
 
   // DEBUG: log whenever modal opens, URL changes or load flag changes
 useEffect(() => {
@@ -501,7 +507,7 @@ console.log("[DEBUG] Active Filters:", activeFilters);
 
       return result;
 
-      console.log("[DEBUG] FlyerBook fetched:", result);
+      //console.log("[DEBUG] FlyerBook fetched:", result);
     } catch (error) {
       console.error("Error fetching FlyerBook:", error);
     }
@@ -1273,381 +1279,28 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
       </Row>
 
       {/* Image Modal */}
-      {isModalOpen && (
-        <div id="product-modal"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(0,0,0,0.8)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-          }}
-          onClick={closeModal}
-        >
-          <div
-            style={{
-              position: "relative",
-              backgroundColor: "#fff",
-             
-              borderRadius: 8,
-              maxWidth: "100%",
-              maxHeight: "100%",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-
-{!isImageLoaded && (
-<>
-
-
-  <Placeholder as="div" animation="glow">
-    <Placeholder
-      style={{
-        width: 300,
-        maxWidth: 300,
-        height: "60vh",    // match your maxHeight
-      }}
-    />
-  </Placeholder>
-  </>
-)}
-
-      <img
-          src={modalImageUrl}
-          alt="Product Modal"
-          onLoad={() => setIsImageLoaded(true)} // Set loaded to true when the image loads
-
-          style={{
-            display: isImageLoaded ? "block" : "none",
-            width: "100%",
-            height: "100%",
-            objectFit: "contain",
-            maxWidth: 470,
-            maxHeight: "100vh",
-            cursor: "zoom-in",
-            borderRadius: 5,
-            marginLeft: 'auto',    // Added to center the image horizontally
-            marginRight: 'auto',   // Added to center the image horizontally
- 
-          }}
-
+{/* Image Modal */}
+<ProductModal
+  isOpen={isModalOpen}
+  onClose={closeModal}
+  modalImageUrl={modalImageUrl}
+  isImageLoaded={isImageLoaded}
+  setIsImageLoaded={setIsImageLoaded}
+  modalProduct={modalProduct}
+  handleToggleFavorite={handleToggleFavorite}
+  handleFlyerModal={handleFlyerModal}
 />
-
-
-<span style={{ fontSize: 16, 
-  fontWeight: "bold", marginTop: 10, 
-  whiteSpace: "pre-wrap", 
-    wordBreak: "break-word", // Forces long words to wrap
-    overflowWrap: "break-word",
-    width: "100%",           // Ensures it doesn't overflow
-    lineHeight: 1.3,
-  }}>
-
-
-
-
-
-{modalProduct.product_description.length > 50
-  ? modalProduct.product_description.substring(0, 40) + "\n" + modalProduct.product_description.substring(40)
-  : modalProduct.product_description}
-
-
-
-
-
-
-
-
-  
-
-
-
-
-  </span><br />
-
-{modalProduct.old_price && modalProduct.old_price > 0 ? (
-  <span style={{ color: "red" }}>
-    {modalProduct.old_price}€ -
-  </span>
-) : (
-  <span style={{ color: "red" }}></span>
-)}
-<span style={{ color: "green" }}>
-  {modalProduct.new_price}€
-  {modalProduct.old_price > 0 && modalProduct.new_price && (
-    <> (-{Math.round(((modalProduct.old_price - modalProduct.new_price) / modalProduct.old_price) * 100)}%)</>
-  )}
-
-
-
-</span>
-
-{ <span style={{ color: "black", marginRight:5 }}>
-    <br />
-    {modalProduct.storeName}
-
-  </span> }
-
-  <span style={{ color: "black" }}>
-
-
-    {
-    
-    // check is products sale_end_date is not null and if it is in the future
-    modalProduct.sale_end_date && new Date(modalProduct.sale_end_date) > new Date()
-    ? (
-      <>
-
-        <span style={{ color: "green" }}>
-          Deri:{" "}
-          {new Date(modalProduct.sale_end_date).toLocaleDateString(
-            "en-GB",
-            {
-              day: "2-digit",
-              month: "2-digit",
-              year: "2-digit",
-            }
-          )}
-        </span>
-      </>
-    ) : (
-      ""
-    )}
-  </span>
-
-  <div
-    style={{
-      display: "flex",
-      flexDirection: "row",
-      alignItems: "center",
-
-      justifyContent: "space-between",
-      marginTop: 10,
-      padding: 5,
-      borderRadius: 5,
-    }}
-  >
-    <div
-
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        cursor: "pointer",
-      }}
-      onClick={() =>
-        handleToggleFavorite(modalProduct.productId, modalProduct.isFavorite)
-
-
-      }
-    >
-      <img
-
-        src={
-          modalProduct.isFavorite
-
-            ? "/star-fill-2.png"
-            : "/star-empty.jpg"
-        }
-        alt={modalProduct.isFavorite ? "Unfavorite" : "Favorite"}
-        style={{
-          width: 24,
-          height: 24,
-        }}
-      />
-      <span className="icon-description">
-        {modalProduct.isFavorite ? "Hiq favorit" : "Shto favorit"}      
-      </span>
-    </div>
-
-
-{modalProduct.flyer_book_id > 0 && (
-    <div
-
-style={{
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  justifyContent: "center",
-  cursor: "pointer",
-}}
-onClick={() =>
-  handleFlyerModal(modalProduct.flyer_book_id)
-
-
-}
->
-<img
-
-  src={
-    modalProduct.isFavorite
-
-      ? "/flyer.png"
-      : "/flyer.png"
-  }
-  alt={modalProduct.isFavorite ? "Unfavorite" : "Favorite"}
-  style={{
-    width: 24,
-    height: 24,
-  }}
-/>
-<span className="icon-description">
-  Fletushka
-</span>
-</div>
-
-)}
-
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        cursor: "pointer",
-      }}
-    >
-      <img
-
-        src={
-          modalProduct.productOnSale
-            ? "/sale-fill-2.png"
-            : "/sale-empty.jpg"
-        }
-        alt={
-          modalProduct.productOnSale ? "On sale" : "Not on sale"
-        }
-        style={{ width: 24, height: 24 }}
-      />
-      <span className="icon-description"
-      
-      style={{
-        color: modalProduct.productOnSale ? "green" : "red",
-      }}
-      
-      
-      >
-        {modalProduct.productOnSale ? "Aktive" : "Skaduar"}
-      </span>
-    </div>
-  </div>
-
-
-  
-  <div
-    style={{
-      display: "flex",
-      flexDirection: "row",
-      alignItems: "center",
-
-      justifyContent: "space-between",
-      marginTop: 10,
-      padding: 5,
-      borderRadius: 5,
-    }}
-  >
-  
-
-
-
-
-
-  </div>
-  {/* Close button */}
-
-
-
-            <Button
-              style={{
-                position: "absolute",
-                top: 10,
-                right: 10,
-                background: "white",
-                color: "black",
-                border: "none",
-                width: 40, // Set a fixed width
-                height: 40, // Set a fixed height
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: "30%", // Ensure it's square
-                cursor: "pointer",
-                //make font color black
-
-             
-
-              }}
-              onClick={closeModal}
-            >
-              X
-
-            </Button>
-
-            <Button
-              style={{
-                position: "absolute",
-
-                // position the button in the center of the image
-                top: "50%",
-                left: "50%",
-
-
-                
-                // make background transparent 
-                //backgroundColor: "rgb(0, 0, 0.5)", // Semi-transparent background
-                //background: "rgba(0, 0, 0, 0.5)",
-                // make background white semi transparent
-                //backgroundColor: "white", // Semi-transparent white background with rgba
-                backgroundColor: "rgba(255, 255, 255, 0.5)", // Semi-transparent white background 
-
-                color: "#fff",
-                border: "none",
-                width: 40, // Set a fixed width
-                height: 40, // Set a fixed height
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: "30%", // Ensure it's square
-                cursor: "pointer",
-              }}
-              
-            >
-
-                      <img
-
-                      src={
-
-
-                          "/zoom.png"
-
-                      }
-
-                      style={{
-                        width: 24,
-                        height: 24,
-                      }}
-                      />
-              
-            </Button>
-
-          </div>
-        </div>
-      )}
 
 
 {/* your existing modal wrapper */}
 {isFlyerModalOpen && (
   <FlyerSlider
-    flyerBook={flyerBook}
+    flyerBook={flyerBookData}
     baseUrl={baseUrl}
     isFlyerModalOpen={isFlyerModalOpen}
     closeFlyerModal={closeFlyerModal}
+    isLoading={isFlyerLoading}
+    error={flyerBookError}
   />
 )}
 

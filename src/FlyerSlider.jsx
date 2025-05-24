@@ -68,8 +68,8 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
   onClick={e => e.stopPropagation()}
   style={{ width: '100%', maxWidth: '600px', margin: '0 auto' }} // Added styles
 >
-  {flyerBook.length > 0 ? (
-    <Slider key={flyerBook.length} {...settings}>
+  {flyerBook?.length > 0 ? (
+    <Slider key={flyerBook?.length} {...settings}>
       {flyerBook.map((item, i) => {
         const url = item.image_url.startsWith('http')
           ? item.image_url

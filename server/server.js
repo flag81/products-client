@@ -2015,6 +2015,7 @@ app.post('/upload0', upload.array('images', 10), async (req, res) => {
           }
         ],
       });
+      
       console.log('Transformed image URL:', transformationResult.secure_url);
       const saveLocally = async (url, destination) => {
         try {
