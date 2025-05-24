@@ -1327,7 +1327,7 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
             width: "100%",
             height: "100%",
             objectFit: "contain",
-            maxWidth: 500,
+            maxWidth: 470,
             maxHeight: "100vh",
             cursor: "zoom-in",
             borderRadius: 5,

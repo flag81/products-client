@@ -1,7 +1,8 @@
-import React from "react";
+import React, { lazy } from "react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import { Placeholder } from "react-bootstrap";
 
 // Styles for container (add to your CSS file or styled-component)
 // .slider-container {
@@ -23,6 +24,8 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
     slidesToShow: 1,
     slidesToScroll: 1,
     adaptiveHeight: true,
+    
+
   };
 
   return (
