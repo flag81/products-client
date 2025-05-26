@@ -593,6 +593,10 @@ const count       = allProducts.length;
 const lgCols      = count >= 4 ? 4 : count || 1;
 
 
+const onSaleProducts = allProducts.filter(p => p.productOnSale);
+const notOnSaleProducts = allProducts.filter(p => !p.productOnSale);
+
+
 
 const settings = {
   dots: true,
@@ -692,6 +696,8 @@ onClick={() => handleLogin()}
       </Container>
 
 <Container>
+
+
   {/* Search and Store Filter */}
   <Row className="mb-3 d-flex d-md-flex flex-column flex-md-row align-items-center"
  style={{ flexWrap: "wrap", minWidth: "100%" }}
@@ -953,26 +959,23 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
 
 }
 
+{
 
+
+  
+}
 
 
 
       {/* Products */}
 
      
-        <Row 
 
-            xs={2}
-            sm={2}
-            md={2}
-            lg={lgCols}
-        
-        
-         
-        className="g-2 justify-content-start ">
-          {data?.pages.map((page, pi) =>
-            page.products.map((product, idx) => (
-          <Col key={`${pi}-${idx}`} className="d-flex ">
+
+
+<Row xs={2} sm={2} md={2} lg={lgCols} className="g-2 justify-content-start">
+  {onSaleProducts.map((product, idx) => (
+          <Col key={`onsale-${idx}`} className="d-flex ">
             <Card className="h-100 p-1  product-card d-flex flex-column"        
             
                 // if product.productOnSale make card border red else make it white
@@ -994,25 +997,6 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
             )}
 
 
-              {/* <Card.Img
-
-                    variant="top"
-                    className="product-image"
-                  
-                    src={`${baseUrl}/${transformation}/${directory}/${product.image_url
-                      .split("/")
-                      .pop()}`}
-                    alt={product.product_description}
-                    onLoad={() => setIsCardImageLoaded(true)} // Set loaded to true when the image loads
-                    onClick={() =>
-                      openModal(
-                        `${baseUrl}/${transformation2}/${directory}/${product.image_url
-                      .split("/")
-                      .pop()}`, product
-                      )
-                    }
-          
-              /> */}
 
 
       {(() => {
@@ -1267,16 +1251,308 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
                 </Card.Body>
               </Card>
             </Col>
+  ))}
+</Row>
+
+
+      {/* Not On Sale Products */}
+      
+      <div className="select-description"
+
+style={{ marginLeft: 5, 
+marginRight: 5, border: "1px solid #ccc", padding:3 ,borderRadius: 5 , marginBottom: 10,
+marginTop: 10
+
+}}>
+<span style={{ fontWeight: "bold" }}>
+        Te skaduara
+      </span>
+</div>
+      
+     
+
+
+
+<Row xs={2} sm={2} md={2} lg={lgCols} className="g-2 justify-content-start">
+  {notOnSaleProducts.map((product, idx) => (
+          <Col key={`notonsale-${idx}`} className="d-flex ">
+            <Card className="h-100 p-1  product-card d-flex flex-column"        
+            
+                // if product.productOnSale make card border red else make it white
+                style={{ borderColor: product.productOnSale ? "green" : null }}
+                
+                >
+            <div >
+
+            {!isCardImageLoaded && (
+              <Placeholder as="div" animation="glow">
+                <Placeholder
+                  style={{
+                    width: "100%",
+                    height: "200px", // Adjust to match the image dimensions
+                  }}
+                  className="rounded" // Optional: Add rounded corners
+                />
+              </Placeholder>
+            )}
 
 
 
 
-          ))
-        )}
+      {(() => {
+        const filename = product.image_url.split("/").pop();
+        // use single, auto-format/DPR transformation for max resolution
+        const imgUrl = `${baseUrl}/${autoTransformation}/${directory}/${filename}`;
+
+  
 
 
 
-      </Row>
+
+        return (
+          <img
+            className="card-img-top product-image"
+            src={imgUrl}
+            alt={product.product_description}
+            loading="lazy"
+            onLoad={() => setIsCardImageLoaded(true)}
+            onClick={() => openModal(imgUrl, product)}
+            style={{ cursor: "pointer", width: "100%", height: "auto" }}
+          />
+        );
+     })()}
+
+          <div
+            className="overlay-container"
+            role="button"
+              style={{
+                position: "absolute",
+                top: "5px", // Same position as the image
+                right: "5px", // Same position as the image
+                //
+                backgroundColor: "rgb(249, 245, 245)", // Semi-transparent background
+                padding: "15px", // Optional: Add padding around the image
+                borderRadius: "20%", // Optional: Make it circular
+                
+              }}
+            >
+
+                <img
+
+                
+
+                // check screen size for mobile or desktop USING @MEDIA CSS
+                // if screen size is less than 768px use smaller image
+
+
+                // how to place this overlay image to botton right corner of the image , but the image height may vary
+
+
+                  src={"/loop.png"} // Replace with your overlay image path
+                  
+                  alt="Overlay"
+                  style={{
+                    position: "absolute",
+                    top: "0px", // Adjust as needed
+                    right: "0px", // Adjust as needed
+
+                    
+                  }}
+                  onClick={() =>
+                    openModal(
+                      `${baseUrl}/${directory}/${product.image_url
+                    .split("/")
+                    .pop()}`
+                    )
+                  }
+                />
+
+
+</div>
+
+<div
+            className="overlay-container2"
+            
+              style={{
+                position: "absolute",
+
+                top: "5px",
+                left: "5px",
+                //
+                //background: "rgba(0, 0, 0, 0.2)",
+               
+                backgroundColor: "rgba(255, 255, 255, 0.9)", // Semi-transparent white background 
+                padding: "12px", // Optional: Add padding around the image
+                borderRadius: "20%", // Optional: Make it circular
+                
+              }}
+            >
+
+                <img
+
+                
+
+                // check screen size for mobile or desktop USING @MEDIA CSS
+                // if screen size is less than 768px use smaller image
+
+                  src={"/click.png"} // Replace with your overlay image path
+                  
+                  alt="Overlay"
+                  style={{
+                    position: "absolute",
+                    top: "0px", // Adjust as needed
+                    left: "0px", // Adjust as needed
+                    width: 24,
+
+                    
+                  }}
+                 
+                />
+
+
+</div>
+
+
+<div
+            className="overlay-container3"
+            
+              style={{
+                position: "absolute",
+
+                top: "30%",
+                right: "5px",
+                
+                //background: "rgba(0, 0, 0, 0.2)",
+                backgroundColor: "rgba(255, 255, 255, 0.9)", // Semi-transparent white background 
+               
+                borderRadius: "20%", // Optional: Make it circular
+                
+              }}
+            >
+
+              <span style={{ color: "green", fontWeight: "bold"}}>
+                {product.old_price > 0 && product.new_price && (
+                  <> -{Math.round(((product.old_price - product.new_price) / product.old_price) * 100)}%</>
+                )}
+              </span>
+
+
+</div>
+
+              </div>
+              <Card.Body   style={{
+                display: "flex",
+                flexDirection: "column",
+                flex: 1,             // <-- body now expands to fill the card
+              }}>
+            <Card.Text className="product-description">
+              {product.product_description}
+            </Card.Text>
+
+
+            
+            <Card.Text className="product-description">
+              <span style={{ color: "red" }}>{product.old_price && product.old_price > 0 ? product.old_price + "€ - " : ""}</span>
+              <span style={{ color: "green" }}>
+                {product.new_price}€ 
+              </span>
+            </Card.Text>
+
+            <Card.Text className="product-description">
+               {product.storeName}
+            </Card.Text>
+            <Card.Text className="sale-date">
+              {product.sale_end_date ? (
+                
+
+                <><span style={{ color: product.productOnSale ? "green" : "red" }}>
+
+
+
+{product.productOnSale ? "Deri" : "Skaduar" } :  
+               
+
+              {new Date(product.sale_end_date).toLocaleDateString(
+                "en-GB",
+                {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "2-digit",
+                }
+              )}
+
+
+              <br />
+              </span>
+                </>
+              ) 
+              
+              : null}
+
+              
+              
+            </Card.Text>
+
+
+<div  
+
+// make this div take the rest of the space vertically
+
+style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
+
+
+>
+  {/* ...existing code... */}
+            {/* Favorite toggle */}
+            <div id="bottom-menu" style={{ display: "flex", width:"100%",
+               flexDirection: "row", alignItems: "center", // add vertical alignment to bottom
+               //border: "1px solid #ccc", // Optional: Add a border to separate the footer
+                alignItems: "flex-end", 
+                justifyContent: "space-between", // horizontal alignment to left
+                 borderRadius: 5,justifyContent: "space-between" }}>
+
+            <div style={{ display: "flex", flexDirection: "column",  alignItems: "center", // Centers items horizontally
+                justifyContent: "center", borderColor: "red", 
+                //borderWidth: 1, // Border width
+              // borderStyle: "solid", // Solid border style
+
+            }} role="button">
+                  <img
+                    src={product.isFavorite ? "star-fill-2.png" : "star-empty.jpg"}
+                    alt={product.isFavorite ? "Unfavorite" : "Favorite"}
+                    style={{
+                     
+                      width: 24,
+                      height: 24,
+                      
+                    }}
+                    onClick={() =>
+                      handleToggleFavorite(product.productId, product.isFavorite)
+                    }
+                  />
+
+
+                  
+
+             
+              </div>
+                 {/* Sale icon */}
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }} role="button">
+                  <img
+                    src={product.productOnSale ? "sale-fill-2.png" : "sale-empty.jpg"}
+                    alt={product.productOnSale ? "On sale" : "Not on sale"}
+                    style={{ cursor: "hand", width: 24, height: 24 }}
+                  />
+                
+                </div>
+              </div>  
+</div>
+
+                </Card.Body>
+              </Card>
+            </Col>
+  ))}
+</Row>
 
       {/* Image Modal */}
 {/* Image Modal */}
