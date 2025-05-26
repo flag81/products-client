@@ -66,7 +66,7 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
 <div id="flamur"
   className="slider-container"
   onClick={e => e.stopPropagation()}
-  style={{ width: '100%', maxWidth: '600px', margin: '0 auto' }} // Added styles
+  style={{ width: '100%', maxWidth: '400px', margin: '0 auto' }} // Added styles
 >
   {flyerBook?.length > 0 ? (
     <Slider key={flyerBook?.length} {...settings}>
@@ -80,7 +80,7 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
             <img
               src={url}
               alt={`Flyer ${i}`}
-              style={{ display: 'inline-block', width: '100%', maxHeight: '80vh', objectFit: 'contain' }} // Adjusted image styles for better fitting
+              style={{ display: 'inline-block', width: '400px', maxHeight: '80vh', objectFit: 'contain' }} // Adjusted image styles for better fitting
             />
           </div>
         );

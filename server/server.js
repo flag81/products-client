@@ -1191,6 +1191,11 @@ For each distinct product entry you identify in the image, create a JSON object 
 Also, generate a list of relevant keywords for each product description. These keywords should be in lowercase, in Albanian, 
 and exclude common articles, conjunctions, prepositions, and size/volume information (like 'kg', 'l', 'pako', numbers, units). 
 Only include words longer than 2 characters. Convert the Albanian letter 'ë' to 'e' for all keywords. 
+If there is a keyword like "qumesht" or "qumësht" add a keyword "qumsht" as well to cover both spellings.
+if there is a keyword like "veze" add a keyword "vo" as well to cover both spellings.
+if there is a keyword like "shalqi*" add a keyword "bostan" as well to cover both spellings.
+if there is a keyword like "ver*" add a keyword "vene" as well to cover both spellings.
+if there is a keyword like "qepe" add a keyword "kep" as well to cover both spellings.
 The \`keywords\` field should be an array of strings. Limit the keywords to the most relevant 5 per product.
 
 If you can find a date mentioned explicitly in the flyer image that seems to indicate the sale end date, use that date instead of the provided \`${saleEndDate}\`, formatted as "YYYY-MM-DD". If multiple dates are present, use the latest one as the \`sale_end_date\` for all products extracted from this image.
@@ -1198,6 +1203,7 @@ If you can find a date mentioned explicitly in the flyer image that seems to ind
 Provide ONLY the JSON array of extracted product objects in your response. Do not include any introductory or concluding text, explanations, or code block markers. Ensure the output is valid JSON.
 
 `;
+
 
 
 
@@ -2015,7 +2021,7 @@ app.post('/upload0', upload.array('images', 10), async (req, res) => {
           }
         ],
       });
-      
+
       console.log('Transformed image URL:', transformationResult.secure_url);
       const saveLocally = async (url, destination) => {
         try {
