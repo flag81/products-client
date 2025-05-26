@@ -3,24 +3,14 @@ import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { Placeholder } from "react-bootstrap";
-import PlaceholderImage from "./PlaceholderImage";
 
-// Styles for container (add to your CSS file or styled-component)
-// .slider-container {
-//   width: 600px;
-//   margin: 0 auto;
-// }
+
 
 const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) => {
 
     console.log('[DEBUG] flyerBook:', flyerBook);
     console.log('[DEBUG] baseUrl:', baseUrl);
     console.log('[DEBUG] isFlyerModalOpen:', isFlyerModalOpen);
-
-
-    // add placeholder for images 
-    //const PlaceholderImage = lazy(() => import('./PlaceholderImage'));
-
 
 
     
