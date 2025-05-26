@@ -1,8 +1,9 @@
-import React, { lazy } from "react";
+import React, { lazy, useState } from "react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { Placeholder } from "react-bootstrap";
+import PlaceholderImage from "./PlaceholderImage";
 
 // Styles for container (add to your CSS file or styled-component)
 // .slider-container {
@@ -16,6 +17,14 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
     console.log('[DEBUG] baseUrl:', baseUrl);
     console.log('[DEBUG] isFlyerModalOpen:', isFlyerModalOpen);
 
+
+    // add placeholder for images 
+    //const PlaceholderImage = lazy(() => import('./PlaceholderImage'));
+
+
+
+    
+
     // Check if flyerBook is an array and has elements
   const settings = {
     dots: true,
@@ -24,6 +33,9 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
     slidesToShow: 1,
     slidesToScroll: 1,
     adaptiveHeight: true,
+    lazyLoad: true, // Enable lazy loading for images
+ 
+    
     
 
   };
@@ -71,16 +83,53 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
   {flyerBook?.length > 0 ? (
     <Slider key={flyerBook?.length} {...settings}>
       {flyerBook.map((item, i) => {
+        const [isLoading, setIsLoading] = useState(true);
         const url = item.image_url.startsWith('http')
           ? item.image_url
           : `<span class="math-inline">\{baseUrl\}/</span>{item.image_url}`;
         //console.log('[DEBUG] slide img URL:', url);
+
+        console.log('[DEBUG] Image URL:', url);
+        console.log('[DEBUG] isLoading:', isLoading);
+
         return (
           <div id="ardita" key={i} style={{ textAlign: 'center' }}>
+            {isLoading && (
+    <>
+        {console.log('[DEBUG] Rendering PlaceholderImage')}
+        <Placeholder as="div" animation="glow">
+                <Placeholder
+                  style={{
+                    width: "100%",
+                    height: "400px", // Adjust to match the image dimensions
+                    backgroundColor: 'lightgray'
+                  }}
+                  className="rounded" // Optional: Add rounded corners
+                />
+              </Placeholder>
+    </>
+)}
+
+
             <img
               src={url}
               alt={`Flyer ${i}`}
-              style={{ display: 'inline-block', width: '400px', maxHeight: '80vh', objectFit: 'contain' }} // Adjusted image styles for better fitting
+              style={{ display: isLoading ? 'none' : 'inline-block',
+                width: '400px', 
+                maxHeight: '80vh', 
+                objectFit: 'contain' }} // Adjusted image styles for better fitting
+               // add lazy loading placeholder component onload
+
+               onLoad={() => {
+
+                console.log('[DEBUG] Image loaded:', url);
+                setIsLoading(false)
+
+               } 
+
+
+               } // Hide placeholder on successful load
+               onError={() => setIsLoading(false)} // Hide placeholder on error
             />
           </div>
         );
