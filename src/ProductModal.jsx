@@ -37,7 +37,7 @@ const ProductModal = ({
           backgroundColor: "#fff",
           borderRadius: 8,
           maxWidth: 400,
-          width: "90vw",
+          width: "98vw",
           maxHeight: "100vh",
           minHeight: 200,
           display: "flex",
@@ -252,8 +252,8 @@ const ProductModal = ({
         <Button
           style={{
             position: "absolute",
-            top: 10,
-            right: 10,
+            top: 5,
+            right: 5,
             background: "white",
             color: "black",
             border: "none",
@@ -264,6 +264,8 @@ const ProductModal = ({
             justifyContent: "center",
             borderRadius: "30%",
             cursor: "pointer",
+            //transparency: 0.5,
+            backgroundColor: "rgba(255, 255, 255, 0.9)",
           }}
           onClick={onClose}
         >
@@ -273,9 +275,9 @@ const ProductModal = ({
         <Button
           style={{
             position: "absolute",
-            top: "50%",
-            left: "50%",
-            backgroundColor: "rgba(255, 255, 255, 0.5)",
+            top: "5px",
+            left: "5px",
+            backgroundColor: "white",
             color: "#fff",
             border: "none",
             width: 40,
@@ -285,6 +287,7 @@ const ProductModal = ({
             justifyContent: "center",
             borderRadius: "30%",
             cursor: "pointer",
+            backgroundColor: "rgba(255, 255, 255, 0.9)",
           }}
         >
           <img

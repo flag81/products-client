@@ -53,8 +53,8 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
           onClick={closeFlyerModal}
           style={{
             position: 'absolute',
-            top: '20px',
-            right: '20px',
+            top: '10px',
+            right: '10px',
             background: 'none',
             border: 'none',
             color: '#fff',
@@ -126,7 +126,7 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
       })}
     </Slider>
   ) : (
-    <p style={{ color: '#fff' }}>Loading images…</p>
+    <p style={{ color: '#fff' }}>Duke ngarkuar…</p>
   )}
 </div>
       </div>
