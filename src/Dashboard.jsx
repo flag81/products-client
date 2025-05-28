@@ -1326,23 +1326,12 @@ if (!productId || !keyword) {
 
     
 
-<div style={{ margin: '0', padding: '0', width: '90vw' }}>
+<div style={{ margin: '0', padding: '0', width: '90vw', 
 
-<div>
-      <input
-        type="file"
-        id="imageUpload"
-        accept="image/*"
-        name="images" 
-        multiple // Allows selecting multiple images
-        onChange={handleFileChange}
-        ref={fileInputRef}
-      />
-      <button onClick={handleUploadImages}>Upload & Process Images</button>
-      <div id="result" ref={resultDivRef}>
-        {extractedText && <p>{extractedText}</p>}
-      </div>
-    </div>
+
+
+ }}>
+
 
 
 {/* 
@@ -1434,34 +1423,76 @@ if (!productId || !keyword) {
 
 }
 
-<div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
+<div style={{ display: 'flex', flexDirection: 'row', gap: '10px', 
+
+
+
+
+ }}>
 
   <div  style={{ display: 'flex', flexDirection: 'column', gap: '10px' , width : '50%' }}>
 
     
-  {/* <div>
-          
-          Shto Producte: <textarea id="products" name="products" rows="8" cols="50" />
-          <br />
-          <div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
-          <button onClick={insertProducts}>Insert Products</button>
+
+<div style={{ 
+
+border: '1px solid red', 
+padding: '10px', marginBottom: '20px', width: '100%' ,
 
 
-          <button onClick={() => document.getElementById('products').value = ''}>Clear</button>
+ }}>
 
-          </div>
+<div style={{ display: 'flex', flexDirection: 'row', gap: '10px', 
 
-          <p>{insertStatus}</p>
-  </div> */}
+padding: '10px', marginBottom: '10px', width: '100%'
+
+ }}>
+
+
+<input   autofocus  type="date" id="sale_end_date" name="sale_end_date" style={{width:150}}  />
+
+
+
+
+
+
+
+<select name='store' id = 'store' style={{width : 100}}>
+{stores.map(store => (
+  <option value={store.storeId}>{store.storeName}</option>
+))}
+
+</select>
+</div>
+
+<div
+
+style={{ display: 'flex', flexDirection: 'row', gap: '10px', marginBottom: '10px' }}
+
+>
+    <input
+      type="file"
+      id="imageUpload"
+      accept="image/*"
+      name="images" 
+      multiple // Allows selecting multiple images
+      onChange={handleFileChange}
+      ref={fileInputRef}
+     
+    />
+    <button onClick={handleUploadImages}>Process Images</button>
+    <div id="result" ref={resultDivRef}>
+      {extractedText && <p>{extractedText}</p>}
+    </div>
+</div>
+
+
+
+</div>
   
   <div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
 
-  <select name='store' id = 'store' style={{width : 100}}>
-    {stores.map(store => (
-      <option value={store.storeId}>{store.storeName}</option>
-    ))}
 
-  </select>
 {/* 
   <select name='user'>
     {users.map(user => (
@@ -1470,6 +1501,7 @@ if (!productId || !keyword) {
 
   </select> */}
 
+<button onClick={() => updateProductSaleDate(selectedProduct, document.getElementById('sale_end_date').value, document.getElementById('newPrice').value)}>Update Date {selectedProduct}</button>
 
 
 
@@ -1541,17 +1573,8 @@ if (!productId || !keyword) {
 
 </div>
 
-<div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
 
 
-  <input type="date" id="sale_end_date" name="sale_end_date" style={{width:150}} placeholder='mm/dd/yyyy' />
-  <button onClick={() => updateProductSaleDate(selectedProduct, document.getElementById('sale_end_date').value, document.getElementById('newPrice').value)}>Update Date {selectedProduct}</button>
-
-
-
-  
-
-</div>
 
   </div>
 

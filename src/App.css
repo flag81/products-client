@@ -97,6 +97,12 @@
 }
 
 
+.equal-spacing {
+  flex-grow: 1; /* Ensures columns grow equally */
+  min-width: 0; /* Prevents columns from shrinking below their content size */
+  max-width: 100%; /* Prevents columns from expanding too much */
+}
+
 .product-image {
  
   width: 100%;

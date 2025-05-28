@@ -802,18 +802,7 @@ onClick={() => handleLogin()}
         <span  className="icon-description" >Favoritet</span>
 
       </div>
-      <div
-        role="button" 
-        className="d-flex flex-column align-items-center "
-        onClick={() => setOnSale((prev) => !prev)}
-      >
-        <img
-          src={onSale ? "/sale-fill-2.png" : "/sale-empty.jpg"}
-          alt="Ne Zbritje"
-          className="icon-image"
-        />
-        <span  className="icon-description" >Zbritjet</span>
-      </div>
+
 
 
       </div>
@@ -1058,13 +1047,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
 
                     
                   }}
-                  onClick={() =>
-                    openModal(
-                      `${baseUrl}/${directory}/${product.image_url
-                    .split("/")
-                    .pop()}`
-                    )
-                  }
+
                 />
 
 
@@ -1119,7 +1102,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
               style={{
                 position: "absolute",
 
-                top: "30%",
+                top: "5px",
                 right: "5px",
                 
                 //background: "rgba(0, 0, 0, 0.2)",
@@ -1257,32 +1240,76 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
 
       {/* Not On Sale Products */}
       
-      <div className="select-description"
 
-style={{ marginLeft: 5, 
-marginRight: 5, border: "1px solid #ccc", padding:3 ,borderRadius: 5 , marginBottom: 10,
-marginTop: 10
+{
+// if not onSaleProducts is empty, do not render this section
 
-}}>
-<span style={{ fontWeight: "bold" }}>
-        Te skaduara
-      </span>
-</div>
+notOnSaleProducts.length > 0 && (
+
+
+        <div className="select-description"
+        style={{ marginLeft: 5, 
+        marginRight: 5, border: "1px solid #ccc", padding:3 ,borderRadius: 5 , marginBottom: 20,
+        marginTop: 20
+
+        }}>
+        <span style={{ fontWeight: "bold", fontSize: 18 }}>
+                Te skaduara
+              </span>
+        </div>
+
+)
+}
+
+
       
      
 
 
 
-<Row xs={2} sm={2} md={2} lg={lgCols} className="g-2 justify-content-start">
-  {notOnSaleProducts.map((product, idx) => (
-          <Col key={`notonsale-${idx}`} className="d-flex ">
+<Row xs={2} sm={2} md={2} lg={lgCols} className="g-2 justify-content-start"
+
+style={{
+  //border: "1px solid black", // Add a black border
+  //borderRadius: "5px", // Optional: Add rounded corners
+  //padding: "10px", // Optional: Add padding inside the row
+}}
+
+>
+  {notOnSaleProducts.map((product, idx) => 
+  {
+
+
+    const filename = product.image_url.split("/").pop();
+    // use single, auto-format/DPR transformation for max resolution
+    const imgUrl = `${baseUrl}/${autoTransformation}/${directory}/${product.image_url.split("/").pop()}`;
+
+    
+  return (
+          <Col key={`notonsale-${idx}`} className="d-flex"
+
+          style={{
+            //border: "1px solid black", // Add a black border
+            //borderRadius: "5px", // Optional: Add rounded corners
+            //padding: "10px", // Optional: Add padding inside the row
+          }}
+          
+
+
+
+          >
             <Card className="h-100 p-1  product-card d-flex flex-column"        
             
                 // if product.productOnSale make card border red else make it white
-                style={{ borderColor: product.productOnSale ? "green" : null }}
+                style={{ borderColor: product.productOnSale ? "green" : null, 
+
+                  width: "100%",
+
+                }}
+
                 
                 >
-            <div >
+            <div  style={{ width: "100%", height: "100%" }}>
 
             {!isCardImageLoaded && (
               <Placeholder as="div" animation="glow">
@@ -1299,15 +1326,18 @@ marginTop: 10
 
 
 
+
+
+
+
       {(() => {
-        const filename = product.image_url.split("/").pop();
+        //const filename = product.image_url.split("/").pop();
         // use single, auto-format/DPR transformation for max resolution
-        const imgUrl = `${baseUrl}/${autoTransformation}/${directory}/${filename}`;
+        //const imgUrl = `${baseUrl}/${autoTransformation}/${directory}/${product.image_url.split("/").pop()}`;
 
-  
+        //return this two variables to the image tag
 
-
-
+        
 
         return (
           <img
@@ -1317,9 +1347,14 @@ marginTop: 10
             loading="lazy"
             onLoad={() => setIsCardImageLoaded(true)}
             onClick={() => openModal(imgUrl, product)}
-            style={{ cursor: "pointer", width: "100%", height: "auto" }}
+            style={{ cursor: "pointer", width: "100%", height: "auto" ,
+            filter: "grayscale(100%)", // Apply grayscale effect
+
+            }}
           />
         );
+
+
      })()}
 
           <div
@@ -1339,14 +1374,6 @@ marginTop: 10
 
                 <img
 
-                
-
-                // check screen size for mobile or desktop USING @MEDIA CSS
-                // if screen size is less than 768px use smaller image
-
-
-                // how to place this overlay image to botton right corner of the image , but the image height may vary
-
 
                   src={"/loop.png"} // Replace with your overlay image path
                   
@@ -1358,13 +1385,9 @@ marginTop: 10
 
                     
                   }}
-                  onClick={() =>
-                    openModal(
-                      `${baseUrl}/${directory}/${product.image_url
-                    .split("/")
-                    .pop()}`
-                    )
-                  }
+                
+
+                  onClick={() => openModal(imgUrl, product)}
                 />
 
 
@@ -1390,10 +1413,6 @@ marginTop: 10
 
                 <img
 
-                
-
-                // check screen size for mobile or desktop USING @MEDIA CSS
-                // if screen size is less than 768px use smaller image
 
                   src={"/click.png"} // Replace with your overlay image path
                   
@@ -1406,6 +1425,10 @@ marginTop: 10
 
                     
                   }}
+
+              
+
+                  onClick={() => openModal(imgUrl, product)}
                  
                 />
 
@@ -1418,13 +1441,10 @@ marginTop: 10
             
               style={{
                 position: "absolute",
-
-                top: "30%",
-                right: "5px",
-                
+                top: "5px",
+                right: "5px",   
                 //background: "rgba(0, 0, 0, 0.2)",
-                backgroundColor: "rgba(255, 255, 255, 0.9)", // Semi-transparent white background 
-               
+                backgroundColor: "rgba(255, 255, 255, 0.9)", // Semi-transparent white background              
                 borderRadius: "20%", // Optional: Make it circular
                 
               }}
@@ -1517,19 +1537,7 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
               // borderStyle: "solid", // Solid border style
 
             }} role="button">
-                  <img
-                    src={product.isFavorite ? "star-fill-2.png" : "star-empty.jpg"}
-                    alt={product.isFavorite ? "Unfavorite" : "Favorite"}
-                    style={{
-                     
-                      width: 24,
-                      height: 24,
-                      
-                    }}
-                    onClick={() =>
-                      handleToggleFavorite(product.productId, product.isFavorite)
-                    }
-                  />
+
 
 
                   
@@ -1537,21 +1545,18 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
              
               </div>
                  {/* Sale icon */}
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }} role="button">
-                  <img
-                    src={product.productOnSale ? "sale-fill-2.png" : "sale-empty.jpg"}
-                    alt={product.productOnSale ? "On sale" : "Not on sale"}
-                    style={{ cursor: "hand", width: 24, height: 24 }}
-                  />
-                
-                </div>
+
               </div>  
 </div>
 
                 </Card.Body>
               </Card>
             </Col>
-  ))}
+  
+)
+}
+  
+  )}
 </Row>
 
       {/* Image Modal */}
