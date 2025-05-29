@@ -821,10 +821,10 @@ style={{
 
 overflowX: "scroll",
 whiteSpace: "nowrap",
-margin: "2px 0",
+margin: "10px 0",
 padding: "2px 0",
 //borderBottom: "1px solid #eee",
-maxWidth: "85vw", // Prevents exceeding screen width
+maxWidth: "78vw", // Prevents exceeding screen width
 width: "100%",     // Fills parent width
 boxSizing: "border-box",
 // hide scrollbar horizontally but allow scrolling horizontally
