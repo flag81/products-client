@@ -824,13 +824,14 @@ whiteSpace: "nowrap",
 margin: "10px 0",
 padding: "2px 0",
 //borderBottom: "1px solid #eee",
-maxWidth: "100vw", // Prevents exceeding screen width
+maxWidth: "85vw", // Prevents exceeding screen width
 width: "100%",     // Fills parent width
 boxSizing: "border-box",
 // hide scrollbar horizontally but allow scrolling horizontally
 
 scrollbarWidth: "none", // Hide scrollbar for Firefox
 msOverflowStyle: "none", // Hide scrollbar for IE/Edge
+
 
 
 
