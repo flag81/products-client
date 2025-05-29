@@ -632,7 +632,6 @@ const settings = {
     overflowX: "hidden", // Good for this main block
     margin: 0,
     padding: 0,
-    
 
 
   }}
@@ -640,14 +639,14 @@ const settings = {
     <div className="container" 
     
     style={{
-      width: "100%",
-      maxWidth: "100%", // Changed from 100vw
-      marginTop: 0,
-      position: "relative",
-      top: 0,
-      flexShrink: 0,
-      // minWidth: "100%", // Already width: 100%
-      boxSizing: "border-box",
+    width: "100%",
+    maxWidth: "100%", // Changed from 100vw
+    marginTop: 0,
+    position: "relative",
+    top: 0,
+    flexShrink: 0,
+    // minWidth: "100%", // <-- REMOVE THIS
+    boxSizing: "border-box", // <-- ADD THIS
 
     }}
     
@@ -700,7 +699,7 @@ onClick={() => handleLogin()}
 
   {/* Search and Store Filter */}
   <Row className="mb-3 d-flex d-md-flex flex-column flex-md-row align-items-center"
- style={{ flexWrap: "wrap", minWidth: "100%" }}
+ style={{ flexWrap: "wrap", minWidth: "100%", maxWidth: "100%" }}
   >
     {/* Search */}
     <Col xs={12} md={6} 
@@ -815,13 +814,14 @@ onClick={() => handleLogin()}
 
 
 
+
 <div 
 
 style={{
 
 overflowX: "scroll",
 whiteSpace: "nowrap",
-margin: "10px 0",
+margin: "2px 0",
 padding: "2px 0",
 //borderBottom: "1px solid #eee",
 maxWidth: "85vw", // Prevents exceeding screen width

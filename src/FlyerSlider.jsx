@@ -4,7 +4,10 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { Placeholder } from "react-bootstrap";
 
+import Zoom from "react-medium-image-zoom";
+import "react-medium-image-zoom/dist/styles.css";
 
+import Button from "react-bootstrap/Button";
 
 const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) => {
 
@@ -70,6 +73,8 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
   onClick={e => e.stopPropagation()}
   style={{ width: '100%', maxWidth: '400px', margin: '0 auto' }} // Added styles
 >
+
+
   {flyerBook?.length > 0 ? (
     <Slider key={flyerBook?.length} {...settings}>
       {flyerBook.map((item, i) => {
@@ -100,6 +105,9 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
     </>
 )}
 
+    <Zoom>
+
+            <div style={{ position: "relative", display: "inline-block" }}>
 
             <img
               src={url}
@@ -121,6 +129,43 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
                } // Hide placeholder on successful load
                onError={() => setIsLoading(false)} // Hide placeholder on error
             />
+
+      
+       <Button
+              style={{
+                position: "absolute",
+                top: "5px",
+                left: "5px",
+                backgroundColor: "white",
+                color: "#fff",
+                border: "none",
+                width: 40,
+                height: 40,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "30%",
+                cursor: "pointer",
+                backgroundColor: "rgba(255, 255, 255, 0.9)",
+              }}
+            >
+              <img
+                src={"/click.png"}
+                style={{
+                  width: 24,
+                  height: 24,
+                }}
+                alt="Zoom"
+              />
+            </Button>
+
+            </div>
+
+    </Zoom>
+
+
+ 
+
           </div>
         );
       })}
