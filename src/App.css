@@ -103,6 +103,10 @@
   max-width: 100%; /* Prevents columns from expanding too much */
 }
 
+.bold-text {
+  font-weight: bold;
+}
+
 .product-image {
  
   width: 100%;

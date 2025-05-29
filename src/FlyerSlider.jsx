@@ -53,8 +53,8 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
           onClick={closeFlyerModal}
           style={{
             position: 'absolute',
-            top: '10px',
-            right: '10px',
+            top: '10%',
+            right: '10%',
             background: 'none',
             border: 'none',
             color: '#fff',

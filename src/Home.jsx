@@ -741,12 +741,32 @@ onClick={() => handleLogin()}
           Kerko
         </Button>
       </InputGroup>
+
+
+
+      <div 
+        role="button"
+        style={{marginLeft: 10}}
+
+        onClick={() => setIsFavorite((prev) => !prev)}
+      >
+        <img
+          src={isFavorite ? "/star-fill-2.png" : "/star-empty.jpg"}
+          alt="Favoritet"
+          className="icon-image"
+          
+        />
+        <span  className="icon-description" >Favoritet</span>
+
+      </div>
+
+      
     </Col>
 
     {/* Store Filter */}
     <Col xs={12} md={6} className="d-flex align-items-center justify-content-between">
 
-<br />
+
                 {/* <div style={{marginRight:5, fontSize: 10}}>
                 <img
                   src={"/filter.png"}
@@ -756,7 +776,7 @@ onClick={() => handleLogin()}
                   
                   Filtro </div> */}
 
-      <Form.Select  className="select-description form-control-lg" 
+      {/* <Form.Select  className="select-description form-control-lg" 
       id="store"
         style={{ width: "50%" }}
         onChange={(e) => {
@@ -783,29 +803,9 @@ onClick={() => handleLogin()}
             {store.storeName}
           </option>
         ))}
-      </Form.Select>
-
-      <div className="d-flex flex-row align-items-center justify-content-between" style={{ width: "40%" }}>
-
-      <div 
-        role="button"
-        className="d-flex flex-column align-items-center justify-content-between"
-        style={{ width: "40%" }}
-        onClick={() => setIsFavorite((prev) => !prev)}
-      >
-        <img
-          src={isFavorite ? "/star-fill-2.png" : "/star-empty.jpg"}
-          alt="Favoritet"
-          className="icon-image"
-          
-        />
-        <span  className="icon-description" >Favoritet</span>
-
-      </div>
+      </Form.Select> */}
 
 
-
-      </div>
     </Col>
   </Row>
 
@@ -814,6 +814,75 @@ onClick={() => handleLogin()}
 </Container>
 
 
+
+<div
+
+style={{
+overflowX: "auto",
+whiteSpace: "nowrap",
+margin: "10px 0",
+padding: "2px 0",
+//borderBottom: "1px solid #eee",
+maxWidth: "100vw", // Prevents exceeding screen width
+width: "100%",     // Fills parent width
+boxSizing: "border-box",
+}}
+>
+
+
+{stores.map((store) => (
+<span key={store.storeId} style={{ display: "inline-block", marginRight: 16, textAlign: "center" }}>
+  {/* <img
+   
+    src="/vivafresh.jpeg"
+    alt="star"
+    style={{
+      width: 32,
+      height: 32,
+      display: "inline-block",
+      marginRight: 8,
+      verticalAlign: "middle",
+    }}
+
+
+    onClick={() => {
+      setSelectedStore(store.storeId);
+      setSelectedStoreName(store.storeName);
+    } }
+
+
+
+  /> */}
+
+        <div style={{ 
+          
+          fontSize: 12,
+         color: "#333" ,
+         // add a border with rounded corners
+          border: "1px solid #ccc",
+          borderRadius: 5,
+          padding: 10,
+          cursor: "pointer",
+          
+
+
+
+        }}
+        
+        onClick={() => {
+          setSelectedStore(store.storeId);
+          setSelectedStoreName(store.storeName);
+        } }
+        
+        
+        
+        >{store.storeName}</div>
+</span>
+
+
+))}
+
+</div>
 
 
 <div className="d-flex flex-row align-items-center " 
@@ -1028,14 +1097,6 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
 
                 <img
 
-                
-
-                // check screen size for mobile or desktop USING @MEDIA CSS
-                // if screen size is less than 768px use smaller image
-
-
-                // how to place this overlay image to botton right corner of the image , but the image height may vary
-
 
                   src={"/loop.png"} // Replace with your overlay image path
                   
@@ -1136,19 +1197,19 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
             
             <Card.Text className="product-description">
               <span style={{ color: "red" }}>{product.old_price && product.old_price > 0 ? product.old_price + "€ - " : ""}</span>
-              <span style={{ color: "green" }}>
+              <span style={{ color: "green" }} className="bold-text">
                 {product.new_price}€ 
               </span>
             </Card.Text>
 
-            <Card.Text className="product-description">
+            <Card.Text className="product-description bold-text">
                {product.storeName}
             </Card.Text>
             <Card.Text className="sale-date">
               {product.sale_end_date ? (
                 
 
-                <><span style={{ color: product.productOnSale ? "green" : "red" }}>
+                <><span style={{ color: product.productOnSale ? "green" : "red" }} className="bold-text">
 
 
 
@@ -1478,7 +1539,7 @@ style={{
               </span>
             </Card.Text>
 
-            <Card.Text className="product-description">
+            <Card.Text className="product-description bold-text">
                {product.storeName}
             </Card.Text>
             <Card.Text className="sale-date">
