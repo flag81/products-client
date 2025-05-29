@@ -631,6 +631,8 @@ const settings = {
     minWidth: "100%", // Ensures the container takes the full width
     boxSizing: "border-box", // Includes padding and border in width calculation
     //border: "1px solid #ccc",
+    maxWidth: "100vw",
+    overflowX: "hidden"
 
 
   }}
@@ -639,7 +641,7 @@ const settings = {
     
     style={{
       width: "100%", // Ensures the container takes the full width
-      maxWidth: "1200px", // Limits the maximum width for better readability
+      maxWidth: "100vw", // Limits the maximum width for better readability
       marginTop: 0, // Ensures no extra margin at the top
       position: "relative", // Optional: Ensures proper positioning
       top: 0, // Aligns the container to the top
