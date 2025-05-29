@@ -620,19 +620,19 @@ const settings = {
     <div
  
   style={{
+
     display: "flex",
     flexDirection: "column",
-    justifyContent: "flex-start", // Aligns child elements to the top
-    alignItems: "center", // Centers the content horizontally
-    height: "100vh", // Ensures the parent takes the full viewport height
-    //padding: "1rem", // Adds padding for better spacing
-    //border: "1px solid #ccc", // Optional: Adds a border for better visibility
-    flexShrink: 0, // Prevents the container from shrinking
-    minWidth: "100%", // Ensures the container takes the full width
-    boxSizing: "border-box", // Includes padding and border in width calculation
-    //border: "1px solid #ccc",
-    maxWidth: "100vw",
-    overflowX: "hidden"
+    justifyContent: "flex-start",
+    alignItems: "center",
+    // height: "100vh", // Consider if this is strictly needed or causes other issues
+    width: "100%", // Use 100% to fill parent's content area
+    maxWidth: "100%", // Ensure it doesn't exceed parent's width
+    boxSizing: "border-box",
+    overflowX: "hidden", // Good for this main block
+    margin: 0,
+    padding: 0,
+    
 
 
   }}
@@ -640,22 +640,20 @@ const settings = {
     <div className="container" 
     
     style={{
-      width: "100%", // Ensures the container takes the full width
-      maxWidth: "100vw", // Limits the maximum width for better readability
-      marginTop: 0, // Ensures no extra margin at the top
-      position: "relative", // Optional: Ensures proper positioning
-      top: 0, // Aligns the container to the top
-      // add border to this div 
-      //border: "1px solid #ccc", // Optional: Adds a border for better visibility
-      flexShrink: 0, // Prevents the container from shrinking
-      minWidth: "100%",
+      width: "100%",
+      maxWidth: "100%", // Changed from 100vw
+      marginTop: 0,
+      position: "relative",
+      top: 0,
+      flexShrink: 0,
+      // minWidth: "100%", // Already width: 100%
       boxSizing: "border-box",
 
     }}
     
     >
       
-      <Container>
+      <Container fluid>
 
       <div
         role="button" 

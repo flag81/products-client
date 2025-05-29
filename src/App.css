@@ -22,14 +22,14 @@
 .scrollable-div {
   max-height: 800px; /* Set the maximum height */
   overflow-y: auto;  /* Enables vertical scrolling if the content exceeds the max height */
-  overflow-x: auto; /* Disables horizontal scrolling */
+  overflow-x: hidden; /* Disables horizontal scrolling */
   border: 1px solid #110505;
 }
 
 .scrollable-div2 {
   max-height: 200px; /* Set the maximum height */
   overflow-y: auto;  /* Enables vertical scrolling if the content exceeds the max height */
-  overflow-x: auto; /* Disables horizontal scrolling */
+  overflow-x: hidden; /* Disables horizontal scrolling */
   border: 1px solid #110505;
 }
 
@@ -62,6 +62,8 @@
 }
 
 body {
+  margin: 0; /* Remove default margin to prevent overflow */
+  padding: 0; /* Remove default padding */
   overflow-x: hidden; /* Prevent horizontal scrolling */
   box-sizing: border-box; /* Include padding and borders in width calculations */
 }
@@ -75,7 +77,7 @@ body {
 }
 
 .product-card {
-  max-width: 300px;   /* match your Cloudinary width */
+  max-width: "50%";   /* match your Cloudinary width */
   margin: 0 auto;     /* center when alone */
 }
 
