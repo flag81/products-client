@@ -638,15 +638,18 @@ const settings = {
 >
     <div className="container" 
     
-    style={{
-    width: "100%",
-    maxWidth: "100%", // Changed from 100vw
-    marginTop: 0,
-    position: "relative",
-    top: 0,
-    flexShrink: 0,
-    // minWidth: "100%", // <-- REMOVE THIS
-    boxSizing: "border-box", // <-- ADD THIS
+          id="home-container"
+
+          style={{
+          width: "100%",
+          maxWidth: "100%", // Changed from 100vw
+          marginTop: 0,
+          position: "relative",
+          top: 0,
+          flexShrink: 0,
+          // minWidth: "100%", // <-- REMOVE THIS
+          boxSizing: "border-box", // <-- ADD THIS
+          //border: "1px solid #ccc", // Optional: Add a border for visibility
 
     }}
     
@@ -658,57 +661,124 @@ const settings = {
         role="button" 
         
        className="d-flex flex-row align-items-center justify-content-between"
+
+       style={{  
+        
+        //border: "1px solid #ccc"
+
+
+       }} 
         
       >
 
-<img
+      <img
                   src={"/logo.png"}
                   alt="Meniven.com"
                   style={{ width: 150, cursor: "pointer", margin: 5 }}
-                />
+      />
 
-
-<div className="d-flex flex-column align-items-center"
-
-onClick={() => handleLogin()}
-
->
-{/* <img
-          src={"/profile.png"}
-          alt="Profile"
-          style={{ width: 32, height: 32 }}
-        />
-
-
-   <span className="icon-description">
-    
-     {isRegistered && email ? email : "Hyrja"}
-    
-    </span>   */}
-
-</div>
-        
 
 
       </div>
         
       </Container>
 
-<Container>
 
 
-  {/* Search and Store Filter */}
-  <Row className="mb-3 d-flex d-md-flex flex-column flex-md-row align-items-center"
- style={{ flexWrap: "wrap", minWidth: "100%", maxWidth: "100%" }}
+ 
+
+
+
+
+<div className="d-flex flex-row " 
+
+id="search-container"
+
+style={{  
+
+  display: "flex", // Enables flexbox layout
+  justifyContent: "flex-start",
+  //border: "1px solid green",
+  width: "100%",
+  maxWidth: "100%", // Ensure it fills the parent width
+// stetch div to fill the width of the parent 
+
+boxSizing: "border-box",
+
+}} 
+
+>
+
+  
+<Container
+
+style={{ 
+  display: "flex",
+  width: "100%", // Ensure it fills the parent width
+justifyContent: "flex-start",
+  boxSizing: "border-box",
+
+}}
+
+
+>
+ {/* Search and Store Filter */}
+ <Row className="mb-3 d-flex flex-column flex-md-row "
+ style={{ 
+  flexWrap: "wrap",
+  display: "flex",
+  width: "100%", // Ensure it fills the parent width
+  flex: "1",
+  justifyContent: "flex-start",
+  //border: "1px solid red",
+  // stetch div to fill the width of the parent
+  boxSizing: "border-box",
+
+}}
   >
     {/* Search */}
     <Col xs={12} md={6} 
-    className="mb-3 mb-md-0 d-flex align-items-center justify-content-between">
+   
+    
+    style={{
+
+      display: "flex",
+      flexDirection: "row",
+      justifyContent: "flex-start",
+      marginLeft: "0", // Removes any left margin
+      paddingLeft: "0", // Removes any left padding
+
+    }}
+    
+    >
+
+ <InputGroup className="w-100"
+ 
+ 
+ 
+ >
+  <div className="select-description flex-grow-1 form-control-lg" 
+  
+  
+  style={{ 
+    
+    width: "100%",
+    //border: "1px solid YELLOW", // Optional: Add a border for visibility
+    margin: "0", // Removes any left margin
+    padding: "0", // Removes any left padding
+
+    display: "flex",
 
 
 
-      <InputGroup className="w-100">
+   }}>
+
         <Form.Control className="select-description flex-grow-1 form-control-lg" 
+
+        style={{
+
+          //width: "100%", // Ensure it fills the parent width
+        }}
           type="text"
           id="search"
           maxLength={20}
@@ -732,20 +802,29 @@ onClick={() => handleLogin()}
 
         
         />
-        <Button
+
+                <Button
           className="responsive-button"
           onClick={(e) => handleSearch(e.target.previousSibling.value)}
-          style={{ marginLeft: 5 }}
+          style={{ marginLeft: 5 
+
+
+          }}
         >
           Kerko
         </Button>
-      </InputGroup>
+     
 
+  </div>      
 
-
+  </InputGroup>
+      
       <div 
         role="button"
-        style={{marginLeft: 10}}
+        style={{
+          margin: 0,
+          padding: 0
+        }}
 
         onClick={() => setIsFavorite((prev) => !prev)}
       >
@@ -763,59 +842,27 @@ onClick={() => handleLogin()}
     </Col>
 
     {/* Store Filter */}
-    <Col xs={12} md={6} className="d-flex align-items-center justify-content-between">
 
-
-                {/* <div style={{marginRight:5, fontSize: 10}}>
-                <img
-                  src={"/filter.png"}
-                  alt="Meniven.com"
-                  style={{ width: 30, cursor: "pointer", marginRight: 0 }}
-                />
-                  
-                  Filtro </div> */}
-
-      {/* <Form.Select  className="select-description form-control-lg" 
-      id="store"
-        style={{ width: "50%" }}
-        onChange={(e) => {
-          const selectedStoreId = e.target.value;
-          const selectedStoreName = e.target.options[e.target.selectedIndex].text;
-
-
-          //console.log("[DEBUG] Selected Store ID:", selectedStoreId);
-          //console.log("[DEBUG] Selected Store Name:", selectedStoreName);
-
-          setSelectedStore(selectedStoreId);
-      
-          // Set the selected store name
-          const store = stores.find((store) => store.storeId === selectedStoreId);
-
-         
-
-          setSelectedStoreName(selectedStoreName);
-        }}
-      >
-        
-        {stores.map((store) => (
-          <option key={store.storeId} value={store.storeId}>
-            {store.storeName}
-          </option>
-        ))}
-      </Form.Select> */}
-
-
-    </Col>
   </Row>
+  </Container>
+
+</div>
+     
 
 
 
-</Container>
+
+
+
+
+
 
 
 
 
 <div 
+
+id="store-filter-container"
 
 style={{
 
@@ -832,7 +879,10 @@ boxSizing: "border-box",
 scrollbarWidth: "none", // Hide scrollbar for Firefox
 msOverflowStyle: "none", // Hide scrollbar for IE/Edge
 
+//border: "1px solid red", // Debugging border
+cursor: "grab",
 
+//border: "1px solid #ccc"
 
 
 }}
@@ -899,7 +949,11 @@ msOverflowStyle: "none", // Hide scrollbar for IE/Edge
 
 
 <div className="d-flex flex-row align-items-center " 
-style={{ width: "100%" }}>
+style={{ width: "100%", 
+
+//border: "1px solid #ccc" 
+
+}}>
 
 
 
