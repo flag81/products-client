@@ -76,6 +76,10 @@ const [responseMessage, setResponseMessage ] = useState('');
 
   const [uploadedImageUrls, setUploadedImageUrls] = useState([]);
 
+
+  const [facebookPhotos, setFacebookPhotos] = useState([]);
+
+  const[facebookPhotosCount, setFacebookPhotosCount] = useState(0);
   
 
 const width = 200;
@@ -83,94 +87,110 @@ var baseUrl = "https://res.cloudinary.com/dt7a4yl1x/image/upload";
 const transformation = `w_${width},c_scale`;
 const directory = "uploads";
 
-const prompt =
-  'Your task is to analyze the attached sales flyers image(s) and extract specific information for each product presented. Focus ONLY on the text provided within the flyer layout, not text appearing solely on product packaging imagery.' +
-  '\n\nThe flyer language is Albanian and the response should be in Albanian.'+
-  '\n\n**Extraction Requirements for Each Product:**' +
-  '\n1.  **Product Description (`product_description`):** Extract the complete Albanian descriptive text located next to or associated with the product image within the flyer layout. Include any size/volume information (e.g., 0,33L, 400ml, 3kg, 10/1, 1.7L) found in this specific text block.' +
-  '\n2.  **Old Price (`old_price`):** Extract the original price (usually crossed out or listed before the sale price). Remove currency symbols (€).' +
-  '\n3.  **New Price (`new_price`):** Extract the current sale price. Remove currency symbols (€).' +
-  '\n4.  **Discount Percentage (`discount_percentage`):** Extract the discount percentage shown (e.g., -14%). Remove the percentage symbol (%).' +
-  '\n5.  **Sale End Date (`sale_end_date`):** Look for a general sale validity period or end date mentioned anywhere on the flyer. If found, format it as "YYYY-MM-DD". If no end date is explicitly mentioned on the flyer, use `null`.' +
-  '\n6.  **Store ID (`storeId`):** Search the *entire flyer* for a number immediately following an "@" symbol. Extract only the number. If no such pattern (@ followed by a number) exists anywhere on the flyer, use `null`.' +
-  '\n7.  **User ID (`userId`):** Use the provided value: {userId}.' +
-  '\n8.  **Image URL (`image_url`):** Look for text at the top of the image starting with "#". If found, take the text *after* the "#", remove any leading/trailing whitespace, and append ".jpg". If no text starting with "#" is found at the top, use `null`.' +
-  '\n9.  **Keywords (`keywords`):**' +
-  '\n    * **CRITICAL:** Generate keywords **exclusively** by analyzing the words within the text extracted for the `product_description` field (Requirement #1) for that specific product.' +
-  '\n    * **DO NOT** use words that are only visible *on* the products packaging in the image unless those exact words are *also* part of the flyer descriptive text identified in Requirement #1.' +
-  '\n    * Convert the Albanian letter `ë` to `e` for all keywords.' +
-  '\n    * Exclude common Albanian stop words (like articles, conjunctions, prepositions - e.g., "e", "i", "të", "për", "ose", "me").' +
-  '\n    * Exclude all numbers, units, sizes, volumes, or counts (e.g., "0,33L", "400ml", "3kg", "1,5L", "10/1", "0,5L", "1,7", "3", "10", "1"). Exclude these even if they appear in the `product_description`.' +
-  '\n    * Keywords should be single, relevant nouns, adjectives in Albanian language, except for brand names, taken directly from the `product_description` text. ' +
-  '\n    * Only include the last five kewords you find following these rules. The keywords array should not include more than 5 items.' +
-  '\n    * If you can find a Date in the text, make sure to pick the latest Date as sale_end_date .' +
-  '\n\n**Processing Instructions:**' +
-  '\n- If multiple images are attached, process them sequentially. Wait 3 seconds between processing each image.' +
-  '\n- Process all attached images automatically without asking for confirmation to continue.' +
 
-  '\n\n**Output Format:**' +
-  '\n- Provide the response as a single JSON array containing an object for each distinct product identified in the flyer(s).' +
-  '\n- Strictly adhere to the following JSON structure for each product object:' +
-  '\n```json' +
-  `
-[
-  {
-    "product_description": "Pije e gazuar Lemon 0,33L", // Full description text from flyer
-    "product_brand_name": "Lemon", // Brand name
-    "old_price": "0.69", // Original price, no symbols
-    "new_price": "0.59", // Sale price, no symbols
-    "discount_percentage": "14", // Discount number, no symbol
-    "sale_end_date": 2025-03-03, // YYYY-MM-DD or null
-    "storeId": null, // Extracted number or null
-    "userId": {userId}, // Provided user ID
-    "image_url": "487117352_1080468107452630_830115842423760541_n.jpg", // Constructed URL or null
-    "keywords": ["pije", "gazuar", "lemon"] // Keywords STRICTLY from product_description, following rules
+useEffect(() => {
+  // Initialize user preferences or settings if needed
+
+
+  //initializeUser();
+  setFacebookPhotosCount(facebookPhotos.length);
+
+
+}, [facebookPhotos]);
+
+// add function to handle to api end point to in server.js , extract-sale-end-date with item.image tag for every item in facebookPhotos array, and set it to the to the new sale_end_date field in the item object of the facebookPhotos array, if not fund return null
+
+
+// Add this function below your other functions in Dashboard
+
+/**
+ * For each item in facebookPhotos, call the /extract-sale-end-date API with item.image,
+ * and set the returned value to item.sale_end_date. If not found, set to null.
+ * Updates the facebookPhotos state with the new array.
+ */
+const extractSaleEndDatesForFacebookPhotos = async () => {
+  console.log('extractSaleEndDatesForFacebookPhotos called with facebookPhotos:', facebookPhotos);
+
+  if (!facebookPhotos.length) {
+    setStatus('No Facebook photos to process.');
+    return;
   }
-  // ... more product objects if present
-]
-` +
-  '\n```' +
-  '\nEnsure all placeholder values in the example structure are replaced with the actual extracted data or `null` where applicable. Double-check that keywords strictly follow the rules, especially the source limitation to the `product_description` text.' +
-  '\n\nThe user ID for this request is: {userId}.';
+  setStatus('Extracting sale end dates from Facebook photos...');
 
-  const prompt1 = 
+  // Extract only the image tag from each photo object
+  const imageArray = facebookPhotos.map(item => item.image).filter(Boolean);
 
-  'Can you extract product description , old price , sale price , sale end date from in Albanian language from this sales flyer() given.' +
-' The keywords should only come from product descritopn next to the product in Albanian language.\n' +
-  ' Convert ë letter to e for all the keywords. Do not include conjunctions, articles words in Albanian language, in keywords.\n' +
- ' Do not include product size info for keywords but only for description. \n' + 
- ' After you have extracted data from firt image , pause for 3 seconds and continue with next one if attached, untill all of them are finished. \n' +  
- ' Do not ask me to continue, just continue on your own\n' + 
- ' Do not show euro and percetage symbols. \n' + 
-  ' The userId is:{userId}. \n' +
+  console.log('Image array for API:', imageArray);
 
- 
-  'The response should be in the format for each product as object in an array of objects: \n' +
-  `[
+  try {
+    // Send only the array of image URLs to the API
+    const response = await fetch(`${node_url}/extract-sale-end-date`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ photos: imageArray }),
+    });
+    const result = await response.json();
 
-    {
-      "product_description": "",
-      "productId": 1,
-      "old_price": "",
-      "new_price": "",
-      "discount_percentage": "",
-      "sale_end_date": "YYYY-MM-DD",
-      "storeId": 1,
-      "userId": 1,
-      "image_url": "",
-      "keywords": ["keyword1", "keyword2"]
-}]` +
-' Replace the placeholder data in the example with extracted and given data. \n' +
-' Do not include any comments in JSON return data that you return. like :   "old_price": 1.85,  // Assumed same as Euroblini due to proximity and similar discount.  Double check. \n' +
+    // Expecting result to be an array of { image, sale_end_date }
+    if (response.ok && Array.isArray(result)) {
+      // Merge sale_end_date back into facebookPhotos by matching image
+      const updatedPhotos = facebookPhotos.map(photo => {
+        const found = result.find(r => r.image === photo.image);
+        return { ...photo, sale_end_date: found ? found.sale_end_date : null };
+      });
+      setFacebookPhotos(updatedPhotos);
+      setStatus('Sale end dates extracted for Facebook photos.');
+    } else {
+      setStatus('Failed to extract sale end dates.');
+    }
+  } catch (error) {
+    console.error('Error extracting sale end dates:', error);
+    setStatus('Error extracting sale end dates.');
+  }
+};
 
- ` The image url is the first text on top of the image starting with # sign. Do not include the # sign , but add .jpg at the end of string \n 
- 
- The store Id is the number starts with @ symbol, do not include the this symbol as storeId. 
- 
- 
- \n` 
- ;
 
+
+
+
+
+
+
+
+
+
+const handleFetchFacebookPhotos = async () => {
+
+
+
+  try {
+    const response = await fetch(`${node_url}/get-facebook-photos`
+
+  
+  );
+    const result = await response.json();
+
+    if (response.ok) {
+      setFacebookPhotos(result.items || []);
+      setFacebookPhotosCount(result.items.length || 0);
+
+      console.log('Facebook photos count:', result.items.length);
+
+      // order the  facebookPhotos  array by facebookId tag in each item
+
+      setFacebookPhotos(prevPhotos => prevPhotos.sort((a, b) => {
+        return a.facebookId.localeCompare(b.facebookId);
+      }));
+
+      console.log('Facebook photos fetched:', result.items);
+    } else {
+      alert(`Failed: ${result.error}`);
+    }
+  } catch (err) {
+    console.error('Error fetching Facebook photos:', err);
+    alert('An error occurred while fetching Facebook photos.');
+  }
+};
 
  const handleFileChange2 = (event) => {
   setSelectedFile(event.target.files[0]);
@@ -184,6 +204,32 @@ const handleFileChange = (e) => {
   console.log('Picked files:', files);
 };
 
+
+const extractTextSingle = async (imageUrl, saleEndDate='2025-06-05' , storeId = '1', flyerBookId = 1) => {
+  try {
+    const response = await fetch(`${node_url}/extract-text-single`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        imageUrl,
+        saleEndDate,
+        storeId,
+        flyerBookId,
+      }),
+    });
+    const result = await response.json();
+    if (response.ok) {
+      console.log('Extracted data:', result);
+      return result;
+    } else {
+      console.error('Failed to extract text:', result);
+      return null;
+    }
+  } catch (error) {
+    console.error('Error calling /extract-text-single:', error);
+    return null;
+  }
+};
 
 // Bulk “upload & extract” handler
 const handleUploadImages = async () => {
@@ -205,7 +251,7 @@ const handleUploadImages = async () => {
 
   // get the date from the date picker input element and and convert it to YYYY-MM-DD format for the sale_end_date field
 
-  const saleEndDate = document.getElementById('sale_end_date').value;
+  const saleEndDate = document.getElementById('sale_end_date').value || '';
   const storeId = document.querySelector('select[name="store"]').value;
 
 
@@ -1481,6 +1527,11 @@ style={{ display: 'flex', flexDirection: 'row', gap: '10px', marginBottom: '10px
      
     />
     <button onClick={handleUploadImages}>Process Images</button>
+
+
+  
+
+
     <div id="result" ref={resultDivRef}>
       {extractedText && <p>{extractedText}</p>}
     </div>
@@ -1699,10 +1750,80 @@ Search Products: <input type="text" id="keyword_search" name="keyword_search" on
     </button>
   
     
-</div>      
+</div>  
+    
 
 
 </div>
+
+
+
+<div id="prod_image" style={{ display: 'flex', flexDirection: 'row', gap: '10px', margin : '10px', justifyContent: 'center', alignItems: 'center' }}>
+
+
+  <button onClick={handleFetchFacebookPhotos}>Get Facebook Photos</button>
+  <span style={{ color: 'red' }}>{facebookPhotosCount}</span>
+
+    <button onClick={extractSaleEndDatesForFacebookPhotos}>Extract SALE DATE</button>
+
+
+  
+
+</div>
+
+
+<div style={{ display: 'flex', flexDirection: 'row', gap: '10px', margin : '10px', justifyContent: 'center', alignItems: 'center' }}>
+  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+    <h3>Facebook Photos</h3>
+    {facebookPhotos.map((photo, index) => (
+      <div key={index} style={{ display: 'flex', flexDirection: 'row', gap: '10px', alignItems: 'center' }}>
+        <img
+          src={photo.image}
+          alt={`Facebook Photo ${index + 1}`}
+          style={{ width: '400px', height: 'auto', cursor: 'pointer' }}
+
+        />
+
+
+        <button onClick={() => {
+          setFacebookPhotos(facebookPhotos.filter((_, i) => i !== index));
+          setStatus(`Removed photo ${index + 1}`);
+          //setFacebookPhotosCount(facebookPhotosCount - 1);
+        }}>
+          Remove  
+        </button>
+
+        <button onClick={() => {
+
+          const flyerData = {
+            imageUrl: photo.image,
+            storeId: 1,
+            saleEndDate: '2025-06-31', // Default date, can be changed later
+            flyerBookId: 1,
+           
+          };
+
+          console.log('flyerData:', flyerData);
+
+          extractTextSingle(photo.image);
+
+          setStatus(`Extracting text from photo ${index + 1}`);
+        }
+        }>
+          Extract Text
+        </button>
+    
+
+        
+      
+</div>
+
+    ))}
+  </div>
+</div>
+
+
+
 
 
 

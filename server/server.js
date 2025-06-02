@@ -64,8 +64,20 @@ const privateKey = fs.readFileSync(privateKeyPath, "utf8");
 // });
 
 
+import { ApifyClient } from 'apify-client';
+
+
+// Initialize Apify client with your token
+const apify = new ApifyClient({
+  token: process.env.APIFY_TOKEN  // Replace with your Apify API token
+});
+
+
+console.log('✅ Apify client initialized in server.js', process.env.APIFY_TOKEN );
+
 import { format } from 'path';
 import db from './connection.js';
+
 
 import cookieParser from 'cookie-parser';
 import bodyParser from'body-parser';
@@ -112,6 +124,7 @@ app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUniniti
 }));
 
 
+
 passport.use(
   new GoogleStrategy(
       {
@@ -136,19 +149,14 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 
-// Apple Sign-In Route (keeping these as they are authentication related)
-app.get(
-  "/auth/apple222",
-  passport.authenticate("apple", { scope: ["email", "name"] }),
-  (req, res) => {
-    console.log("🍏 Apple OAuth Callback Triggered");
-  }
-);
+//
 
-app.get("/auth/apple44444", (req, res) => {
-  const appleRedirectUrl = `https://appleid.apple.com/auth/authorize?response_type=code%20id_token&client_id=${process.env.APPLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.APPLE_CALLBACK_URL)}&scope=name%20email&response_mode=form_post`;
-  res.redirect(appleRedirectUrl);
-});
+
+
+
+// Apple Sign-In Route (keeping these as they are authentication related)
+
+
 
 
 const generateAppleClientSecret = () => {
@@ -299,128 +307,8 @@ app.post("/auth/apple/callback", async (req, res) => {
 });
 
 
-app.post("/auth/apple/callback121212", async (req, res) => {
-  try {
-    console.log("🍏 Apple OAuth Callback Triggered");
-    const { code, id_token } = req.body;
-
-    if (!code && !id_token) {
-      console.error("❌ No authorization code or ID token received.");
-      return res.status(400).json({ error: "No authorization code provided" });
-    }
-
-    const clientSecret = generateAppleClientSecret();
-    const appleResponse = await AppleSigninAuth.getAuthorizationToken(code, {
-      clientID: process.env.APPLE_CLIENT_ID,
-      clientSecret: clientSecret,
-      redirectURI: process.env.APPLE_CALLBACK_URL,
-    });
-    const decodedToken = jwt.decode(appleResponse.id_token);
-    const appleId = decodedToken.sub;
-    const email = decodedToken.email || null;
-    res.json({ user: decodedToken, accessToken: appleResponse.access_token });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Apple Sign-in failed" });
-  }
-});
 
 
-app.post("/auth/apple/callback33", async (req, res) => {
-  try {
-      console.log("🍏 Apple OAuth Callback Triggered");
-      const { id_token } = req.body;
-      if (!id_token) {
-          console.error("❌ No ID token received.");
-          return res.status(400).json({ error: "Missing ID token" });
-      }
-
-      const appleKeys = await axios.get("https://appleid.apple.com/auth/keys");
-      const applePublicKeys = appleKeys.data.keys;
-      const decodedHeader = jwt.decode(id_token, { complete: true });
-      if (!decodedHeader) {
-          console.error("❌ Failed to decode Apple ID token.");
-          return res.status(400).json({ error: "Invalid ID token" });
-      }
-
-      const key = applePublicKeys.find(k => k.kid === decodedHeader.header.kid);
-      if (!key) {
-          console.error("❌ No matching Apple key found.");
-          return res.status(400).json({ error: "Invalid Apple key" });
-      }
-
-      const verifiedPayload = jwt.verify(id_token, jwt.jwkToPem(key), { algorithms: ["RS256"] });
-      console.log("✅ Apple ID Token Verified:", verifiedPayload);
-
-      const appleId = verifiedPayload.sub;
-      let email = verifiedPayload.email || null;
-
-      console.log(`🍏 Received AppleID: ${appleId}, Email: ${email || "No email provided"}`);
-
-      const checkQuery = `SELECT userId, email FROM users WHERE userId = ? OR email = ?`;
-      db.query(checkQuery, [appleId, email], (err, results) => {
-          if (err) {
-              console.error("❌ Database error:", err);
-              return res.status(500).json({ error: "Database error" });
-          }
-
-          if (results.length > 0) {
-              const existingUser = results[0];
-              console.log(`✅ Existing user found: userId=${existingUser.userId}, email=${existingUser.email || "No email"}`);
-
-              if (!existingUser.email && email) {
-                  const updateQuery = `UPDATE users SET email = ? WHERE userId = ?`;
-                  db.query(updateQuery, [email, existingUser.userId], (updateErr) => {
-                      if (updateErr) {
-                          console.error("❌ Error updating email:", updateErr);
-                          return res.status(500).json({ error: "Failed to update email" });
-                      }
-                      console.log(`✅ Email updated for userId=${existingUser.userId}`);
-                  });
-              }
-
-              const token = jwt.sign(
-                  { userId: existingUser.userId, email: existingUser.email || email },
-                  process.env.TOKEN_SECRET,
-                  { expiresIn: "7d" }
-              );
-
-              res.cookie("jwt", token, {
-                  httpOnly: true,
-                  secure: true,
-                  sameSite: "None",
-                  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-              });
-
-              return res.redirect(`${process.env.FRONTEND_URL}?loginSuccess=true`);
-          } else {
-              console.log(`🆕 New user detected, inserting: ${email || "No email provided"}`);
-              const insertQuery = `INSERT INTO users (userId, email) VALUES (?, ?)`;
-              db.query(insertQuery, [appleId, email], (insertErr) => {
-                  if (insertErr) {
-                      console.error("❌ Error inserting new user:", insertErr);
-                      return res.status(500).json({ error: "Failed to insert new user" });
-                  }
-
-                  console.log(`✅ New user inserted: AppleID=${appleId}, Email=${email || "No email"}`);
-                  const token = jwt.sign({ userId: appleId, email }, process.env.TOKEN_SECRET, { expiresIn: "7d" });
-
-                  res.cookie("jwt", token, {
-                      httpOnly: true,
-                      secure: true,
-                      sameSite: "None",
-                      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-                  });
-
-                  return res.redirect(`${process.env.FRONTEND_URL}?loginSuccess=true`);
-              });
-          }
-      });
-  } catch (error) {
-      console.error("❌ Apple OAuth Error:", error);
-      return res.status(500).json({ error: "Apple authentication failed" });
-  }
-});
 
 
 // Specify the model you want to use (e.g., Gemini 1.5 Pro)
@@ -490,30 +378,116 @@ app.post('/dashboardLogin', (req, res) => {
   });
 });
 
-app.get("/check-session0",  (req, res) => {
-  const token = req.cookies.jwt;
-  if (!token) {
-      return res.json({ isLoggedIn: false, userId: null });
+
+app.get('/get-facebook-posts', async (req, res) => {
+
+
+  const { pageUrl, date } = req.query;
+
+  console.log(`🔍 Fetching Facebook posts for page: ${pageUrl} on date: ${date}`);
+
+  if (!pageUrl || !date) {
+    return res.status(400).json({ error: 'Missing pageUrl or date (YYYY-MM-DD)' });
   }
 
   try {
-      const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
-      const query = `SELECT userId, email FROM users WHERE userId = ?`;
-      db.query(query, [decoded.userId], (err, results) => {
-          if (err) {
-              console.error("❌ Error retrieving user:", err);
-              return res.status(500).json({ isLoggedIn: false, userId: null });
-          }
-          if (results.length === 0) {
-              console.warn("⚠️ User not found in database");
-              return res.json({ isLoggedIn: false, userId: null });
-          }
-          res.json({ isLoggedIn: true, userId: results[0].userId, email: results[0].email });
-      });
-  } catch (error) {
-      console.error("❌ Invalid JWT:", error.message);
-      res.clearCookie("jwt");
-      return res.json({ isLoggedIn: false, userId: null });
+    // Run Apify Facebook Posts Scraper
+    const run = await apify.actor('apify/facebook-posts-scraper').call({
+      startUrls: [{ url: pageUrl }],
+      maxPosts: 10,
+      proxy: { useApifyProxy: true },
+    });
+
+    // Get results
+    const { items } = await apify.dataset(run.defaultDatasetId).listItems();
+
+    console.log(`📄 Fetched ${items.length} posts from Facebook page: ${pageUrl}`)
+    console.log(`📄 Items:`, items);
+
+    // Filter by date
+    const matchingPosts = items.filter(post => {
+      const postDate = new Date(post.timestamp * 1000).toISOString().split('T')[0];
+      return postDate === date;
+    });
+
+    // Format output
+    const result = matchingPosts.map(post => ({
+      text: post.text || '',
+      postUrl: post.postUrl || '',
+      date: new Date(post.timestamp * 1000).toISOString(),
+      images: post.images || [],
+    }));
+
+    return res.json({
+      total: result.length,
+      date,
+      pageUrl,
+      posts: result,
+    });
+
+  } catch (err) {
+    console.error('Error:', err.message);
+    return res.status(500).json({ error: 'Failed to fetch posts', details: err.message });
+  }
+});
+
+
+// API endpoint to get Facebook photo URLs for a specific date
+app.get('/get-facebook-photos', async (req, res) => {
+
+
+ // console.log(`🔍 Fetching Facebook photos for page: ${pageUrl} on date: ${date}`);
+
+
+
+  console.log(`🔍 Fetching Facebook photos ....`);
+
+  const page1 = 'https://www.facebook.com/vivafresh.rks';
+ // const page2 = 'https://www.facebook.com/etcks'  ;
+  //const page3 = 'https://www.facebook.com/SPARinKosova' ;
+  //const page4 = 'https://www.facebook.com/profile.php?id=100040544017359'; // Example page URL
+  //const page5 = 'https://www.facebook.com/superviva.ks'
+  //const page6 = 'https://www.facebook.com/Horecacenter.ks';
+  //const page7 = 'https://www.facebook.com/maxisupermarketprishtine';
+  //const page8 = 'https://www.facebook.com/emonacenter';
+
+
+
+  
+
+
+
+  try {
+    const input = {
+      startUrls: [
+        { url: `${page1}/photos` },
+
+      ],
+      resultsLimit: 10,
+      proxy: {
+        useApifyProxy: true,
+        apifyProxyGroups: ['RESIDENTIAL'],
+      },
+    };
+
+    // Run the actor
+    const run = await apify.actor('apify/facebook-photos-scraper').call(input);
+
+    // Fetch dataset items
+    const { items } = await apify.dataset(run.defaultDatasetId).listItems();
+
+
+    console.log(`📸 Fetched ${items.length} items from Facebook.`);
+    console.log(`📸 Items:`, items);
+
+
+
+    res.json({
+      items: items
+    });
+  } catch (err) {
+    console.error('Error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch photos', details: err.message });
   }
 });
 
@@ -637,6 +611,87 @@ const SECRET_KEY = 'AAAA-BBBB-CCCC-DDDD-EEEE'; // Consider moving this to enviro
 
 const upload = multer({ dest: 'uploads/' }); // Define upload middleware
 
+
+// add api endpoint like /extract-text that calls extractSaleEndDateFromImage and returns the sale end date
+
+app.post('/extract-sale-end-date', async (req, res) => {
+
+  const { photos} = req.body;
+
+  const imageUrls = photos;
+
+
+  console.log('🔍 Extracting sale end date from image URL:', photos);
+
+
+try {
+    const results = [];
+    for (const imageUrl of imageUrls) {
+      let sale_end_date = null;
+      try {
+        sale_end_date = await extractSaleEndDateFromImage(imageUrl);
+      } catch (err) {
+        console.error('❌ Error extracting date for image:', imageUrl, err);
+      }
+      results.push({ image: imageUrl, sale_end_date: sale_end_date || null });
+    }
+    return res.json(results);
+  } catch (err) {
+    console.error('❌ Error in /extract-sale-end-date route:', err);
+    return res.status(500).json({
+      message: 'Failed to extract sale end date from images.',
+      error: err.message
+    });
+  }
+
+
+
+
+});
+
+
+app.post('/extract-text-single', async (req, res) => {
+
+  console.log('🔍 Extracting data from image using Gemini 1.5 Pro…');
+
+  // Assuming userId is available from authentication middleware or session
+  // Replace with your actual way of getting userId
+  const userId = req.user ? req.user.userId : 1; // Example: Get from req.user if using auth middleware, default to 1
+
+  const { imageUrl, saleEndDate, storeId, flyerBookId } = req.body;
+  console.log('Sale End Date:', saleEndDate);
+  console.log('Store ID:', storeId);
+  console.log('User ID:', userId); // Log userId
+  console.log('Image file:', imageUrl);
+  console.log('flyerBookId:', flyerBookId);
+
+  try {
+
+
+
+
+    // 2️⃣ Format and Extract data using Gemini 1.5 Pro directly from the image URL
+    console.log('▶️  Formatting and extracting data from image using Gemini 1.5 Pro…');
+    // Pass the image URL directly to formatDataToJson
+    const jsonText = await formatDataToJson(imageUrl, imageUrl, saleEndDate, storeId, userId, flyerBookId); // Pass imageUrl as data source and metadata
+    console.log('✅ Formatted JSON from Gemini:', jsonText);
+
+    // 4️⃣ Respond
+    // Respond with the formatted JSON data
+    return res.json({ jsonText, imageUrl });
+
+  } catch (err) {
+    console.error('❌ Error in /extract-text route:', err);
+    // Ensure temp file is deleted even on error
+    if (req.file && req.file.path) {
+        fs.unlinkSync(req.file.path);
+    }
+    return res.status(500).json({
+      message: 'Failed to extract data from image using Gemini.',
+      error: err.message
+    });
+  }
+});
 
 // **UPDATED** /extract-text route to use Gemini 1.5 Pro directly on the image
 app.post('/extract-text', upload.single('image'), async (req, res) => {
@@ -1077,8 +1132,247 @@ async function insertProducts1(jsonData) {
 };
 
 
+// write e function that takes image url and extracts sales end date from the image using Gemini 1.5 Pro 
+// like in functon formatDataToJson but only for sale end date
+
+// change the function to ba an api endpoint that takes image url and returns the sale end date in YYYY-MM-DD format
+
+
+
+
+async function extractSaleEndDateFromImage(imageUrl) {
+  console.log('🔍 Extracting sale end date from image using Gemini 1.5 Pro...')
+  const geminiPrompt = `You are an AI assistant that specializes in extracting sale end dates from images of retail flyers.
+  The flyer is in Albanian language and the sale end date is usually written in a specific Europen format.
+Your task is to analyze the image, identify the sale end date, and return it in the format YYYY-MM-DD.  
+
+Look for text patterns that indicate a date, such as "Sale ends on", "Valid until", or similar phrases.
+Return the date in the format YYYY-MM-DD. If no date is found, return "No date found".`;
+  console.log('Image URL:', imageUrl);
+
+  const response = await generativeModel.generateContent({
+    prompt: geminiPrompt,
+    input: {
+      image: {
+        image_url: imageUrl, // Use the image URL directly
+      },
+    },
+    response_format: {
+      type: 'json',
+      schema: {
+        type: 'object',
+        properties: {
+          saleEndDate: {
+            type: 'string',
+            description: 'The extracted sale end date in YYYY-MM-DD format',
+          },
+        },
+      },
+
+    },
+  });
+  console.log('Response from Gemini:', response);
+  const saleEndDate = response.candidates[0].content.saleEndDate;
+  console.log('Extracted Sale End Date:', saleEndDate);
+  return saleEndDate || 'No date found';
+}
+
+
+
 // **UPDATED** formatDataToJson function to work with image URL
 async function formatDataToJson(imageUrl, originalImageUrl, saleEndDate, storeId, userId, flyerBookId) { // Accepts imageUrl as data source
+  console.log('🔍 Formatting data into JSON using Gemini 1.5 Pro from image URL...');
+  console.log('Metadata received: Image URL:', originalImageUrl, 'Sale End Date:', saleEndDate, 'Store ID:', storeId, 'User ID:', userId , 'flyerBookId:', flyerBookId);
+
+  const geminiPrompt = `You are an AI assistant that specializes in extracting structured product sale information from an image of an Albanian 
+  retail flyer.
+
+Your task is to analyze the image, identify distinct product entries, and extract the product description, original price (if present), 
+sale price, and discount percentage for each. A product entry typically consists of a product description and one or two prices. Original prices are usually higher and may be positioned near the sale price.
+
+Analyze the visual layout and text content within the image to determine which elements belong to which product. 
+Look for price patterns (numbers with currency symbols), percentage signs, and descriptive text.
+
+
+Bellow is a caregories array with category ids, descriptions and weights. Based on the description of the product, 
+you will assign a category_id to each product that best matches the description of the product
+to the categoryDescription in may belong in the array given.
+
+[
+  {"categoryId": 100, "categoryDescription": "Fruits (Fruta)", "categoryWeight": 80},
+  {"categoryId": 101, "categoryDescription": "Vegetables (Perime)", "categoryWeight": 80},
+  {"categoryId": 102, "categoryDescription": "Herbs (Erëza të Freskëta)", "categoryWeight": 80},
+  {"categoryId": 103, "categoryDescription": "Red Meat (Mish i Kuq)", "categoryWeight": 62},
+  {"categoryId": 104, "categoryDescription": "Poultry (Shpendë)", "categoryWeight": 62},
+  {"categoryId": 105, "categoryDescription": "Processed Meats (Mishra të Përpunuar)", "categoryWeight": 59},
+  {"categoryId": 106, "categoryDescription": "Fresh Fish (Peshk i Freskët)", "categoryWeight": 38},
+  {"categoryId": 107, "categoryDescription": "Frozen Fish & Seafood (Peshk dhe Fruta Deti të Ngrira)", "categoryWeight": 70},
+  {"categoryId": 108, "categoryDescription": "Canned Fish (Peshk i Konservuar)", "categoryWeight": 65},
+  {"categoryId": 109, "categoryDescription": "Milk (Qumësht)", "categoryWeight": 82},
+  {"categoryId": 110, "categoryDescription": "Yogurt (Kos / Jogurt)", "categoryWeight": 82},
+  {"categoryId": 111, "categoryDescription": "Cheese (Djathë)", "categoryWeight": 82},
+  {"categoryId": 112, "categoryDescription": "Cream (Ajkë / Krem Qumështi)", "categoryWeight": 82},
+  {"categoryId": 113, "categoryDescription": "Butter (Gjalpë)", "categoryWeight": 82},
+  {"categoryId": 114, "categoryDescription": "Margarine & Spreads (Margarinë dhe Produkte për Lyerje)", "categoryWeight": 64},
+  {"categoryId": 115, "categoryDescription": "Eggs (Vezë)", "categoryWeight": 82},
+  {"categoryId": 116, "categoryDescription": "Bread (Bukë)", "categoryWeight": 71},
+  {"categoryId": 117, "categoryDescription": "Pastries & Croissants (Pasta dhe Kroasante)", "categoryWeight": 71},
+  {"categoryId": 118, "categoryDescription": "Cakes & Sweet Baked Goods (Kekë dhe Ëmbëlsira Furre)", "categoryWeight": 71},
+  {"categoryId": 119, "categoryDescription": "Flour (Miell)", "categoryWeight": 47},
+  {"categoryId": 120, "categoryDescription": "Rice (Oriz)", "categoryWeight": 65},
+  {"categoryId": 121, "categoryDescription": "Pasta & Noodles (Makarona dhe Fide)", "categoryWeight": 65},
+  {"categoryId": 122, "categoryDescription": "Grains & Cereals (Drithëra)", "categoryWeight": 66},
+  {"categoryId": 123, "categoryDescription": "Sugar & Sweeteners (Sheqer dhe Ëmbëltues)", "categoryWeight": 47},
+  {"categoryId": 124, "categoryDescription": "Salt & Spices (Kripë dhe Erëza)", "categoryWeight": 47},
+  {"categoryId": 125, "categoryDescription": "Cooking Oils (Vajra Gatimi)", "categoryWeight": 64},
+  {"categoryId": 126, "categoryDescription": "Vinegar (Uthull)", "categoryWeight": 64},
+  {"categoryId": 127, "categoryDescription": "Canned Goods (Konserva)", "categoryWeight": 65},
+  {"categoryId": 128, "categoryDescription": "Sauces & Condiments (Salca dhe Kondimente)", "categoryWeight": 64},
+  {"categoryId": 129, "categoryDescription": "Spreads (Produkte për Lyerje)", "categoryWeight": 64},
+  {"categoryId": 130, "categoryDescription": "Chips & Crisps (Çipsa dhe Patatina)", "categoryWeight": 76},
+  {"categoryId": 131, "categoryDescription": "Pretzels & Salty Snacks (Shkopinj të Kripur dhe Rosto të Tjera)", "categoryWeight": 76},
+  {"categoryId": 132, "categoryDescription": "Nuts & Seeds (Fruta të Thata dhe Fara)", "categoryWeight": 76},
+  {"categoryId": 133, "categoryDescription": "Chocolate (Çokollatë)", "categoryWeight": 43},
+  {"categoryId": 134, "categoryDescription": "Biscuits & Cookies (Biskota dhe Keksa)", "categoryWeight": 76},
+  {"categoryId": 135, "categoryDescription": "Candies & Gums (Karamele dhe Çamçakëz)", "categoryWeight": 43},
+  {"categoryId": 136, "categoryDescription": "Frozen Vegetables & Fruits (Perime dhe Fruta të Ngrira)", "categoryWeight": 70},
+  {"categoryId": 137, "categoryDescription": "Frozen Potato Products (Produkte Patatesh të Ngrira)", "categoryWeight": 70},
+  {"categoryId": 138, "categoryDescription": "Frozen Ready Meals & Pizza (Gatime të Gata dhe Pica të Ngrira)", "categoryWeight": 70},
+  {"categoryId": 139, "categoryDescription": "Frozen Meat & Fish (Mish dhe Peshk i Ngrirë)", "categoryWeight": 70},
+  {"categoryId": 140, "categoryDescription": "Ice Cream (Akullore)", "categoryWeight": 70},
+  {"categoryId": 141, "categoryDescription": "Baby Food (Ushqim për Foshnje)", "categoryWeight": 7},
+  {"categoryId": 142, "categoryDescription": "Baby Formula (Qumësht Formule)", "categoryWeight": 7},
+  {"categoryId": 143, "categoryDescription": "Water (Ujë)", "categoryWeight": 53},
+  {"categoryId": 144, "categoryDescription": "Still Water (Ujë Natyral / pa Gaz)", "categoryWeight": 53},
+  {"categoryId": 145, "categoryDescription": "Sparkling Water (Ujë Mineral / me Gaz)", "categoryWeight": 53},
+  {"categoryId": 146, "categoryDescription": "Flavored Water (Ujë me Shije)", "categoryWeight": 53},
+  {"categoryId": 147, "categoryDescription": "Fruit Juices (Lëngje Frutash)", "categoryWeight": 53},
+  {"categoryId": 148, "categoryDescription": "Nectars (Nektare)", "categoryWeight": 53},
+  {"categoryId": 149, "categoryDescription": "Smoothies (Smoothie)", "categoryWeight": 53},
+  {"categoryId": 150, "categoryDescription": "Colas (Kola)", "categoryWeight": 53},
+  {"categoryId": 151, "categoryDescription": "Other Carbonated Drinks (Pije të Tjera të Gazuara)", "categoryWeight": 53},
+  {"categoryId": 152, "categoryDescription": "Coffee (Kafe)", "categoryWeight": 53},
+  {"categoryId": 153, "categoryDescription": "Tea (Çaj)", "categoryWeight": 53},
+  {"categoryId": 154, "categoryDescription": "Energy Drinks (Pije Energjetike)", "categoryWeight": 53},
+  {"categoryId": 155, "categoryDescription": "Alcoholic Beverages (Pije Alkoolike)", "categoryWeight": 29},
+  {"categoryId": 156, "categoryDescription": "Beer (Birrë)", "categoryWeight": 29},
+  {"categoryId": 157, "categoryDescription": "Wine (Verë)", "categoryWeight": 29},
+  {"categoryId": 158, "categoryDescription": "Spirits (Pije Spirtuore)", "categoryWeight": 29},
+  {"categoryId": 159, "categoryDescription": "Laundry Detergents (Detergjentë Rrobash)", "categoryWeight": 59},
+  {"categoryId": 160, "categoryDescription": "Fabric Softeners (Zbutës Rrobash)", "categoryWeight": 59},
+  {"categoryId": 161, "categoryDescription": "Dishwashing Products (Produkte për Larjen e Enëve)", "categoryWeight": 59},
+  {"categoryId": 162, "categoryDescription": "Surface Cleaners (Pastrues Sipërfaqesh)", "categoryWeight": 59},
+  {"categoryId": 163, "categoryDescription": "Toilet Cleaners (Pastrues WC)", "categoryWeight": 59},
+  {"categoryId": 164, "categoryDescription": "Garbage Bags (Thasë Mbeturinash)", "categoryWeight": 59},
+  {"categoryId": 165, "categoryDescription": "Soaps & Shower Gels (Sapunë dhe Xhel Dushi)", "categoryWeight": 50},
+  {"categoryId": 166, "categoryDescription": "Shampoos & Conditioners (Shampon dhe Balsam Flokësh)", "categoryWeight": 50},
+  {"categoryId": 167, "categoryDescription": "Oral Care (Kujdesi Oral)", "categoryWeight": 50},
+  {"categoryId": 168, "categoryDescription": "Deodorants & Antiperspirants (Deodorantë)", "categoryWeight": 50},
+  {"categoryId": 169, "categoryDescription": "Skin Care (Kujdesi i Lëkurës)", "categoryWeight": 50},
+  {"categoryId": 170, "categoryDescription": "Feminine Hygiene (Higjiena Femërore)", "categoryWeight": 50},
+  {"categoryId": 171, "categoryDescription": "Paper Products (Produkte Letre)", "categoryWeight": 59},
+  {"categoryId": 172, "categoryDescription": "Baby Diapers & Wipes (Pelena dhe Letra të Lagura për Foshnje)", "categoryWeight": 7},
+  {"categoryId": 173, "categoryDescription": "Other", "categoryWeight": 1}
+]
+
+
+
+For each distinct product entry you identify in the image, create a JSON object in your output array with these exact keys and data types:
+
+* \`product_description\` (string): The complete descriptive text associated with the product in the flyer. Include any size/volume information (e.g., 0,33L, 400ml, 3kg) if it's part of the product's description text in the flyer.
+* \`old_price\` (string or null): The text of the original price (if a higher price is present). Remove currency symbols (€). If no distinct original price is found for a product, use \`null\`.
+* \`new_price\` (string or null): The text of the current sale price (the lower price). Remove currency symbols (€). If no sale price is found, use \`null\`.
+* \`discount_percentage\` (string or null): The numerical value of the discount percentage shown (e.g., "14"). Remove the percentage symbol (%). If no discount percentage is found, use \`null\`.
+* \`sale_end_date\` (string): Use the provided value: "${saleEndDate}". Format as "YYYY-MM-DD".
+* \`storeId\` (number): Use the provided value: ${storeId}.
+* \`userId\` (number): Use the provided value: ${userId}.
+* \`image_url\` (string): Use the provided value: "${originalImageUrl}".
+* \`category_id\` (number or null): The numerical value of the categoryId extract from categories array.\`.
+*\`flyer_book_id\` (number or null): Use the provided value: "${flyerBookId}".\`.
+
+Also, generate a list of relevant keywords for each product description. These keywords should be in lowercase, in Albanian, 
+and exclude common articles, conjunctions, prepositions, and size/volume information (like 'kg', 'l', 'pako', numbers, units). 
+Only include words longer than 2 characters. Convert the Albanian letter 'ë' to 'e' for all keywords. 
+If there is a keyword like "qumesht" or "qumësht" add a keyword "qumsht" as well to cover both spellings.
+if there is a keyword like "veze" add a keyword "vo" as well to cover both spellings.
+if there is a keyword like "shalqi*" add a keyword "bostan" as well to cover both spellings.
+if there is a keyword like "ver*" add a keyword "vene" as well to cover both spellings.
+if there is a keyword like "qepe" add a keyword "kep" as well to cover both spellings.
+The \`keywords\` field should be an array of strings. Limit the keywords to the most relevant 5 per product.
+
+If you can find a date mentioned explicitly in the flyer image that seems to indicate the sale end date, use that date instead of the provided \`${saleEndDate}\`, formatted as "YYYY-MM-DD". If multiple dates are present, use the latest one as the \`sale_end_date\` for all products extracted from this image.
+
+Provide ONLY the JSON array of extracted product objects in your response. Do not include any introductory or concluding text, explanations, or code block markers. Ensure the output is valid JSON.
+
+`;
+
+
+
+
+/*
+
+
+*/
+
+
+
+  try {
+    // Correctly structure the content for generateContent
+    const response = await generativeModel.generateContent({
+      contents: [
+        {
+          role: 'user', // Added the user role
+          parts: [
+            { text: geminiPrompt }, // Text part
+            {
+              fileData: {
+                mimeType: 'image/jpeg', // Or image/png, etc. based on your uploaded file type
+                fileUri: imageUrl, // Pass the Cloudinary URL here
+              },
+            }, // File data part
+          ],
+        },
+      ],
+    });
+
+
+    let text = response.response.candidates[0].content.parts[0].text;
+
+    console.log('Raw Gemini Output:', text);
+
+    // Clean up potential markdown code block and backticks
+    text = text.replace(/^```json\s*/, '').replace(/\s*```$/, '').replace(/`/g, '');
+
+    try {
+        const products = JSON5.parse(text);
+        console.log('Parsed JSON:', products);
+
+        // Call the insertion function with the parsed products array
+        await insertProducts1(products);
+
+        return products; // Return the formatted JSON data
+
+    } catch (parseError) {
+        console.error('JSON Parsing Error:', parseError);
+        console.error('Failed JSON Text:', text);
+        return null;
+    }
+
+  } catch (error) {
+      console.error('Gemini API Error:', error);
+      // Check for specific error details if available
+      if (error.details) {
+          console.error('Gemini API Error Details:', error.details);
+      }
+      if (error.message && error.message.includes("400 Bad Request")) {
+           console.error("Possible issue: Incorrect file type or URL for Gemini Vision input.");
+      }
+      return null;
+  }
+}
+
+
+async function extractDateFromData(imageUrl, originalImageUrl, saleEndDate, storeId, userId, flyerBookId) { // Accepts imageUrl as data source
   console.log('🔍 Formatting data into JSON using Gemini 1.5 Pro from image URL...');
   console.log('Metadata received: Image URL:', originalImageUrl, 'Sale End Date:', saleEndDate, 'Store ID:', storeId, 'User ID:', userId , 'flyerBookId:', flyerBookId);
 
