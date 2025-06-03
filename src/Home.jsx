@@ -12,6 +12,8 @@ import RegistrationModal from "./RegistrationModal";
 import ProductModal from "./ProductModal";
 
 
+
+
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -84,18 +86,6 @@ function Home({ mode }) {
 
   
 
-  // // Infinite‐scroll query
-  // const {
-  //   data,
-  //   fetchNextPage,
-  //   hasNextPage,
-  //   isFetching,
-  //   isFetchingNextPage,
-  // } = useInfiniteQuery({
-  //   queryKey: productsQueryKey,
-  //   queryFn: getAllProducts,
-  //   getNextPageParam: (lastPage) => lastPage.nextPage,
-  // });
 
     // --- Data Fetching ---
     const {
@@ -515,45 +505,6 @@ console.log("[DEBUG] Active Filters:", activeFilters);
 
 
 
-  const signInWithApple = () => {
-    const params = new URLSearchParams({
-      client_id: import.meta.env.VITE_APPLE_CLIENT_ID,
-      redirect_uri: import.meta.env.VITE_APPLE_CALLBACK_URL,
-      response_type: "code",
-      scope: "name email",
-      response_mode: "form_post",
-    });
-    window.location.href = `https://appleid.apple.com/auth/authorize?${params.toString()}`;
-  };
-
-  const handleAppleLogin = async () => {
-    try {
-      if (!window.AppleID || !window.AppleID.auth) {
-        console.error("Apple SDK not loaded");
-        return;
-      }
-      window.AppleID.auth.init({
-        clientId: import.meta.env.VITE_APPLE_CLIENT_ID,
-        scope: "email name",
-        redirectURI: import.meta.env.VITE_APPLE_CALLBACK_URL,
-        usePopup: true,
-      });
-      const response = await window.AppleID.auth.signIn();
-      const idToken = response.authorization.id_token;
-      const res = await fetch(`${node_url}/auth/apple/callback`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id_token: idToken }),
-        credentials: "include",
-      });
-      const data = await res.json();
-      setIsLoggedIn(true);
-      window.location.href = `${node_url}?loginSuccess=true`;
-    } catch (error) {
-      console.error("Apple Login Error:", error);
-    }
-  };
-
   const logout = async () => {
     try {
       await fetch(`${node_url}/logout`, { credentials: "include" });
@@ -894,30 +845,10 @@ cursor: "grab",
 
 
 {stores.map((store) => (
-<span key={store.storeId} style={{ display: "inline-block", marginRight: 16, textAlign: "center" }}>
-  {/* <img
-   
-    src="/vivafresh.jpeg"
-    alt="star"
-    style={{
-      width: 32,
-      height: 32,
-      display: "inline-block",
-      marginRight: 8,
-      verticalAlign: "middle",
-    }}
-
-
-    onClick={() => {
-      setSelectedStore(store.storeId);
-      setSelectedStoreName(store.storeName);
-    } }
-
-
-
-  /> */}
 
         <div style={{ 
+
+          display: "inline-block",
           
           fontSize: 12,
          color: "#333" ,
@@ -926,6 +857,7 @@ cursor: "grab",
           borderRadius: 5,
           padding: 10,
           cursor: "pointer",
+          margin: "0 5px",
           
 
 
@@ -939,8 +871,15 @@ cursor: "grab",
         
         
         
-        >{store.storeName}</div>
-</span>
+        >
+          
+          
+          <span key={store.storeId} style={{  textAlign: "center" }}>
+{store.storeName}
+  </span>      
+        
+        </div>
+
 
 
 ))}

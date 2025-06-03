@@ -3,7 +3,9 @@ import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 import { use } from 'react';
-import Home from './Home';
+
+
+import Calendar from "react-calendar";
 
 import {
   useInfiniteQuery,
@@ -59,6 +61,9 @@ const [mode, setMode] = useState('dashboard');
 
 const [responseMessage, setResponseMessage ] = useState('');
 
+const [selectedStore, setSelectedStore] = useState('0'); // Default to "All Stores"
+const [selectedStoreName, setSelectedStoreName] = useState('All Stores'); // Default to "All Stores"
+
   const CLOUD_NAME = import.meta.env.CLOUDINARY_CLOUD_NAME;
   const API_KEY = import.meta.env.CLOUDINARY_API_KEY;
   const API_SECRET = import.meta.env.CLOUDINARY_API_SECRET;
@@ -80,6 +85,9 @@ const [responseMessage, setResponseMessage ] = useState('');
   const [facebookPhotos, setFacebookPhotos] = useState([]);
 
   const[facebookPhotosCount, setFacebookPhotosCount] = useState(0);
+
+  const [saleEndDate, setSaleEndDate] = useState(''); // State for sale end date
+  const [storeId, setStoreId] = useState(''); // State for store ID
   
 
 const width = 200;
@@ -163,8 +171,15 @@ const handleFetchFacebookPhotos = async () => {
 
 
 
+  console.log('handleFetchFacebookPhotos called with selectedStore:', selectedStore);
+
+  setFacebookPhotos([]); // Clear previous photos
+
   try {
     const response = await fetch(`${node_url}/get-facebook-photos`
+
+      // send selectedStore as a query parameter to the server
+      + `?storeId=${encodeURIComponent(selectedStore)}`, // Use selectedStore state
 
   
   );
@@ -205,7 +220,41 @@ const handleFileChange = (e) => {
 };
 
 
-const extractTextSingle = async (imageUrl, saleEndDate='2025-06-05' , storeId = '1', flyerBookId = 1) => {
+
+
+
+const extractTextSingle = async () => {
+
+  const flyerBookId = Math.floor(100000 + Math.random() * 900000);
+
+
+
+  console.log('extractTextSingle called with facebookPhotos with:', saleEndDate, storeId, flyerBookId);
+ 
+  console.log('flyerBookId:', flyerBookId);
+
+  // for all facebookImages, call the /extract-text-single API with imageUrl, saleEndDate, storeId and flyerBookId  
+
+  console.log('extractTextSingle called with:', { saleEndDate, storeId, flyerBookId });
+
+  if (!saleEndDate || !storeId) {
+    console.error('Missing required parameters for extractTextSingle:', { saleEndDate, storeId });
+    return null;
+  }
+
+  // Ensure node_url is defined and valid
+
+// add for loop 
+
+for( let i = 0; i < facebookPhotos.length; i++) {
+
+  const item = facebookPhotos[i];
+  console.log(`Processing item ${i + 1}/${facebookPhotos.length}:`, item);
+
+  const imageUrl = item.image; // Assuming each item has an 'image' property
+
+  console.log('Image URL for extraction:', imageUrl);
+  
   try {
     const response = await fetch(`${node_url}/extract-text-single`, {
       method: 'POST',
@@ -229,6 +278,10 @@ const extractTextSingle = async (imageUrl, saleEndDate='2025-06-05' , storeId = 
     console.error('Error calling /extract-text-single:', error);
     return null;
   }
+
+}
+
+
 };
 
 // Bulk “upload & extract” handler
@@ -1758,23 +1811,66 @@ Search Products: <input type="text" id="keyword_search" name="keyword_search" on
 
 
 
+{stores.map((store) => (
+
+<div style={{ 
+
+  display: "inline-block",
+  
+  fontSize: 12,
+ color: "#333" ,
+ // add a border with rounded corners
+  border: "1px solid #ccc",
+  borderRadius: 5,
+  padding: 10,
+  cursor: "pointer",
+  margin: "0 5px",
+  
+
+
+
+}}
+
+onClick={() => {
+  setSelectedStore(store.storeId);
+  setSelectedStoreName(store.storeName);
+  handleFetchFacebookPhotos(); // Fetch photos for the selected store
+
+} }
+
+
+
+>
+  
+  
+  <span key={store.storeId} style={{  textAlign: "center" }}>
+{store.storeName}
+</span>      
+
+</div>
+
+
+
+))}
+
+
 <div id="prod_image" style={{ display: 'flex', flexDirection: 'row', gap: '10px', margin : '10px', justifyContent: 'center', alignItems: 'center' }}>
 
 
-  <button onClick={handleFetchFacebookPhotos}>Get Facebook Photos</button>
+  <button onClick={handleFetchFacebookPhotos}>Get Facebook Photos </button>
+
+  <button onClick={extractTextSingle}>Process images</button>
+
   <span style={{ color: 'red' }}>{facebookPhotosCount}</span>
 
     <button onClick={extractSaleEndDatesForFacebookPhotos}>Extract SALE DATE</button>
-
-
-  
 
 </div>
 
 
 <div style={{ display: 'flex', flexDirection: 'row', gap: '10px', margin : '10px', justifyContent: 'center', alignItems: 'center' }}>
   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-    <h3>Facebook Photos</h3>
+    <h3>Facebook Photos - {selectedStoreName}</h3>
     {facebookPhotos.map((photo, index) => (
       <div key={index} style={{ display: 'flex', flexDirection: 'row', gap: '10px', alignItems: 'center' }}>
         <img
