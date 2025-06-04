@@ -3,9 +3,8 @@ import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 import { use } from 'react';
-
-
-import Calendar from "react-calendar";
+import Home from './Home';
+import Calendar from 'react-calendar';
 
 import {
   useInfiniteQuery,
@@ -31,6 +30,8 @@ const [uploadedImageUrl, setUploadedImageUrl] = useState('');
   const fileInputRef = useRef(null);
 
   const [currentPage, setCurrentPage] = useState(0);
+
+  const [ facebookUrl , setFacebookUrl ] = useState(null); // State for single file upload
 
 
   console.log("starting...");
@@ -87,7 +88,7 @@ const [selectedStoreName, setSelectedStoreName] = useState('All Stores'); // Def
   const[facebookPhotosCount, setFacebookPhotosCount] = useState(0);
 
   const [saleEndDate, setSaleEndDate] = useState(''); // State for sale end date
-  const [storeId, setStoreId] = useState(''); // State for store ID
+  const [storeId, setStoreId] = useState(0); // State for store ID
   
 
 const width = 200;
@@ -175,11 +176,46 @@ const handleFetchFacebookPhotos = async () => {
 
   setFacebookPhotos([]); // Clear previous photos
 
-  try {
-    const response = await fetch(`${node_url}/get-facebook-photos`
 
-      // send selectedStore as a query parameter to the server
-      + `?storeId=${encodeURIComponent(selectedStore)}`, // Use selectedStore state
+    // get the facebookUrl field from the stores array that matched the storeId 
+    const store = stores.find(s => s.storeId === parseInt(storeId, 10)); 
+
+ 
+
+    const facebookUrl = store ? store.facebookUrl : null;
+  
+    setFacebookUrl(facebookUrl); // Update state with Facebook URL
+  
+    console.log('Facebook URL for store:', facebookUrl);
+
+  if (!facebookUrl) {
+    alert('Please select a store with a valid Facebook URL.');
+    return;
+  }
+
+
+
+
+
+  try {
+    const response = await fetch(`${node_url}/get-facebook-photos`,
+
+      {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      //+ `?storeId=${encodeURIComponent(selectedStore)}`, // Use selectedStore state
+      //+ `&facebookUrl=${encodeURIComponent(facebookUrl)}`, // Include Facebook URL in the request
+      body: JSON.stringify({
+        selectedStore,
+        facebookUrl, // Include Facebook URL in the request
+      }),
+
+    }
+
+
+
 
   
   );
@@ -224,64 +260,61 @@ const handleFileChange = (e) => {
 
 
 const extractTextSingle = async () => {
-
   const flyerBookId = Math.floor(100000 + Math.random() * 900000);
-
-
-
-  console.log('extractTextSingle called with facebookPhotos with:', saleEndDate, storeId, flyerBookId);
- 
-  console.log('flyerBookId:', flyerBookId);
-
-  // for all facebookImages, call the /extract-text-single API with imageUrl, saleEndDate, storeId and flyerBookId  
 
   console.log('extractTextSingle called with:', { saleEndDate, storeId, flyerBookId });
 
-  if (!saleEndDate || !storeId) {
+
+
+  if (!saleEndDate || !storeId || !flyerBookId || !facebookUrl) {
     console.error('Missing required parameters for extractTextSingle:', { saleEndDate, storeId });
     return null;
   }
 
-  // Ensure node_url is defined and valid
-
-// add for loop 
-
-for( let i = 0; i < facebookPhotos.length; i++) {
-
-  const item = facebookPhotos[i];
-  console.log(`Processing item ${i + 1}/${facebookPhotos.length}:`, item);
-
-  const imageUrl = item.image; // Assuming each item has an 'image' property
-
-  console.log('Image URL for extraction:', imageUrl);
-  
-  try {
-    const response = await fetch(`${node_url}/extract-text-single`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        imageUrl,
-        saleEndDate,
-        storeId,
-        flyerBookId,
-      }),
-    });
-    const result = await response.json();
-    if (response.ok) {
-      console.log('Extracted data:', result);
-      return result;
-    } else {
-      console.error('Failed to extract text:', result);
-      return null;
-    }
-  } catch (error) {
-    console.error('Error calling /extract-text-single:', error);
+  if (!facebookPhotos.length) {
+    setStatus('No Facebook photos to process.');
     return null;
   }
 
-}
+  setStatus('Extracting text from Facebook photos...');
+  const results = [];
 
+  for (let i = 0; i < facebookPhotos.length; i++) {
+    const item = facebookPhotos[i];
+    const imageUrl = item.image;
+    console.log(`Processing item ${i + 1}/${facebookPhotos.length}:`, item);
 
+    try {
+      const response = await fetch(`${node_url}/extract-text-single`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageUrl,
+          saleEndDate,
+          storeId,
+          flyerBookId,
+          facebookUrl, // Include Facebook URL in the request
+        }),
+      });
+      const result = await response.json();
+      if (response.ok) {
+        console.log('Extracted data:', result);
+        results.push({ ...item, extracted: result });
+      } else {
+        console.error('Failed to extract text:', result);
+        results.push({ ...item, extracted: null, error: result });
+      }
+    } catch (error) {
+      console.error('Error calling /extract-text-single:', error);
+      results.push({ ...item, extracted: null, error: error.message });
+    }
+  }
+
+  setStatus('Extraction complete.');
+  console.log('Extraction complete:');
+  // Optionally, update state or display results as needed
+  // setExtractedText(JSON.stringify(results, null, 2));
+  return results;
 };
 
 // Bulk “upload & extract” handler
@@ -1548,7 +1581,7 @@ padding: '10px', marginBottom: '10px', width: '100%'
  }}>
 
 
-<input   autofocus  type="date" id="sale_end_date" name="sale_end_date" style={{width:150}}  />
+<input autofocus  type="date" id="sale_end_date" name="sale_end_date" style={{width:150}}  />
 
 
 
@@ -1833,6 +1866,7 @@ Search Products: <input type="text" id="keyword_search" name="keyword_search" on
 
 onClick={() => {
   setSelectedStore(store.storeId);
+  setStoreId(store.storeId);
   setSelectedStoreName(store.storeName);
   handleFetchFacebookPhotos(); // Fetch photos for the selected store
 
@@ -1862,11 +1896,30 @@ onClick={() => {
   <button onClick={extractTextSingle}>Process images</button>
 
   <span style={{ color: 'red' }}>{facebookPhotosCount}</span>
+  <span style={{ color: 'red' }}>Date:{saleEndDate}</span>
+  <span style={{ color: 'red' }}>Store:{storeId}</span>
 
-    <button onClick={extractSaleEndDatesForFacebookPhotos}>Extract SALE DATE</button>
+    
 
 </div>
 
+<div>
+  <Calendar 
+  
+  onClickDay={(day) => {
+    console.log('Selected day:', day);
+    // get the date in YYYY-MM-DD format
+   const formattedDate = new Date(day.setDate(day.getDate() + 1)).toISOString().split('T')[0];
+  console.log('Formatted date:', formattedDate);
+    setSaleEndDate(formattedDate);
+  }
+}
+  value={saleEndDate ? new Date(saleEndDate) : new Date()}
+  style={{ width: '70%', maxWidth: '200px', margin: '0 auto' }}
+
+  
+  />
+</div>
 
 <div style={{ display: 'flex', flexDirection: 'row', gap: '10px', margin : '10px', justifyContent: 'center', alignItems: 'center' }}>
   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

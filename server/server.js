@@ -5,6 +5,8 @@ import fs from 'fs';
 import dotenv from 'dotenv';
 
 
+
+
 // We no longer need groupTextElementsSpatially if extracting directly from image
 // import { groupTextElementsSpatially } from './utils.js';
 
@@ -359,6 +361,7 @@ app.use(identifyUserMiddleware);
 
 import authRoutes from "./routes/authRoutes.js";
 import { start } from 'repl';
+import { redirectDocument } from 'react-router-dom';
 app.use("/auth", authRoutes);
 
 
@@ -436,19 +439,29 @@ app.get('/get-facebook-posts', async (req, res) => {
 
 
 // API endpoint to get Facebook photo URLs for a specific date
-app.get('/get-facebook-photos', async (req, res) => {
+app.post('/get-facebook-photos', async (req, res) => {
 
 
  // console.log(`🔍 Fetching Facebook photos for page: ${pageUrl} on date: ${date}`);
 
 
+  const { selectedStore, facebookUrl } = req.body;
+
+  console.log(`🔍 Fetching Facebook photos for store: ${selectedStore} with URL: ${facebookUrl}`);
+
+
+
+  const facebookData = [
+    {url: facebookUrl, storeId: selectedStore}
+  ]; 
+
 
   console.log(`🔍 Fetching Facebook photos ....`);
 
   const page1 = 'https://www.facebook.com/vivafresh.rks/photos';
-  //const page2 = 'https://www.facebook.com/etcks'  ;
+  const page5 = 'https://www.facebook.com/etcks/photos'; // Example page URL;
   const page3 = 'https://www.facebook.com/SPARinKosova/photos' ;
-  //const page4 = 'https://www.facebook.com/profile.php?id=100040544017359'; // Example page URL
+  const page4 = 'https://www.facebook.com/RrjetiMeridianExpress/photos'; // Example page URL
   //const page5 = 'https://www.facebook.com/superviva.ks'
   //const page6 = 'https://www.facebook.com/Horecacenter.ks';
   const page2 = 'https://www.facebook.com/maxisupermarketprishtine/photos';
@@ -456,29 +469,48 @@ app.get('/get-facebook-photos', async (req, res) => {
 
 
   const urls = [
-    {url: page1, storeId: 1, name: 'Viva Fresh'},
+    {url: 'https://www.facebook.com/vivafresh.rks/photos', storeId: 1, name: 'Viva Fresh'},
     {url: page2, storeId: 2, name: 'Maxi Supermarket'},
     {url: page3, storeId: 3, name: 'Spar Kosova'},
-  ]
+    {url: page4, storeId: 4, name: 'Spar Kosova'},
+    {url: page5, storeId: 5, name: 'Spar Kosova'},
+    {url: 'https://www.facebook.com/kamkosova/photos', storeId: 6, name: 'Kam Kosova'},
+    {url: 'https://www.facebook.com/InterexKs/photos', storeId: 7, name: 'interex'},
+    {url: 'https://www.facebook.com/Horecacenter.ks/photos', storeId: 8, name: 'Horeca Center'}, // Example page URL
+    {url: 'https://www.facebook.com/superviva.ks/photos', storeId: 16, name: 'Super viva '}, // Example page URL
+    {url: 'https://www.facebook.com/AlbiMarket/photos', storeId: 17, name: 'Albi'}, // Example page URL
+    {url: 'https://www.facebook.com/ABICENTER1/photos', storeId: 18, name: 'Abi '}, // Example page URL
+    {url: 'https://www.facebook.com/ViprosMarket/photos', storeId: 19, name: 'Vipros'}, // Example page URL
+    {url: 'https://www.facebook.com/eliabmarket/photos', storeId: 20, name: 'ETC'}, // Example page URL
+    {url: 'https://www.facebook.com/etcks/photos', storeId: 21, name: 'ETC'}, // Example page URL
+    {url: 'https://www.facebook.com/kipperkosova/photos', storeId: 26, name: 'Kipper'}, // Example page URL
+    {url: 'https://www.facebook.com/iffis.ks/photos', storeId: 27, name: 'IFFIS'}, // Example page URL
 
-  
+
+
+
+    {url: 'https://www.facebook.com/marketnora.official/photos', storeId: 30, name: 'Market Nora'}, // Example page URL
+
+  ]
 
 // filter urls to return only the object with matching given mystoreId with storeId in urls array
 
-   const mystoreId = parseInt(req.query.storeId, 10); // Assuming storeId is passed as a query parameter
+ 
+
+  // const mystoreId = parseInt(req.query.storeId, 10); // Assuming storeId is passed as a query parameter
 
 
    //const filteredUrls = urls.filter(urlObj => urlObj.storeId === mystoreId).map(urlObj => urlObj.url);
 
    //filter objects in urls array to return only the url and storeId of the object with matching mystoreId
-    const filteredUrls = urls.filter(urlObj => urlObj.storeId === mystoreId).map(urlObj => ({url: urlObj.url, storeId: urlObj.storeId}));
+   // const filteredUrls = urls.filter(urlObj => urlObj.storeId === mystoreId).map(urlObj => ({url: urlObj.url, storeId: urlObj.storeId}));
 
 
-   console.log(`🔍 Filtered URLs for storeId ${mystoreId}:`, filteredUrls);
+   //console.log(`🔍 Filtered URLs for storeId ${mystoreId}:`, filteredUrls);
 
 
 
-  if(filteredUrls.length === 0) {
+  if(facebookData.length === 0) {
     console.error(`❌ No URLs found for storeId ${mystoreId}`);
     return res.status(404).json({ error: `No URLs found for storeId ${mystoreId}` });
   }
@@ -487,7 +519,7 @@ app.get('/get-facebook-photos', async (req, res) => {
 
   try {
     const input = {
-      startUrls: filteredUrls ,
+      startUrls: facebookData ,
       resultsLimit: 10,
       proxy: {
         useApifyProxy: true,
@@ -683,26 +715,20 @@ app.post('/extract-text-single', async (req, res) => {
   // Replace with your actual way of getting userId
   const userId = req.user ? req.user.userId : 1; // Example: Get from req.user if using auth middleware, default to 1
 
-  const { imageUrl, saleEndDate, storeId, flyerBookId } = req.body;
+  const { imageUrl, saleEndDate, storeId, flyerBookId , facebookUrl } = req.body;
   console.log('Sale End Date:', saleEndDate);
   console.log('Store ID:', storeId);
   console.log('User ID:', userId); // Log userId
   console.log('Image file:', imageUrl);
   console.log('flyerBookId:', flyerBookId);
-
-
-if( !imageUrl ) {
-
-  console.error('❌ Missing required fields in request body:', { imageUrl, saleEndDate, storeId, userId, flyerBookId });
-  return res.status(400).json({ error: 'Missing required fields in request body' });
-}
+  console.log('Facebook URL:', facebookUrl); // Log Facebook URL if provided
 
 
 
   try {
     const cloudinaryUrl = await uploadFacebookPhotoToCloudinary(imageUrl);
 
-    console.log('✅ Uploaded URL:', cloudinaryUrl);
+    console.log('✅ Uploaded URL cloudinaryc:', cloudinaryUrl);
 
     if( !cloudinaryUrl ) {
 
@@ -1622,6 +1648,9 @@ app.get("/getStores", (req, res) => {
     return res.json(data);
   });
 });
+
+
+
 
 // api to get all the image_url that have the same flyer_book_id 
 
