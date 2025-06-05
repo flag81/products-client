@@ -168,13 +168,14 @@ const extractSaleEndDatesForFacebookPhotos = async () => {
 
 
 
-const handleFetchFacebookPhotos = async () => {
+const handleFetchFacebookPhotos = async (storeId) => {
 
 
 
-  console.log('handleFetchFacebookPhotos called with selectedStore:', selectedStore);
+  console.log('handleFetchFacebookPhotos called with selectedStore:', storeId);
 
   setFacebookPhotos([]); // Clear previous photos
+  
 
 
     // get the facebookUrl field from the stores array that matched the storeId 
@@ -229,9 +230,19 @@ const handleFetchFacebookPhotos = async () => {
 
       // order the  facebookPhotos  array by facebookId tag in each item
 
-      setFacebookPhotos(prevPhotos => prevPhotos.sort((a, b) => {
-        return a.facebookId.localeCompare(b.facebookId);
-      }));
+      // setFacebookPhotos(prevPhotos => prevPhotos.sort((a, b) => {
+      //   return a.facebookId.localeCompare(b.facebookId);
+      // }));
+
+
+      setFacebookPhotos(prevPhotos =>
+        [...prevPhotos].sort((a, b) => {
+          const idA = a.facebookId || '';
+          const idB = b.facebookId || '';
+          return idA.localeCompare(idB);
+        })
+      );
+      
 
       console.log('Facebook photos fetched:', result.items);
     } else {
@@ -1868,7 +1879,7 @@ onClick={() => {
   setSelectedStore(store.storeId);
   setStoreId(store.storeId);
   setSelectedStoreName(store.storeName);
-  handleFetchFacebookPhotos(); // Fetch photos for the selected store
+  handleFetchFacebookPhotos(store.storeId); // Fetch photos for the selected store
 
 } }
 
