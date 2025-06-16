@@ -64,6 +64,8 @@ const [responseMessage, setResponseMessage ] = useState('');
 
 const [selectedStore, setSelectedStore] = useState('0'); // Default to "All Stores"
 const [selectedStoreName, setSelectedStoreName] = useState('All Stores'); // Default to "All Stores"
+const [selectedStoreFacebookPageId, setSelectedStoreFacebookPageId ] = useState(''); // State for selected store's Facebook URL
+
 
   const CLOUD_NAME = import.meta.env.CLOUDINARY_CLOUD_NAME;
   const API_KEY = import.meta.env.CLOUDINARY_API_KEY;
@@ -162,8 +164,43 @@ const extractSaleEndDatesForFacebookPhotos = async () => {
 
 
 
+const handleFetchFacebookPhotosRapid = async (facebookPageId) => {
+
+// call /facebook-photos api endpoint with facebookPageId as parameter
+
+//const facebookPageId = 100064857035989; // Use selectedStore as the Facebook Page ID
+
+  console.log('handleFetchFacebookPhotosRapid called with facebookPageId:', facebookPageId);
+  setFacebookPhotos([]); // Clear previous photos
+
+// do a get request to the /facebook-photos endpoint with the facebookPageId as a parameter
+  try {
+    const response = await fetch(`${node_url}/facebook-photos?facebookPageId=${facebookPageId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    setFacebookPhotos(result.items || []);
+    setFacebookPhotosCount(result.items.length || 0);
+
+    console.log('Facebook photos fetched:', result.items);
+  } catch (error) {
+    console.error('Error fetching Facebook photos:', error);
+    alert('An error occurred while fetching Facebook photos->');
+  }
 
 
+
+
+
+}
 
 
 
@@ -262,6 +299,7 @@ const handleFileChange = (e) => {
   // turn FileList → Array<File>
   const files = Array.from(e.target.files);
 
+
    setSelectedFiles(files);
   console.log('Picked files:', files);
 };
@@ -277,7 +315,7 @@ const extractTextSingle = async () => {
 
 
 
-  if (!saleEndDate || !storeId || !flyerBookId || !facebookUrl) {
+  if (!saleEndDate || !storeId || !flyerBookId) {
     console.error('Missing required parameters for extractTextSingle:', { saleEndDate, storeId });
     return null;
   }
@@ -292,7 +330,7 @@ const extractTextSingle = async () => {
 
   for (let i = 0; i < facebookPhotos.length; i++) {
     const item = facebookPhotos[i];
-    const imageUrl = item.image;
+    const imageUrl = item.uri;
     console.log(`Processing item ${i + 1}/${facebookPhotos.length}:`, item);
 
     try {
@@ -329,7 +367,7 @@ const extractTextSingle = async () => {
 };
 
 // Bulk “upload & extract” handler
-const handleUploadImages = async () => {
+const handleUploadImagesManual = async () => {
   // 1️⃣ Ensure at least one file is selected
   if (selectedFiles.length === 0) {
     alert('Please select at least one image.');
@@ -379,7 +417,6 @@ const handleUploadImages = async () => {
   //const year = parseInt(dateParts[0], 10);
 
 
-
   console.log('dateParts:', year, month, day);
 
   const date = new Date(year, month, day);
@@ -421,6 +458,10 @@ console.log('flyerBookId:', flyerBookId);
   // 4️⃣ Loop over each image file
   for (let i = 0; i < imageFiles.length; i++) {
     const file = imageFiles[i];
+
+    
+
+    console.log('file:', file);
     console.log(`▶️ [${i + 1}/${imageFiles.length}] Processing "${file.name}"…`);
 
     const formData = new FormData();
@@ -431,6 +472,8 @@ console.log('flyerBookId:', flyerBookId);
     formData.append('saleEndDate', saleEndDate);
     formData.append('storeId', storeId); // Send storeId in request
     formData.append('flyerBookId', flyerBookId ); // Send storeId in request
+
+    console.log('formData:', formData , formData.get('saleEndDate'), formData.get('storeId'), formData.get('flyerBookId'));
 
     try {
       const res = await fetch(`${node_url}/extract-text`, {
@@ -1623,7 +1666,7 @@ style={{ display: 'flex', flexDirection: 'row', gap: '10px', marginBottom: '10px
       ref={fileInputRef}
      
     />
-    <button onClick={handleUploadImages}>Process Images</button>
+    <button onClick={handleUploadImagesManual}>Process Images manual</button>
 
 
   
@@ -1879,7 +1922,8 @@ onClick={() => {
   setSelectedStore(store.storeId);
   setStoreId(store.storeId);
   setSelectedStoreName(store.storeName);
-  handleFetchFacebookPhotos(store.storeId); // Fetch photos for the selected store
+  //handleFetchFacebookPhotos(store.storeId); // Fetch photos for the selected store
+  handleFetchFacebookPhotosRapid(store.facebookPageId); // Fetch photos for the selected store using Rapid API
 
 } }
 
@@ -1903,6 +1947,9 @@ onClick={() => {
 
 
   <button onClick={handleFetchFacebookPhotos}>Get Facebook Photos </button>
+
+
+   <button onClick={handleFetchFacebookPhotosRapid}>Get Facebook Photos Rapid api</button>
 
   <button onClick={extractTextSingle}>Process images</button>
 
@@ -1938,7 +1985,7 @@ onClick={() => {
     {facebookPhotos.map((photo, index) => (
       <div key={index} style={{ display: 'flex', flexDirection: 'row', gap: '10px', alignItems: 'center' }}>
         <img
-          src={photo.image}
+          src={photo.uri}
           alt={`Facebook Photo ${index + 1}`}
           style={{ width: '400px', height: 'auto', cursor: 'pointer' }}
 

@@ -1037,7 +1037,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
 
 
 
-<Row xs={2} sm={2} md={2} lg={lgCols} className="g-2 justify-content-start">
+<Row xs={1} sm={2} md={2} lg={lgCols} className="g-2 justify-content-start">
   {onSaleProducts.map((product, idx) => (
           <Col key={`onsale-${idx}`} className="d-flex ">
             <Card className="h-100 p-1  product-card d-flex flex-column"        
@@ -1334,7 +1334,7 @@ notOnSaleProducts.length > 0 && (
 
 
 
-<Row xs={2} sm={2} md={2} lg={lgCols} className="g-2 justify-content-start"
+<Row xs={1} sm={1} md={2} lg={lgCols} className="g-2 justify-content-start"
 
 style={{
   //border: "1px solid black", // Add a black border
