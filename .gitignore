@@ -16,6 +16,9 @@ server
 downloads
 *.lock
 
+# remove .env files from git
+.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
