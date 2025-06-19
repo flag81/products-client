@@ -331,6 +331,7 @@ const extractTextSingle = async () => {
   for (let i = 0; i < facebookPhotos.length; i++) {
     const item = facebookPhotos[i];
     const imageUrl = item.uri;
+    const imageId = item.id; // Use facebookId or id as fallback
     console.log(`Processing item ${i + 1}/${facebookPhotos.length}:`, item);
 
     try {
@@ -339,6 +340,7 @@ const extractTextSingle = async () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           imageUrl,
+          imageId,
           saleEndDate,
           storeId,
           flyerBookId,
