@@ -325,6 +325,8 @@ const extractTextSingle = async () => {
     return null;
   }
 
+
+
   setStatus('Extracting text from Facebook photos...');
   const results = [];
 
@@ -332,7 +334,7 @@ const extractTextSingle = async () => {
     const item = facebookPhotos[i];
     const imageUrl = item.uri;
     const imageId = item.id; // Use facebookId or id as fallback
-    console.log(`Processing item ${i + 1}/${facebookPhotos.length}:`, item);
+    console.log(`Processing item ${i + 1}/${facebookPhotos.length}:`, item, imageUrl, imageId);
 
     try {
       const response = await fetch(`${node_url}/extract-text-single`, {
