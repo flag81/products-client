@@ -11,7 +11,6 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-import { all } from 'axios';
 
 
 
@@ -104,21 +103,13 @@ useEffect(() => {
   // Initialize user preferences or settings if needed
 
 
-  console.log('useEffect for facebookPhotos called with facebookPhotos:', facebookPhotos);
-
   //initializeUser();
   setFacebookPhotosCount(facebookPhotos.length);
 
+  //console.log('useEffect for facebookPhotos:', facebookPhotos);
+
 
 }, [facebookPhotos]);
-
-
-// ADD USEEFFECT  for products to log when products change
-
-useEffect(() => {
-  console.log('useEffect for products called with products:', products);
-}, [products]);
-
 
 // add function to handle to api end point to in server.js , extract-sale-end-date with item.image tag for every item in facebookPhotos array, and set it to the to the new sale_end_date field in the item object of the facebookPhotos array, if not fund return null
 
@@ -175,172 +166,102 @@ const extractSaleEndDatesForFacebookPhotos = async () => {
 
 
 
-// ...existing code...
-const handleFetchFacebookPhotosRapid = async () => {
-    console.log('handleFetchFacebookPhotosRapid called for all stores (sequential with delay).');
-    setFacebookPhotos([]);
-    setFacebookPhotosCount(0);
-    
-    // Using a temporary array to accumulate photos before setting state once at the end.
-    let allPhotos = [];
-    let allMessages = [];
+const handleFetchFacebookPhotosRapid0 = async (facebookPageId) => {
+  console.log('🔄 handleFetchFacebookPhotosRapid called with facebookPageId:', facebookPageId);
 
-    try {
-        const storesWithFacebookId = stores.filter(store => store.facebookPageId && Number(store.facebookPageId) > 0);
-        console.log('Stores to be processed:', storesWithFacebookId.map(s => ({ name: s.storeName, id: s.facebookPageId })));
-
-        // Loop through each store sequentially instead of in parallel.
-        for (const store of storesWithFacebookId) {
-            console.log(`Fetching photos for ${store.storeName} (ID: ${store.facebookPageId})...`);
-            try {
-                const response = await fetch(`${node_url}/facebook-photos?facebookPageId=${store.facebookPageId}`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' },
-                });
-
-                if (!response.ok) {
-                    // Log error for a specific store but continue with the others.
-                    console.error(`HTTP error for ${store.storeName}! status: ${response.status}`);
-                    continue; // Skip to the next store
-                }
-
-                const result = await response.json();
-                if (result.items && result.items.length > 0) {
-                    console.log(`Found ${result.items.length} photos for ${store.storeName} with storeId ${store.storeId} .`);
-
-                    // add storeId to each item in the result with tag storeId
-                    result.items.forEach(item => {
-                        item.storeId = store.storeId; // Add storeId to each photo item
-                        item.storeName = store.storeName; // Add storeName for easier reference
-                    });
-
-                    // add a flyerBookId to each item in the result with tag flyerBookId genetrate random 6 digit number
-
-                    const flyerBookId = Math.floor(100000 + Math.random() * 900000);
-                    result.items.forEach(item => {
-                        item.flyerBookId = flyerBookId; // Add flyerBookId to each photo item
-                    });
-
-
-                    
-                 
-
-                    allPhotos = allPhotos.concat(result.items);
-
-
-                    allMessages = allMessages.concat(result.allMessages || []); // Collect all messages if available
-
-                } else {
-                    console.log(`No photos returned for ${store.storeName}.`);
-                }
-
-                // --- KEY CHANGE: Wait for 250ms before the next request to avoid rate-limiting ---
-                await new Promise(resolve => setTimeout(resolve, 250));
-
-            } catch (error) {
-                console.error(`An error occurred while fetching photos for ${store.storeName}:`, error);
-                // Continue to the next store even if one fails.
-            }
-        }
-
-        console.log("All messages:" , allMessages);
-
-        // Update state once after all fetches are complete.
-        console.log('All fetches complete. Updating state.');
-        setFacebookPhotos(allPhotos);
-        setFacebookPhotosCount(allPhotos.length);
-        console.log(`Total Facebook photos fetched: ${allPhotos.length}`, allPhotos);
-
-    } catch (error) {
-        // This will catch errors in the initial filtering, but not in the loop.
-        console.error('A critical error occurred in handleFetchFacebookPhotosRapid:', error);
-        alert('A critical error occurred. Check the console for details.');
-    }
-};
-//
-
-
-// ...existing code...
-
-// ...existing code...
-
-/**
- * Fetches the latest Facebook posts for each store using your backend /facebook-posts endpoint.
- * Handles posts with multiple or single images and extracts the message.
- * Updates facebookPhotos state with the results.
- * Adds extensive debugging for transparency.
- */
-const handleFetchFacebookPostsRapidApi = async (pageId) => {
-  setStatus('Fetching Facebook posts via backend /facebook-posts endpoint...');
+  // Clear previous state
   setFacebookPhotos([]);
   setFacebookPhotosCount(0);
 
-  console.log('handleFetchFacebookPostsRapidApi called for all stores (sequential with delay).', pageId);
-
-  let allPhotos = [];
-  let allMessages = [];
-
   try {
-    const storesWithFacebookId = stores.filter(store => store.facebookPageId && Number(store.facebookPageId) > 0);
-    console.log('Stores to be processed (backend /facebook-posts):', storesWithFacebookId.map(s => ({ name: s.storeName, id: s.facebookPageId })));
+    const response = await fetch(`${node_url}/facebook-photos?facebookPageId=${encodeURIComponent(facebookPageId)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
-    for (const store of storesWithFacebookId) {
-      try {
-        setStatus(`Fetching posts for ${store.storeName}...`);
-        const response = await fetch(`${node_url}/facebook-posts?facebookPageId=${store.facebookPageId}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          console.error(`HTTP error for ${store.storeName}! status: ${response.status}`);
-          allMessages.push(`Failed to fetch for ${store.storeName}: ${response.statusText}`);
-          continue;
-        }
-
-        const result = await response.json();
-        console.log(`[${store.storeName}] /facebook-posts result:`, result);
-
-        if (result.debugMessages) {
-          result.debugMessages.forEach(msg => console.log(`[${store.storeName}] DEBUG:`, msg));
-          allMessages = allMessages.concat(result.debugMessages);
-        }
-
-        if (result.items && result.items.length > 0) {
-          console.log(`Found ${result.items.length} images for ${store.storeName} with storeId ${store.storeId}.`);
-          // Add storeId and storeName to each item for context
-          result.items.forEach(item => {
-            item.storeId = store.storeId;
-            item.storeName = store.storeName;
-            // Add a flyerBookId for grouping if needed
-            item.flyerBookId = Math.floor(100000 + Math.random() * 900000);
-          });
-          allPhotos = allPhotos.concat(result.items);
-        } else {
-          console.log(`No images returned for ${store.storeName}.`);
-        }
-
-        // Wait 250ms between requests to avoid rate-limiting
-        await new Promise(resolve => setTimeout(resolve, 250));
-      } catch (error) {
-        console.error(`Error fetching posts for ${store.storeName}:`, error);
-        allMessages.push(`Error for ${store.storeName}: ${error.message}`);
-      }
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    setFacebookPhotos(allPhotos);
-    setFacebookPhotosCount(allPhotos.length);
-    setStatus(`Fetched ${allPhotos.length} Facebook post images via backend /facebook-posts.`);
-    console.log('All messages:', allMessages);
+    const responseData = await response.json();
+
+    const albums = responseData.items || []; // [{ message, imageUrls: [] }]
+
+    // 👉 Extract and flatten all image URLs into a single array
+    const imageUrls = albums.flatMap(album => album.imageUrls || []);
+
+    // how to deal with long image URLs needed to store in array of strings
+    // Ensure all URLs are valid strings
+
+
+    const validImageUrls = imageUrls.filter(url => typeof url === 'string' && url.trim() !== '');
+    setFacebookPhotos(validImageUrls); // Update state with valid URLs
+    setFacebookPhotosCount(validImageUrls.length);
+
+    console.log('✅ Facebook photos fetched:', validImageUrls);
+    console.log('📸 Extracted image URLs:', validImageUrls);
+
+    console.log('📸 Extracted image URLs:', imageUrls);
+
+     const messages  = albums.map(a => a.message || '');
+
+     console.log('📖 Messages from albums:', messages);
+
+    console.log(`📸 Extracted ${imageUrls.length} image URLs`);
+
+    // Update state
+    //setFacebookPhotos(imageUrls);        // <— array of strings
+    //setFacebookPhotosCount(imageUrls.length);
+
+    console.log('✅ Facebook photos fetched:', imageUrls);
+    
   } catch (error) {
-    setStatus('A critical error occurred in handleFetchFacebookPostsRapidApi.');
-    console.error('Critical error:', error);
+    console.error('❌ Error fetching Facebook photos:', error);
+    alert('An error occurred while fetching Facebook photos.');
   }
 };
 
-// ...existing
+const handleFetchFacebookPhotosRapid = async (facebookPageId) => {
+  console.log('🔄 handleFetchFacebookPhotosRapid called with facebookPageId:', facebookPageId);
+
+  // Clear previous state
+  setFacebookPhotos([]);
+  setFacebookPhotosCount(0);
+
+  try {
+    const response = await fetch(`${node_url}/facebook-photos?facebookPageId=${encodeURIComponent(facebookPageId)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const responseData = await response.json();
+
+    console.log('🔍 Response data:', responseData);
+
+    // Ensure response is an array and contains posts with images
+    if (Array.isArray(responseData)) {
+      const validPhotos = responseData.filter(post => post.images && post.images.length > 0);
+
+      setFacebookPhotos(validPhotos);
+      setFacebookPhotosCount(validPhotos.length);
+      console.log(`✅ Set ${validPhotos.length} Facebook posts with images`);
+    } else {
+      console.warn('⚠️ Unexpected response format:', responseData);
+    }
+
+  } catch (error) {
+    console.error('❌ Error fetching Facebook photos:', error);
+  }
+};
+
 
 
 
@@ -447,86 +368,68 @@ const handleFileChange = (e) => {
 
 
 
-// ...existing code...
 
-/**
- * Extracts text for each group of facebookPhotos with the same postId.
- * Calls the API separately for each postId group, not the whole array at once.
- * Results are collected and merged for display.
- */
 const extractTextSingle = async () => {
-  console.log('extractTextSingle called with:', facebookPhotos);
+  const flyerBookId = Math.floor(100000 + Math.random() * 900000);
+
+  console.log('extractTextSingle called with:', { saleEndDate, storeId, flyerBookId });
+
+
+
+  if (!saleEndDate || !storeId || !flyerBookId) {
+    console.error('Missing required parameters for extractTextSingle:', { saleEndDate, storeId });
+    return null;
+  }
 
   if (!facebookPhotos.length) {
     setStatus('No Facebook photos to process.');
     return null;
   }
 
-  setStatus('Extracting text from Facebook photos by postId groups...');
+
+
+  setStatus('Extracting text from Facebook photos...');
   const results = [];
-  const groupedByPostId = {};
 
-  // Group facebookPhotos by postId
-  facebookPhotos.forEach(photo => {
-    const postId = photo.postId || 'no_post_id';
-    if (!groupedByPostId[postId]) groupedByPostId[postId] = [];
-    groupedByPostId[postId].push(photo);
-  });
-
-  // Debug: log the grouping
-  console.log('Grouped facebookPhotos by postId:', groupedByPostId);
-
-  // Process each group separately
-  for (const postId in groupedByPostId) {
-    const group = groupedByPostId[postId];
-    // Prepare payload for the API
-    const imagesPayload = group.map((item, idx) => ({
-      imageUrl: item.uri,
-      imageId: item.id || item.facebookId || `img_${idx}`,
-      storeId: item.storeId,
-      flyerBookId: item.flyerBookId || Math.floor(100000 + Math.random() * 900000),
-      facebookUrl: facebookUrl || item.facebookUrl || '',
-      postText: item.message || '',
-      created_time: item.created_time || null,
-      userId: item.userId || userId || 1, // Use userId from item or default to 1
-    }));
-
-    console.log(`Processing postId group "${postId}" with ${imagesPayload.length} images:`, imagesPayload);
+  for (let i = 0; i < facebookPhotos.length; i++) {
+    const item = facebookPhotos[i];
+    const imageUrl = item.uri;
+    const imageId = item.id; // Use facebookId or id as fallback
+    console.log(`Processing item ${i + 1}/${facebookPhotos.length}:`, item, imageUrl, imageId);
 
     try {
       const response = await fetch(`${node_url}/extract-text-single`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ images: imagesPayload }),
+        body: JSON.stringify({
+          imageUrl,
+          imageId,
+          saleEndDate,
+          storeId,
+          flyerBookId,
+          facebookUrl, // Include Facebook URL in the request
+        }),
       });
       const result = await response.json();
-
       if (response.ok) {
-        console.log(`Extracted data for postId "${postId}":`, result);
-        if (result.allMessages) {
-          console.log(`🔍 Debug Messages from Server for postId "${postId}":`, result.allMessages);
-          setResponseMessage(prev => prev + '\n' + result.allMessages.join('\n'));
-        }
-        results.push({ postId, extracted: result });
+        console.log('Extracted data:', result);
+        results.push({ ...item, extracted: result });
       } else {
-        console.error(`Failed to extract text for postId "${postId}":`, result);
-        results.push({ postId, extracted: null, error: result });
+        console.error('Failed to extract text:', result);
+        results.push({ ...item, extracted: null, error: result });
       }
     } catch (error) {
-      console.error(`Error calling /extract-text-single for postId "${postId}":`, error);
-      results.push({ postId, extracted: null, error: error.message });
+      console.error('Error calling /extract-text-single:', error);
+      results.push({ ...item, extracted: null, error: error.message });
     }
   }
 
   setStatus('Extraction complete.');
-  console.log('Extraction complete:', results);
+  console.log('Extraction complete:');
   // Optionally, update state or display results as needed
   // setExtractedText(JSON.stringify(results, null, 2));
   return results;
 };
-
-// ...existing code...
-
 
 // Bulk “upload & extract” handler
 const handleUploadImagesManual = async () => {
@@ -1055,7 +958,7 @@ console.log('editStore called:', productId, storeId);
       console.log('getAllProducts onSale:', onSale);
 
       
-      const response = await fetch(`${node_url}/getProductsWithKeywords?
+      const response = await fetch(`${node_url}/getProducts?
       userId=${encodeURIComponent(userId)}
       &storeId=${encodeURIComponent(storeId)}
       &isFavorite=${encodeURIComponent(isFavorite)}
@@ -1070,15 +973,13 @@ console.log('editStore called:', productId, storeId);
 
       const result = await response.json();
 
-      console.log('getAllProducts result:', result);
-
             if (!response.ok) throw new Error(result.message);
       
             // on page 1 replace, otherwise append
             if (page === 1) {
-              setProducts(result);
+              setProducts(result.data);
             } else {
-              setProducts(prev => [...prev, ...result]);
+              setProducts(prev => [...prev, ...result.data]);
             }
            } catch (error) {
              console.error('Error fetching prod:', error);
@@ -2004,7 +1905,12 @@ style={{ display: 'flex', flexDirection: 'row', gap: '10px', marginBottom: '10px
 <div>
 
 
+<div style={{ display: 'flex', flexDirection: 'row', gap: '10px', margin : '10px', justifyContent: 'center', alignItems: 'center' }}>
 
+
+  {responseMessage}
+
+</div>
 
 
 <div style={{ display: 'flex', flexDirection: 'row', gap: '10px', margin : '10px', justifyContent: 'center', alignItems: 'center' }}>
@@ -2082,7 +1988,7 @@ onClick={() => {
   setStoreId(store.storeId);
   setSelectedStoreName(store.storeName);
   //handleFetchFacebookPhotos(store.storeId); // Fetch photos for the selected store
-  handleFetchFacebookPostsRapidApi(store.facebookPageId); // Fetch photos for the selected store using Rapid API
+  handleFetchFacebookPhotosRapid(store.facebookPageId); // Fetch photos for the selected store using Rapid API
 
 } }
 
@@ -2138,67 +2044,68 @@ onClick={() => {
   />
 </div>
 
+<div style={{ display: 'flex', flexDirection: 'row', gap: '10px', margin : '10px', justifyContent: 'center', alignItems: 'center' }}>
+  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+    <h3>Facebook Photos - {selectedStoreName}</h3>
+    {facebookPhotos.map((photo, index) => (
+      <div key={index} style={{ display: 'flex', flexDirection: 'row', gap: '10px', alignItems: 'center' }}>
+        <img
+          src={photo}
+          alt={`Facebook Photo ${index + 1}`}
+          style={{ width: '400px', height: 'auto', cursor: 'pointer' }}
+
+        />
 
 
-<div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-  <h3>Facebook Posts - {selectedStoreName}</h3>
-  {(() => {
-    const postsMap = {};
-    facebookPhotos.forEach(photo => {
-      if (!postsMap[photo.postId]) {
-        postsMap[photo.postId] = {
-          message: photo.message,
-          created_time: photo.created_time,
-          images: [],
-        };
-      }
-      postsMap[photo.postId].images.push(photo.uri);
-    });
-    return Object.entries(postsMap).map(([postId, post]) => (
-      <div key={postId} style={{ border: '1px solid #ccc', borderRadius: 5, marginBottom: 20, padding: 10 }}>
-        <div style={{ marginBottom: 8, fontWeight: 'bold', color: '#333' }}>
-          {post.message || <span style={{ color: '#888' }}>[No message]</span>}
-        </div>
-        <div style={{ fontSize: 11, color: '#888', marginBottom: 8 }}>
-          {post.created_time ? `Posted: ${new Date(post.created_time * 1000).toLocaleString()}` : ''}
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'row', gap: '10px', flexWrap: 'wrap' }}>
-          {post.images.map((uri, idx) => (
-            <div key={idx} style={{ position: 'relative' }}>
-              <img
-                src={uri}
-                alt={`Facebook Post ${postId} Photo ${idx + 1}`}
-                style={{ width: '200px', height: 'auto', cursor: 'pointer', borderRadius: 4, border: '1px solid #eee' }}
-                onClick={() => window.open(uri, '_blank')}
-              />
-              <button
-                style={{
-                  position: 'absolute',
-                  top: 5,
-                  right: 5,
-                  background: '#fff',
-                  border: '1px solid #ccc',
-                  borderRadius: '50%',
-                  width: 24,
-                  height: 24,
-                  cursor: 'pointer',
-                  fontSize: 12,
-                  padding: 0,
-                }}
-                title="Remove photo"
-                onClick={() => {
-                  setFacebookPhotos(facebookPhotos.filter(p => !(p.postId === postId && p.uri === uri)));
-                  setStatus(`Removed photo from post ${postId}`);
-                }}
-              >
-                ×
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-    ));
-  })()}
+        <button onClick={() => {
+          setFacebookPhotos(facebookPhotos.filter((_, i) => i !== index));
+          setStatus(`Removed photo ${index + 1}`);
+          //setFacebookPhotosCount(facebookPhotosCount - 1);
+        }}>
+          Remove  
+        </button>
+
+        <button onClick={() => {
+
+          const flyerData = {
+            imageUrl: photo.image,
+            storeId: 1,
+            saleEndDate: '2025-06-31', // Default date, can be changed later
+            flyerBookId: 1,
+           
+          };
+
+          console.log('flyerData:', flyerData);
+
+          extractTextSingle(photo.image);
+
+          setStatus(`Extracting text from photo ${index + 1}`);
+        }
+        }>
+          Extract Text
+        </button>
+    
+
+        
+      
+</div>
+
+    ))}
+
+{facebookPhotos.map((post, idx) => (
+  <div key={idx} className="facebook-post">
+    <p>{post.message}</p>
+      <p>{post.sale_end_date}</p>
+    <div className="image-gallery">
+      {post.images.map((url, imgIdx) => (
+        <img key={imgIdx} src={url} alt={`Post ${idx + 1} - Image ${imgIdx + 1}`} />
+      ))}
+    </div>
+  </div>
+))}
+
+
+  </div>
 </div>
 
 
@@ -2227,7 +2134,7 @@ onClick={() => {
               <th>Delete</th>
 
             </tr>
-            {products?.map(product => ( 
+            {products.map(product => ( 
 
 <tr
   key={product.productId}
@@ -2300,7 +2207,7 @@ onClick={() => {
 
 
                     <img
-                      src={`${baseUrl}/${transformation}/${directory}/${product?.image_url?.split('/').pop()}`} alt={product.product_description}
+                      src={`${baseUrl}/${transformation}/${directory}/${product.image_url.split('/').pop()}`} alt={product.product_description}
                       onClick={() => {
                     
                       document.getElementById('prod_image').innerHTML = `<img id="largeImage" src="https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_600/uploads/${product.image_url.split('/').pop()}" />`;
@@ -2317,25 +2224,31 @@ onClick={() => {
                 />
                 </td>
 
+                <td>{product?.keywords?.split(',').map(keyword => (
+                  <div style={{ gap: '10px', margin : '10px', fontSize : '10px' }}><button onClick={() => removeKeyword(selectedProduct, keyword)}>{keyword} X</button></div>
+                ))}</td>
 
-<td>
-  {(Array.isArray(product.keywords)
-    ? product.keywords
-    : typeof product.keywords === 'string' && product.keywords.length > 0
-      ? product.keywords.split(',')
-      : []
-  ).map((keyword, idx) => (
-    <div key={idx} style={{ gap: '10px', margin: '10px', fontSize: '10px' }}>
-      <button onClick={() => removeKeyword(selectedProduct, keyword)}>{keyword} X</button>
-    </div>
-  ))}
-</td>
 
 
 
              
 
+                <td><input type="checkbox" checked={product.isFavorite} onChange={(e) => {
 
+                  const userId = document.querySelector('select[name="user"]').value;
+
+                  console.log('userId:', userId);
+
+                  if (e.target.checked) {
+
+                    // get the user id from the select element with name user
+
+                    addProductToFavorites(userId, product.productId);
+                  } else {
+                    removeProductFromFavorites(userId, product.productId);
+                  }
+                }
+                } /></td>
 
 
                 <td><button onClick={() => handleDeleteProduct(product.productId)}>Delete</button></td>
