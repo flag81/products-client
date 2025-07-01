@@ -2057,7 +2057,6 @@ Search Products: <input type="text" id="keyword_search" name="keyword_search" on
 
 
 
-{stores.map((store) => (
 
 <div style={{ 
 
@@ -2078,9 +2077,9 @@ Search Products: <input type="text" id="keyword_search" name="keyword_search" on
 }}
 
 onClick={() => {
-  setSelectedStore(store.storeId);
-  setStoreId(store.storeId);
-  setSelectedStoreName(store.storeName);
+  //setSelectedStore(store.storeId);
+  //setStoreId(store.storeId);
+  //setSelectedStoreName(store.storeName);
   //handleFetchFacebookPhotos(store.storeId); // Fetch photos for the selected store
   handleFetchFacebookPostsRapidApi(store.facebookPageId); // Fetch photos for the selected store using Rapid API
 
@@ -2092,23 +2091,18 @@ onClick={() => {
   
   
   <span key={store.storeId} style={{  textAlign: "center" }}>
-{store.storeName}
+  Fetch Photos for all Facebook Posts
 </span>      
 
 </div>
 
 
 
-))}
+
 
 
 <div id="prod_image" style={{ display: 'flex', flexDirection: 'row', gap: '10px', margin : '10px', justifyContent: 'center', alignItems: 'center' }}>
 
-
-  <button onClick={handleFetchFacebookPhotos}>Get Facebook Photos </button>
-
-
-   <button onClick={handleFetchFacebookPhotosRapid}>Get Facebook Photos Rapid api</button>
 
   <button onClick={extractTextSingle}>Process images</button>
 
