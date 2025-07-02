@@ -2090,13 +2090,11 @@ onClick={() => {
 >
   
   
-  <span key={store.storeId} style={{  textAlign: "center" }}>
+  <span style={{  textAlign: "center" }}>
   Fetch Photos for all Facebook Posts
 </span>      
 
 </div>
-
-
 
 
 
