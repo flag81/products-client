@@ -12,6 +12,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { all } from 'axios';
+import { post } from 'jquery';
 
 
 
@@ -92,6 +93,8 @@ const [selectedStoreFacebookPageId, setSelectedStoreFacebookPageId ] = useState(
 
   const [saleEndDate, setSaleEndDate] = useState(''); // State for sale end date
   const [storeId, setStoreId] = useState(0); // State for store ID
+
+  const [postIds, setPostIds] = useState([]);
   
 
 const width = 200;
@@ -118,6 +121,10 @@ useEffect(() => {
 useEffect(() => {
   console.log('useEffect for products called with products:', products);
 }, [products]);
+
+useEffect(() => {
+  console.log('useEffect for postIds:', postIds);
+}, [postIds]);
 
 
 // add function to handle to api end point to in server.js , extract-sale-end-date with item.image tag for every item in facebookPhotos array, and set it to the to the new sale_end_date field in the item object of the facebookPhotos array, if not fund return null
@@ -173,96 +180,6 @@ const extractSaleEndDatesForFacebookPhotos = async () => {
 
 
 
-
-
-// ...existing code...
-const handleFetchFacebookPhotosRapid = async () => {
-    console.log('handleFetchFacebookPhotosRapid called for all stores (sequential with delay).');
-    setFacebookPhotos([]);
-    setFacebookPhotosCount(0);
-    
-    // Using a temporary array to accumulate photos before setting state once at the end.
-    let allPhotos = [];
-    let allMessages = [];
-
-    try {
-        const storesWithFacebookId = stores.filter(store => store.facebookPageId && Number(store.facebookPageId) > 0);
-        console.log('Stores to be processed:', storesWithFacebookId.map(s => ({ name: s.storeName, id: s.facebookPageId })));
-
-        // Loop through each store sequentially instead of in parallel.
-        for (const store of storesWithFacebookId) {
-            console.log(`Fetching photos for ${store.storeName} (ID: ${store.facebookPageId})...`);
-            try {
-                const response = await fetch(`${node_url}/facebook-photos?facebookPageId=${store.facebookPageId}`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' },
-                });
-
-                if (!response.ok) {
-                    // Log error for a specific store but continue with the others.
-                    console.error(`HTTP error for ${store.storeName}! status: ${response.status}`);
-                    continue; // Skip to the next store
-                }
-
-                const result = await response.json();
-                if (result.items && result.items.length > 0) {
-                    console.log(`Found ${result.items.length} photos for ${store.storeName} with storeId ${store.storeId} .`);
-
-                    // add storeId to each item in the result with tag storeId
-                    result.items.forEach(item => {
-                        item.storeId = store.storeId; // Add storeId to each photo item
-                        item.storeName = store.storeName; // Add storeName for easier reference
-                    });
-
-                    // add a flyerBookId to each item in the result with tag flyerBookId genetrate random 6 digit number
-
-                    const flyerBookId = Math.floor(100000 + Math.random() * 900000);
-                    result.items.forEach(item => {
-                        item.flyerBookId = flyerBookId; // Add flyerBookId to each photo item
-                    });
-
-
-                    
-                 
-
-                    allPhotos = allPhotos.concat(result.items);
-
-
-                    allMessages = allMessages.concat(result.allMessages || []); // Collect all messages if available
-
-                } else {
-                    console.log(`No photos returned for ${store.storeName}.`);
-                }
-
-                // --- KEY CHANGE: Wait for 250ms before the next request to avoid rate-limiting ---
-                await new Promise(resolve => setTimeout(resolve, 250));
-
-            } catch (error) {
-                console.error(`An error occurred while fetching photos for ${store.storeName}:`, error);
-                // Continue to the next store even if one fails.
-            }
-        }
-
-        console.log("All messages:" , allMessages);
-
-        // Update state once after all fetches are complete.
-        console.log('All fetches complete. Updating state.');
-        setFacebookPhotos(allPhotos);
-        setFacebookPhotosCount(allPhotos.length);
-        console.log(`Total Facebook photos fetched: ${allPhotos.length}`, allPhotos);
-
-    } catch (error) {
-        // This will catch errors in the initial filtering, but not in the loop.
-        console.error('A critical error occurred in handleFetchFacebookPhotosRapid:', error);
-        alert('A critical error occurred. Check the console for details.');
-    }
-};
-//
-
-
-// ...existing code...
-
-// ...existing code...
 
 /**
  * Fetches the latest Facebook posts for each store using your backend /facebook-posts endpoint.
@@ -322,6 +239,10 @@ const handleFetchFacebookPostsRapidApi = async (pageId) => {
           console.log(`No images returned for ${store.storeName}.`);
         }
 
+        // 
+
+
+
         // Wait 250ms between requests to avoid rate-limiting
         await new Promise(resolve => setTimeout(resolve, 250));
       } catch (error) {
@@ -330,9 +251,37 @@ const handleFetchFacebookPostsRapidApi = async (pageId) => {
       }
     }
 
-    setFacebookPhotos(allPhotos);
-    setFacebookPhotosCount(allPhotos.length);
-    setStatus(`Fetched ${allPhotos.length} Facebook post images via backend /facebook-posts.`);
+// i have all existing postIds array of objects that have postId as int type
+// allPhotos is an array of objects with postId field as string
+// i need to filter allPhotos array to remove any objects that have postId that matches with any of the postIds in the postIds array
+  
+
+console.log('Filtering allPhotos. postIds:', postIds);
+console.log('allPhotos before filtering:', allPhotos);
+
+// Convert all postIds to string for reliable comparison
+const postIdSet = new Set(postIds.map(obj => String(obj.postId)));
+console.log('postIdSet for filtering:', postIdSet);
+
+// Filter out photos whose postId matches any in postIds
+const filteredPhotos = allPhotos.filter(photo => {
+  const match = postIdSet.has(String(photo.postId));
+  if (match) {
+    console.log(`Filtered out photo with postId: ${photo.postId}`);
+  }
+  return !match;
+});
+
+console.log('allPhotos after filtering:', filteredPhotos);
+
+
+
+
+
+
+    setFacebookPhotos(filteredPhotos);
+    setFacebookPhotosCount(filteredPhotos.length);
+    setStatus(`Fetched ${filteredPhotos.length} Facebook post images via backend /facebook-posts.`);
     console.log('All messages:', allMessages);
   } catch (error) {
     setStatus('A critical error occurred in handleFetchFacebookPostsRapidApi.');
@@ -489,6 +438,7 @@ const extractTextSingle = async () => {
       postText: item.message || '',
       created_time: item.created_time || null,
       userId: item.userId || userId || 1, // Use userId from item or default to 1
+      postId: item.postId,
     }));
 
     console.log(`Processing postId group "${postId}" with ${imagesPayload.length} images:`, imagesPayload);
@@ -737,9 +687,38 @@ console.log('flyerBookId:', flyerBookId);
   getStores();
   getUsers();
 
+  getPostIds();
+
  // storeId = document.querySelector('select[name="store"]').value;
   //getAllProducts();
 }, []);
+
+
+// add function to call getpostids endpoint to get all post ids and set them to the postIds state
+
+
+
+
+const getPostIds = async () => {
+  try {
+    const response = await fetch(`${node_url}/getPostIds`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    const result = await response.json();
+    if (response.ok) {
+      setPostIds(result);
+      console.log('Post IDs fetched:', result);
+    }
+    else {
+      console.error('Failed to fetch post IDs:', result.message);
+    }
+  } catch (error) {
+    console.error('Error fetching post IDs:', error);
+  }
+};
 
 
 
@@ -1409,77 +1388,7 @@ if (!productId || !keyword) {
   };
 
 
-    // Handle product insertion
-    const insertProducts = async () => {
 
-      console.log('insertProducts called ...calling server api:' , node_url);
-
-
-      const textarea = document.getElementById('products');
-      const productData = textarea.value;
-
-      const storeId = document.querySelector('select[name="store"]').value;
-
-
-      //if storetId is not selected then show error message and return from the function
-
-      if (!storeId || storeId === '0') {
-        setStatus(<font style={{color:'red'}}><b>Please select a store</b></font>);
-        return;
-      }
-
-      console.log('productData sent:', productData);
-  
-      if (!productData) {
-        setStatus('Please enter product data.');
-        return;
-      }
-
-      let parsedProductData;
-  
-      try {
-        // Parse the product data to ensure it's a valid JSON array
-        parsedProductData = JSON.parse(productData);
-        
-        // Check if parsed data is an array of objects
-        if (!Array.isArray(parsedProductData)) {
-          setStatus('Product data should be an array of products.');
-          console.error('Invalid product data...not array:', parsedProductData);
-          return;
-        }
-      } catch (error) {
-        setStatus('Invalid product data. Please enter valid JSON.');
-        console.error('Parsing error:', error);
-        return;
-      }
-  
-      try {
-
-          console.log('parsedProductData:', parsedProductData);
-
-        const response = await fetch(`${node_url}/insertProducts1`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          //body: JSON.stringify({ products: productData }),
-
-          // make body an array of objects
-           body: JSON.stringify(parsedProductData),
-        });
-  
-        const result = await response.json();
-  
-        if (response.ok) {
-          setStatus('Products inserted successfully!');
-        } else {
-          setStatus(`Failed to insert products: ${result.error}`);
-        }
-      } catch (error) {
-        setStatus('An error occurred while inserting products.');
-        console.error('Error:', error);
-      }
-    };
 
     const handleDeleteProduct = async (productId) => {
       try {
