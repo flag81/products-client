@@ -188,7 +188,7 @@ const extractSaleEndDatesForFacebookPhotos = async () => {
  * Adds extensive debugging for transparency.
  */
 const handleFetchFacebookPostsRapidApi = async (pageId) => {
-  setStatus('Fetching Facebook posts via backend /facebook-posts endpoint...');
+  setStatus('Fetching Facebook posts via backend endpoint...');
   setFacebookPhotos([]);
   setFacebookPhotosCount(0);
 
@@ -199,7 +199,7 @@ const handleFetchFacebookPostsRapidApi = async (pageId) => {
 
   try {
     const storesWithFacebookId = stores.filter(store => store.facebookPageId && Number(store.facebookPageId) > 0);
-    console.log('Stores to be processed (backend /facebook-posts):', storesWithFacebookId.map(s => ({ name: s.storeName, id: s.facebookPageId })));
+    console.log('Stores to be processed (backend):', storesWithFacebookId.map(s => ({ name: s.storeName, id: s.facebookPageId })));
 
     for (const store of storesWithFacebookId) {
       try {
@@ -218,7 +218,7 @@ const handleFetchFacebookPostsRapidApi = async (pageId) => {
         }
 
         const result = await response.json();
-        console.log(`[${store.storeName}] /facebook-posts result:`, result);
+        console.log(`[${store.storeName}] /facebook-posts result:`, result.items);
 
         if (result.debugMessages) {
           result.debugMessages.forEach(msg => console.log(`[${store.storeName}] DEBUG:`, msg));
@@ -272,16 +272,18 @@ const filteredPhotos = allPhotos.filter(photo => {
   return !match;
 });
 
-console.log('allPhotos after filtering:', filteredPhotos);
+//filteredPhotos = allPhotos ;
+
+console.log('allPhotos after filtering:', allPhotos);
 
 
 
 
 
 
-    setFacebookPhotos(filteredPhotos);
-    setFacebookPhotosCount(filteredPhotos.length);
-    setStatus(`Fetched ${filteredPhotos.length} Facebook post images via backend /facebook-posts.`);
+    setFacebookPhotos(allPhotos);
+    setFacebookPhotosCount(allPhotos.length);
+    setStatus(`Fetched ${allPhotos.length} Facebook post images via backend /facebook-posts.`);
     console.log('All messages:', allMessages);
   } catch (error) {
     setStatus('A critical error occurred in handleFetchFacebookPostsRapidApi.');
@@ -427,21 +429,42 @@ const extractTextSingle = async () => {
 
   // Process each group separately
   for (const postId in groupedByPostId) {
-    const group = groupedByPostId[postId];
+    //const group = groupedByPostId[postId];
     // Prepare payload for the API
-    const imagesPayload = group.map((item, idx) => ({
-      imageUrl: item.uri,
-      imageId: item.id || item.facebookId || `img_${idx}`,
-      storeId: item.storeId,
-      flyerBookId: item.flyerBookId || Math.floor(100000 + Math.random() * 900000),
-      facebookUrl: facebookUrl || item.facebookUrl || '',
-      postText: item.message || '',
-      created_time: item.created_time || null,
-      userId: item.userId || userId || 1, // Use userId from item or default to 1
-      postId: item.postId,
-    }));
+
+  
+
+const group = groupedByPostId[postId];
+// Take imageData from the first item (all items have the same imageData for this post)
+const imageDataArr = group[0]?.imageData || [];
+const imagesPayload = imageDataArr.map((imgObj, imgIdx) => ({
+  imageUrl: imgObj.uri,
+  imageId: imgObj.id,
+  storeId: group[0].storeId,
+  flyerBookId: group[0].flyerBookId || Math.floor(100000 + Math.random() * 900000),
+  facebookUrl: facebookUrl || group[0].facebookUrl || '',
+  postText: group[0].message || '',
+  created_time: group[0].created_time || null,
+  userId: group[0].userId || userId || 1,
+  postId: postId,
+}));
+
+
 
     console.log(`Processing postId group "${postId}" with ${imagesPayload.length} images:`, imagesPayload);
+
+    console.log('All imageIds in imagesPayload:', imagesPayload.map(img => img.imageId));
+
+
+    const idSet = new Set();
+imagesPayload.forEach(img => {
+  if (idSet.has(img.imageId)) {
+    console.warn('Duplicate imageId found:', img.imageId);
+  }
+  idSet.add(img.imageId);
+});
+
+
 
     try {
       const response = await fetch(`${node_url}/extract-text-single`, {
