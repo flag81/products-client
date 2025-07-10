@@ -447,6 +447,7 @@ const imagesPayload = imageDataArr.map((imgObj, imgIdx) => ({
   created_time: group[0].created_time || null,
   userId: group[0].userId || userId || 1,
   postId: postId,
+  timestamp: group[0].timestamp, // Use the first item's timestamp or current time
 }));
 
 
