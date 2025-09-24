@@ -744,6 +744,28 @@ const getPostIds = async () => {
   }
 };
 
+// --- NEW: Handler to trigger notifications for all users ---
+const handleSendAllNotifications = async () => {
+  if (!window.confirm('Jeni i sigurt që doni të dërgoni njoftime për të gjithë përdoruesit? Ky veprim nuk mund të kthehet mbrapsht.')) {
+    return;
+  }
+
+  setStatus('Duke filluar procesin e njoftimeve...');
+  try {
+    const response = await fetch(`${node_url}/trigger-all-user-notifications`, {
+      method: 'POST',
+    });
+    const result = await response.json();
+    if (response.ok) {
+      setStatus(<font style={{color:'green'}}><b>{result.message}</b></font>);
+    } else {
+      setStatus(<font style={{color:'red'}}><b>Gabim: {result.error}</b></font>);
+    }
+  } catch (error) {
+    console.error('Error triggering all user notifications:', error);
+    setStatus(<font style={{color:'red'}}><b>Gabim rrjeti gjatë dërgimit të kërkesës.</b></font>);
+  }
+};
 
 
 async function initializeUser() {
@@ -1981,7 +2003,10 @@ Search Products: <input type="text" id="keyword_search" name="keyword_search" on
       Refresh Products
     </button>
   
-    
+    {/* --- NEW: Button to trigger notifications for all users --- */}
+    <button onClick={handleSendAllNotifications} style={{ backgroundColor: '#c9302c', color: 'white', borderColor: '#ac2925', fontWeight: 'bold' }}>
+      Dërgo Njoftime Për Të Gjithë
+    </button>
 </div>  
     
 
