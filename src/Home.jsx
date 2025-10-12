@@ -623,22 +623,14 @@ const settings = {
       >
 
       <img
-                  src={"/logo.png"}
+                  src={"mainlogo.png"}
                   alt="Meniven.com"
-                  style={{ width: 150, cursor: "pointer", margin: 5 }}
+                  style={{ width: 250, cursor: "pointer", margin: 5 }}
       />
-
-
 
       </div>
         
       </Container>
-
-
-
- 
-
-
 
 
 <div className="d-flex flex-row " 
@@ -666,7 +658,7 @@ boxSizing: "border-box",
 style={{ 
   display: "flex",
   width: "100%", // Ensure it fills the parent width
-justifyContent: "flex-start",
+  justifyContent: "flex-start",
   boxSizing: "border-box",
 
 }}
@@ -762,7 +754,7 @@ justifyContent: "flex-start",
 
           }}
         >
-          Kerko
+          Kerkoni
         </Button>
      
 
@@ -1204,13 +1196,23 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
             <Card.Text className="product-description">
               <span style={{ color: "red" }}>{product.old_price && product.old_price > 0 ? product.old_price + "€ - " : ""}</span>
               <span style={{ color: "green" }} className="bold-text">
-                {product.new_price}€ 
+                {product.new_price > 0 ? `${product.new_price}€` : ''}
               </span>
             </Card.Text>
 
-            <Card.Text className="product-description bold-text">
-               {product.storeName}
-            </Card.Text>
+
+
+<div style={{ display: "flex", alignItems: "center", justifyContent: "center", alignContent: "center", marginBottom: 5, paddingTop: 5 }}>
+          {product.logoUrl ? (
+                <img src={`${product.logoUrl.replace('/upload/', '/upload/w_100,c_scale/')}`} alt="Store Logo" style={{ width: 50}} />
+               ) : (
+            <span style={{ color: "black", marginRight: 5 }}>
+              {product.storeName || 'N/A'}
+            </span>
+          )}
+
+
+</div>          
             <Card.Text className="sale-date">
               {product.sale_end_date ? (
                 
@@ -1219,7 +1221,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
 
 
 
-{product.productOnSale ? "Deri" : "Skaduar" } :  
+{product.productOnSale ? "Deri" : "Skaduari" } :  
                
 
               {new Date(product.sale_end_date).toLocaleDateString(
@@ -1517,10 +1519,16 @@ style={{
               }}
             >
 
-              <span style={{ color: "green", fontWeight: "bold"}}>
-                {product.old_price > 0 && product.new_price && (
-                  <> -{Math.round(((product.old_price - product.new_price) / product.old_price) * 100)}%</>
-                )}
+          <span style={{ color: "green", fontWeight: "bold"}}>
+                {(() => {
+                  const oldPrice = parseFloat(product.old_price);
+                  const newPrice = parseFloat(product.new_price);
+                  if (oldPrice > 0 && newPrice && oldPrice > newPrice) {
+                    const percentage = Math.round(((oldPrice - newPrice) / oldPrice) * 100);
+                    return <>-{percentage}%</>;
+                  }
+                  return null;
+                })()}
               </span>
 
 
@@ -1541,7 +1549,7 @@ style={{
             <Card.Text className="product-description">
               <span style={{ color: "red" }}>{product.old_price && product.old_price > 0 ? product.old_price + "€ - " : ""}</span>
               <span style={{ color: "green" }}>
-                {product.new_price}€ 
+               {product.old_price > product.new_price ? product.new_price + "€ " : product.new_price + "€*" }
               </span>
             </Card.Text>
 
@@ -1556,7 +1564,7 @@ style={{
 
 
 
-{product.productOnSale ? "Deri" : "Skaduar" } :  
+{product.productOnSale ? "Deriiiii" : "Skaduar" } :  
                
 
               {new Date(product.sale_end_date).toLocaleDateString(

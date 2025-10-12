@@ -437,6 +437,15 @@ const extractTextSingle = async () => {
 const group = groupedByPostId[postId];
 // Take imageData from the first item (all items have the same imageData for this post)
 const imageDataArr = group[0]?.imageData || [];
+
+console.log(`Processing postId group "${postId}" with imageData:`, imageDataArr);
+
+if (!Array.isArray(imageDataArr) || imageDataArr.length === 0) {
+  console.warn(`No imageData found for postId "${postId}", skipping...`);
+  continue; // Skip this group if no imageData
+}
+
+
 const imagesPayload = imageDataArr.map((imgObj, imgIdx) => ({
   imageUrl: imgObj.uri,
   imageId: imgObj.id,

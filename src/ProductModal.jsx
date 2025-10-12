@@ -105,13 +105,13 @@ const ProductModal = ({
               {modalProduct.old_price}€ -
             </span>
           ) : null}
-          <span style={{ color: "green" }}>
-            {modalProduct.new_price}€
-            {modalProduct.old_price > 0 && modalProduct.new_price && (
+          <span style={{ color: "greenii" }}>
+            <span> {modalProduct?.new_price}€</span>
+            {modalProduct.old_price > 0 && modalProduct?.new_price && modalProduct.old_price > modalProduct.new_price && (
               <span>
                 {" "}
                 (-{Math.round(
-                  ((modalProduct.old_price - modalProduct.new_price) /
+                  ((modalProduct.old_price - modalProduct?.new_price) /
                     modalProduct.old_price) *
                     100
                 )}
@@ -130,9 +130,18 @@ const ProductModal = ({
             marginTop: 5,
           }}
         >
-          <span style={{ color: "black", marginRight: 5 }}>
-            {modalProduct.storeName}
-          </span>
+
+          {modalProduct.logoUrl ? (
+            <img src={modalProduct.logoUrl} alt="Store Logo" style={{ width: 50}} />
+          ) : (
+            <span style={{ color: "black", marginRight: 5 }}>
+              {modalProduct.storeName || 'N/A'}
+            </span>
+          )}
+
+
+
+
           <span style={{ color: "black" }}>
             {modalProduct.sale_end_date &&
             new Date(modalProduct.sale_end_date) > new Date() ? (
@@ -244,7 +253,7 @@ const ProductModal = ({
                 color: modalProduct.productOnSale ? "green" : "red",
               }}
             >
-              {modalProduct.productOnSale ? "Aktive" : "Skaduar"}
+              {modalProduct.productOnSale ? "Aktive" : "Skaduariii"}
             </span>
           </div>
         </div>
