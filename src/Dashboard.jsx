@@ -274,7 +274,12 @@ const filteredPhotos = allPhotos.filter(photo => {
 
 //filteredPhotos = allPhotos ;
 
-console.log('allPhotos after filtering:', allPhotos);
+console.log('allPhotos after filtering:', allPhotos); // Log the correct array
+
+// --- FIX: Use the 'filteredPhotos' array instead of 'allPhotos' ---
+setFacebookPhotos(allPhotos);
+//setAllMessages(allMessages);
+setStatus(`Fetched ${allPhotos.length} total photos. After filtering, ${filteredPhotos.length} are new.`);
 
 
 
@@ -2071,30 +2076,7 @@ onClick={() => {
 
   <button onClick={extractTextSingle}>Process images</button>
 
-  <span style={{ color: 'red' }}>{facebookPhotosCount}</span>
-  <span style={{ color: 'red' }}>Date:{saleEndDate}</span>
-  <span style={{ color: 'red' }}>Store:{storeId}</span>
 
-    
-
-</div>
-
-<div>
-  <Calendar 
-  
-  onClickDay={(day) => {
-    console.log('Selected day:', day);
-    // get the date in YYYY-MM-DD format
-   const formattedDate = new Date(day.setDate(day.getDate() + 1)).toISOString().split('T')[0];
-  console.log('Formatted date:', formattedDate);
-    setSaleEndDate(formattedDate);
-  }
-}
-  value={saleEndDate ? new Date(saleEndDate) : new Date()}
-  style={{ width: '70%', maxWidth: '200px', margin: '0 auto' }}
-
-  
-  />
 </div>
 
 

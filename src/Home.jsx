@@ -571,37 +571,30 @@ const settings = {
     <div
  
   style={{
-
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "flex-start",
-    alignItems: "center",
-    // height: "100vh", // Consider if this is strictly needed or causes other issues
-    width: "100%", // Use 100% to fill parent's content area
-    maxWidth: "100%", // Ensure it doesn't exceed parent's width
+    width: "100%",
     boxSizing: "border-box",
-    overflowX: "hidden", // Good for this main block
+    // By removing `display: "flex"`, this div reverts to a standard block element.
+    // A block element naturally occupies the full available width and provides a stable
+    // foundation for the content inside, preventing the layout from shrinking.
+    // The margin and padding have been set to 0 to avoid unwanted spacing.
     margin: 0,
     padding: 0,
 
 
   }}
 >
-    <div className="container" 
+    <div className="container-fluid" 
     
           id="home-container"
 
+          // --- FIX: Removed redundant and conflicting inline styles ---
+          // The container-fluid class handles the width correctly.
           style={{
-          width: "100%",
-          maxWidth: "100%", // Changed from 100vw
           marginTop: 0,
           position: "relative",
           top: 0,
-          flexShrink: 0,
-          // minWidth: "100%", // <-- REMOVE THIS
-          boxSizing: "border-box", // <-- ADD THIS
-          //border: "1px solid #ccc", // Optional: Add a border for visibility
-
+          boxSizing: "border-box",
+          border: "1px solid #060101ff",
     }}
     
     >
@@ -615,7 +608,7 @@ const settings = {
 
        style={{  
         
-        //border: "1px solid #ccc"
+        border: "1px solid #9f1d78ff"
 
 
        }} 
@@ -641,12 +634,16 @@ style={{
 
   display: "flex", // Enables flexbox layout
   justifyContent: "flex-start",
-  //border: "1px solid green",
+  border: "1px solid green",
   width: "100%",
   maxWidth: "100%", // Ensure it fills the parent width
 // stetch div to fill the width of the parent 
 
+// make sure it not shrunk
+
+
 boxSizing: "border-box",
+
 
 }} 
 
@@ -660,6 +657,7 @@ style={{
   width: "100%", // Ensure it fills the parent width
   justifyContent: "flex-start",
   boxSizing: "border-box",
+  
 
 }}
 
@@ -814,7 +812,7 @@ whiteSpace: "nowrap",
 margin: "10px 0",
 padding: "2px 0",
 //borderBottom: "1px solid #eee",
-maxWidth: "78vw", // Prevents exceeding screen width
+//maxWidth: "78vw", // Prevents exceeding screen width
 width: "100%",     // Fills parent width
 boxSizing: "border-box",
 // hide scrollbar horizontally but allow scrolling horizontally
@@ -994,26 +992,28 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
 
 </div>
 
+
 {data?.pages[0].products.length === 0 && (
-
-  <div className="select-description">
-
-
-  Nuk u gjenden produkte me keta filtra 
+  <div
+    id="store-filter-container"
 
 
 
+        style={{
+      borderRadius: 5,
+      border: "1px solid #ccc",
+      margin: "10px auto", // Center the div horizontally
+      padding: "10px",
+      width: "90%", // Set width to 90% of the parent container
+      textAlign: "center", // Center the text inside
+    }}
+
+  >
+  Nuk u gjenden produkte me keta filtra Nuk u gjenden produkte me keta filtra
   </div>
-)
+)}
 
 
-
-
-
-
-
-
-}
 
 {
 
@@ -1022,11 +1022,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
 }
 
 
-
-      {/* Products */}
-
-     
-
+{/* Products */}
 
 
 <Row xs={1} sm={2} md={2} lg={lgCols} className="g-2 justify-content-start">
