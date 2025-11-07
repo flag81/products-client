@@ -594,7 +594,7 @@ const settings = {
           position: "relative",
           top: 0,
           boxSizing: "border-box",
-          border: "1px solid #060101ff",
+          border: "0px solid #060101ff",
     }}
     
     >
@@ -608,7 +608,7 @@ const settings = {
 
        style={{  
         
-        border: "1px solid #9f1d78ff"
+        border: "0px solid #9f1d78ff"
 
 
        }} 
@@ -634,7 +634,7 @@ style={{
 
   display: "flex", // Enables flexbox layout
   justifyContent: "flex-start",
-  border: "1px solid green",
+  border: "0px solid green",
   width: "100%",
   maxWidth: "100%", // Ensure it fills the parent width
 // stetch div to fill the width of the parent 
@@ -916,7 +916,7 @@ style={{ width: "100%",
 
 style={{ marginLeft: 5, marginRight: 5, 
 
-border: selectedStore > 0 ? "1px solid #ccc" : "", padding:3 ,borderRadius: 5, marginBottom: 5 }}
+border: selectedStore > 0 ? "0px solid #ccc" : "", padding:3 ,borderRadius: 5, marginBottom: 5 }}
 >
   
   {selectedStore > 0 ? `${selectedStoreName}` : ""}

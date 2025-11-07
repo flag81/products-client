@@ -2096,7 +2096,7 @@ onClick={() => {
       postsMap[photo.postId].images.push(photo.uri);
     });
     return Object.entries(postsMap).map(([postId, post]) => (
-      <div key={postId} style={{ border: '1px solid #ccc', borderRadius: 5, marginBottom: 20, padding: 10 }}>
+      <div key={postId} style={{ border: '0px solid #ccc', borderRadius: 5, marginBottom: 20, padding: 10 }}>
         <div style={{ marginBottom: 8, fontWeight: 'bold', color: '#333' }}>
           {post.message || <span style={{ color: '#888' }}>[No message]</span>}
         </div>
@@ -2109,7 +2109,7 @@ onClick={() => {
               <img
                 src={uri}
                 alt={`Facebook Post ${postId} Photo ${idx + 1}`}
-                style={{ width: '200px', height: 'auto', cursor: 'pointer', borderRadius: 4, border: '1px solid #eee' }}
+                style={{ width: '200px', height: 'auto', cursor: 'pointer', borderRadius: 4, border: '0px solid #eee' }}
                 onClick={() => window.open(uri, '_blank')}
               />
               <button
@@ -2118,7 +2118,7 @@ onClick={() => {
                   top: 5,
                   right: 5,
                   background: '#fff',
-                  border: '1px solid #ccc',
+                  border: '0px solid #ccc',
                   borderRadius: '50%',
                   width: 24,
                   height: 24,
