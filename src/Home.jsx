@@ -843,7 +843,7 @@ cursor: "grab",
           fontSize: 12,
          color: "#333" ,
          // add a border with rounded corners
-          border: "1px solid #ccc",
+          border: "0px solid #ccc",
           borderRadius: 5,
           padding: 10,
           cursor: "pointer",
@@ -863,10 +863,15 @@ cursor: "grab",
         
         >
           
-          
-          <span key={store.storeId} style={{  textAlign: "center" }}>
-{store.storeName}
-  </span>      
+
+
+     {store.logoUrl ? (
+                <img src={`${store.logoUrl.replace('/upload/', '/upload/w_100,c_scale/')}`} alt="Store Logo" style={{ width: 50}} />
+               ) : (
+            <span style={{ color: "black", marginRight: 5 }}>
+              {store.storeName || 'N/A'}
+            </span>
+          )}    
         
         </div>
 
@@ -1168,11 +1173,6 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
               }}
             >
 
-              <span style={{ color: "green", fontWeight: "bold"}}>
-                {product.old_price > 0 && product.new_price && (
-                  <> -{Math.round(((product.old_price - product.new_price) / product.old_price) * 100)}%</>
-                )}
-              </span>
 
 
 </div>
@@ -1194,59 +1194,27 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
               <span style={{ color: "green" }} className="bold-text">
                 {product.new_price > 0 ? `${product.new_price}€` : ''}
               </span>
-            </Card.Text>
 
-
-
-<div style={{ display: "flex", alignItems: "center", justifyContent: "center", alignContent: "center", marginBottom: 5, paddingTop: 5 }}>
-          {product.logoUrl ? (
-                <img src={`${product.logoUrl.replace('/upload/', '/upload/w_100,c_scale/')}`} alt="Store Logo" style={{ width: 50}} />
-               ) : (
-            <span style={{ color: "black", marginRight: 5 }}>
-              {product.storeName || 'N/A'}
-            </span>
-          )}
-
-
-</div>          
-            <Card.Text className="sale-date">
-              {product.sale_end_date ? (
-                
-
-                <><span style={{ color: product.productOnSale ? "green" : "red" }} className="bold-text">
-
-
-
-{product.productOnSale ? "Deri" : "Skaduari" } :  
-               
-
-              {new Date(product.sale_end_date).toLocaleDateString(
-                "en-GB",
-                {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "2-digit",
-                }
-              )}
-
-
-              <br />
+                <span style={{ color: "green" }} className="bold-text">
+                {product.discount_percentage ? ` (-${Math.round(product.discount_percentage)}%)` : ''}
               </span>
-                </>
-              ) 
-              
-              : null}
-
-              
-              
             </Card.Text>
+
+
+
+       
+   
 
 
 <div  
 
 // make this div take the rest of the space vertically
 
-style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
+style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", alignItems: "center"
+
+
+
+ }}
 
 
 >
@@ -1254,8 +1222,8 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
             {/* Favorite toggle */}
             <div id="bottom-menu" style={{ display: "flex", width:"100%",
                flexDirection: "row", alignItems: "center", // add vertical alignment to bottom
-               //border: "1px solid #ccc", // Optional: Add a border to separate the footer
-                alignItems: "flex-end", 
+               border: "0px solid #ccc", // Optional: Add a border to separate the footer
+                alignItems: "center", 
                 justifyContent: "space-between", // horizontal alignment to left
                  borderRadius: 5,justifyContent: "space-between" }}>
 
@@ -1284,13 +1252,58 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
 
              
               </div>
+
+
+<div style={{ display: "flex", alignItems: "center", justifyContent: "center", alignContent: "center", marginBottom: 5, paddingTop: 5 
+
+
+
+
+}}>
+          {product.logoUrl ? (
+                <img src={`${product.logoUrl.replace('/upload/', '/upload/w_100,c_scale/')}`} alt="Store Logo" style={{ width: 50}} />
+               ) : (
+            <span style={{ color: "black", marginRight: 5 }}>
+              {product.storeName || 'N/A'}
+            </span>
+          )}
+
+
+</div>  
+
+
                  {/* Sale icon */}
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }} role="button">
-                  <img
-                    src={product.productOnSale ? "sale-fill-2.png" : "sale-empty.jpg"}
-                    alt={product.productOnSale ? "On sale" : "Not on sale"}
-                    style={{ cursor: "hand", width: 24, height: 24 }}
-                  />
+
+
+         {product.sale_end_date ? (
+                
+
+                <><span style={{ color: product.productOnSale ? "green" : "red" }} className="bold-text">
+
+
+
+{product.productOnSale ? "Deri" : "Skaduari" } :  
+               
+
+              {new Date(product.sale_end_date).toLocaleDateString(
+                "en-GB",
+                {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "2-digit",
+                }
+              )}
+
+
+              <br />
+              </span>
+                </>
+              ) 
+              
+              : null}
+
+
                 
                 </div>
               </div>  
