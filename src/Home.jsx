@@ -800,7 +800,7 @@ style={{
 
 
 
-
+<div style={{ width: '100%' }}>
 <div 
 
 id="store-filter-container"
@@ -878,6 +878,8 @@ cursor: "grab",
 
 
 ))}
+
+</div>
 
 </div>
 
