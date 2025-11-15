@@ -540,12 +540,12 @@ console.log("[DEBUG] Active Filters:", activeFilters);
 
   const allProducts = data?.pages.flatMap(p => p.products) ?? [];
 
-const count       = allProducts.length;
-const lgCols      = count >= 4 ? 4 : count || 1;
+  // REMOVED: The dynamic lgCols calculation is no longer needed.
+  // const count       = allProducts.length;
+  // const lgCols      = count >= 4 ? 4 : count || 1;
 
-
-const onSaleProducts = allProducts.filter(p => p.productOnSale);
-const notOnSaleProducts = allProducts.filter(p => !p.productOnSale);
+  const onSaleProducts = allProducts.filter(p => p.productOnSale);
+  const notOnSaleProducts = allProducts.filter(p => !p.productOnSale);
 
 
 
@@ -565,41 +565,28 @@ const settings = {
 
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
-
-    
-
     <div
- 
-  style={{
-    width: "100%",
-    boxSizing: "border-box",
-    // By removing `display: "flex"`, this div reverts to a standard block element.
-    // A block element naturally occupies the full available width and provides a stable
-    // foundation for the content inside, preventing the layout from shrinking.
-    // The margin and padding have been set to 0 to avoid unwanted spacing.
-    margin: 0,
-    padding: 0,
-
-
-  }}
->
-    <div className="container-fluid" 
-    
-          id="home-container"
-
-          // --- FIX: Removed redundant and conflicting inline styles ---
-          // The container-fluid class handles the width correctly.
-          style={{
-          marginTop: 0,
-          position: "relative",
-          top: 0,
-          boxSizing: "border-box",
-          border: "0px solid #060101ff",
-    }}
-    
+      style={{
+        width: "100%",
+        maxWidth: "100vw",
+        boxSizing: "border-box",
+        margin: 0,
+        padding: 0,
+        overflowX: "hidden", // prevent page-level horizontal scroll
+      }}
     >
-      
-      <Container fluid>
+      <div className="container-fluid" id="home-container" style={{ marginTop: 0, position: "relative", top: 0, boxSizing: "border-box", 
+        border: "0px solid #060101ff",
+         // NEW: center the whole page content and cap width
+          maxWidth: 1200,
+          marginLeft: "auto",
+          marginRight: "auto",
+          paddingLeft: 12,
+          paddingRight: 12,
+        
+        
+        }}>
+        <Container fluid>
 
       <div
         role="button" 
@@ -626,59 +613,20 @@ const settings = {
       </Container>
 
 
-<div className="d-flex flex-row " 
-
-id="search-container"
-
-style={{  
-
-  display: "flex", // Enables flexbox layout
-  justifyContent: "flex-start",
-  border: "0px solid green",
-  width: "100%",
-  maxWidth: "100%", // Ensure it fills the parent width
-// stetch div to fill the width of the parent 
-
-// make sure it not shrunk
-
-
-boxSizing: "border-box",
-
-
-}} 
-
->
-
-  
-<Container
-
-style={{ 
-  display: "flex",
-  width: "100%", // Ensure it fills the parent width
-  justifyContent: "flex-start",
-  boxSizing: "border-box",
-  
-
-}}
-
-
->
- {/* Search and Store Filter */}
- <Row className="mb-3 d-flex flex-column flex-md-row "
- style={{ 
-  flexWrap: "wrap",
-  display: "flex",
-  width: "100%", // Ensure it fills the parent width
-  flex: "1",
-  justifyContent: "flex-start",
-  //border: "1px solid red",
-  // stetch div to fill the width of the parent
-  boxSizing: "border-box",
-
-}}
-  >
-    {/* Search */}
-    <Col xs={12} md={6} 
+{/* Search section - remove outer flex that could stretch width */}
+<div id="search-container" style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
+  <Container style={{ width: "100%", boxSizing: "border-box" }}>
+    {/* Search and Store Filter */}
+    <Row className="mb-3 d-flex flex-column flex-md-row"
+      style={{
+        // Removed display:flex, flexWrap and flex:1 (Bootstrap handles this)
+        width: "100%",
+        justifyContent: "flex-start",
+        boxSizing: "border-box",
+      }}
+    >
+      {/* Search */}
+      <Col xs={12} md={6} 
    
     
     style={{
@@ -786,55 +734,29 @@ style={{
 
   </Row>
   </Container>
-
 </div>
      
-
-
-
-
-
-
-
-
-
-
-
-<div style={{ width: '100%' }}>
-<div 
-
-id="store-filter-container"
-
-style={{
-
-overflowX: "scroll",
-whiteSpace: "nowrap",
-margin: "10px 0",
-padding: "2px 0",
-//borderBottom: "1px solid #eee",
-//maxWidth: "78vw", // Prevents exceeding screen width
-width: "100%",     // Fills parent width
-boxSizing: "border-box",
-// hide scrollbar horizontally but allow scrolling horizontally
-
-scrollbarWidth: "none", // Hide scrollbar for Firefox
-msOverflowStyle: "none", // Hide scrollbar for IE/Edge
-
-//border: "1px solid red", // Debugging border
-cursor: "grab",
-
-//border: "1px solid #ccc"
-
-
-}}
-
-
-
-
+{/* Store logos scroller - keep inside width and avoid vertical overflow */}
+<div
+  id="store-filter-container"
+  style={{
+    overflowX: "auto",
+    overflowY: "hidden",
+    whiteSpace: "nowrap",
+    margin: "10px 0",
+    padding: "2px 0",
+    width: "100%",
+    maxWidth: "100%",
+    boxSizing: "border-box",
+    scrollbarWidth: "none",
+    msOverflowStyle: "none",
+    cursor: "grab",
+     // NEW: keep scroll contained and smooth on mobile
+    overscrollBehaviorX: "contain",
+    WebkitOverflowScrolling: "touch",
+  }}
 >
-
-
-{stores.map((store) => (
+  {stores.map((store) => (
 
         <div style={{ 
 
@@ -842,7 +764,6 @@ cursor: "grab",
           
           fontSize: 12,
          color: "#333" ,
-         // add a border with rounded corners
           border: "0px solid #ccc",
           borderRadius: 5,
           padding: 10,
@@ -881,7 +802,7 @@ cursor: "grab",
 
 </div>
 
-</div>
+
 
 
 <div className="d-flex flex-row align-items-center " 
@@ -1002,11 +923,8 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
 
 {data?.pages[0].products.length === 0 && (
   <div
-    id="store-filter-container"
-
-
-
-        style={{
+    id="no-products-message"
+    style={{
       borderRadius: 5,
       border: "1px solid #ccc",
       margin: "10px auto", // Center the div horizontally
@@ -1016,7 +934,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
     }}
 
   >
-  Nuk u gjenden produkte me keta filtra Nuk u gjenden produkte me keta filtra
+  Nuk u gjenden produkte me keta filtra.
   </div>
 )}
 
@@ -1032,28 +950,26 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
 {/* Products */}
 
 
-<Row xs={1} sm={2} md={2} lg={lgCols} className="g-2 justify-content-start">
+{/* FIX: Updated Row props for a standard responsive grid. */}
+<Row xs={1} sm={2} md={3} lg={4} className="g-2 justify-content-start">
   {onSaleProducts.map((product, idx) => (
-          <Col key={`onsale-${idx}`} className="d-flex ">
-            <Card className="h-100 p-1  product-card d-flex flex-column"        
-            
-                // if product.productOnSale make card border red else make it white
-                style={{ borderColor: product.productOnSale ? "green" : null }}
-                
+          <Col key={`onsale-${idx}`} className="d-flex" style={{ minWidth: 0 /* allow shrink on small screens */ }}>
+            <Card className="h-100 p-1 product-card d-flex flex-column" style={{ width: "100%", borderColor: product.productOnSale ? "green" : null }}>
+                <div
+                  style={{ position: "relative", width: "100%", height: "100%" }}
                 >
-            <div >
 
-            {!isCardImageLoaded && (
-              <Placeholder as="div" animation="glow">
-                <Placeholder
-                  style={{
-                    width: "100%",
-                    height: "200px", // Adjust to match the image dimensions
-                  }}
-                  className="rounded" // Optional: Add rounded corners
-                />
-              </Placeholder>
-            )}
+                {!isCardImageLoaded && (
+                  <Placeholder as="div" animation="glow">
+                    <Placeholder
+                      style={{
+                        width: "100%",
+                        height: "200px", // Adjust to match the image dimensions
+                      }}
+                      className="rounded" // Optional: Add rounded corners
+                    />
+                  </Placeholder>
+                )}
 
 
 
@@ -1075,8 +991,8 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
             alt={product.product_description}
             loading="lazy"
             onLoad={() => setIsCardImageLoaded(true)}
-            onClick={() => openModal(imgUrl, product)}
-            style={{ cursor: "pointer", width: "100%", height: "auto" }}
+            onClick={() => openModal((() => { const f = product.image_url.split("/").pop(); return `${baseUrl}/${autoTransformation}/${directory}/${f}`; })(), product)}
+            style={{ display: "block", cursor: "pointer", width: "100%", height: "auto" }} // display:block avoids inline-img spacing
           />
         );
      })()}
@@ -1135,10 +1051,6 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
 
                 <img
 
-                
-
-                // check screen size for mobile or desktop USING @MEDIA CSS
-                // if screen size is less than 768px use smaller image
 
                   src={"/click.png"} // Replace with your overlay image path
                   
@@ -1151,6 +1063,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
 
                     
                   }}
+
                  
                 />
 
@@ -1347,7 +1260,8 @@ notOnSaleProducts.length > 0 && (
 
 
 
-<Row xs={1} sm={1} md={2} lg={lgCols} className="g-2 justify-content-start"
+{/* FIX: Updated Row props for a standard responsive grid. */}
+<Row xs={1} sm={2} md={3} lg={4} className="g-2 justify-content-start"
 
 style={{
   //border: "1px solid black", // Add a black border
@@ -1366,42 +1280,23 @@ style={{
 
     
   return (
-          <Col key={`notonsale-${idx}`} className="d-flex"
-
-          style={{
-            //border: "1px solid black", // Add a black border
-            //borderRadius: "5px", // Optional: Add rounded corners
-            //padding: "10px", // Optional: Add padding inside the row
-          }}
-          
-
-
-
+          <Col key={`notonsale-${idx}`} className="d-flex" style={{ minWidth: 0 }}>
+            <Card className="h-100 p-1 product-card d-flex flex-column" style={{ width: "100%", borderColor: product.productOnSale ? "green" : null }}>
+                    <div
+            // NEW: keep absolute overlays contained
+            style={{ position: "relative", width: "100%", height: "100%" }}
           >
-            <Card className="h-100 p-1  product-card d-flex flex-column"        
-            
-                // if product.productOnSale make card border red else make it white
-                style={{ borderColor: product.productOnSale ? "green" : null, 
-
-                  width: "100%",
-
-                }}
-
-                
-                >
-            <div  style={{ width: "100%", height: "100%" }}>
-
-            {!isCardImageLoaded && (
-              <Placeholder as="div" animation="glow">
-                <Placeholder
-                  style={{
-                    width: "100%",
-                    height: "200px", // Adjust to match the image dimensions
-                  }}
-                  className="rounded" // Optional: Add rounded corners
-                />
-              </Placeholder>
-            )}
+                {!isCardImageLoaded && (
+                  <Placeholder as="div" animation="glow">
+                    <Placeholder
+                      style={{
+                        width: "100%",
+                        height: "200px", // Adjust to match the image dimensions
+                      }}
+                      className="rounded" // Optional: Add rounded corners
+                    />
+                  </Placeholder>
+                )}
 
 
 
@@ -1427,10 +1322,7 @@ style={{
             loading="lazy"
             onLoad={() => setIsCardImageLoaded(true)}
             onClick={() => openModal(imgUrl, product)}
-            style={{ cursor: "pointer", width: "100%", height: "auto" ,
-            filter: "grayscale(100%)", // Apply grayscale effect
-
-            }}
+            style={{ display: "block", cursor: "pointer", width: "100%", height: "auto", filter: "grayscale(100%)" }}
           />
         );
 
@@ -1522,7 +1414,8 @@ style={{
               style={{
                 position: "absolute",
                 top: "5px",
-                right: "5px",   
+                right: "5px",
+                
                 //background: "rgba(0, 0, 0, 0.2)",
                 backgroundColor: "rgba(255, 255, 255, 0.9)", // Semi-transparent white background              
                 borderRadius: "20%", // Optional: Make it circular
