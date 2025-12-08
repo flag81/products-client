@@ -37,8 +37,8 @@ function Home({ mode }) {
   const [stores, setStores] = useState([]);
   const [flyerBook, setFlyerBook] = useState([]);
   const [users, setUsers] = useState([]);
-  const [selectedStore, setSelectedStore] = useState("");
-  const [selectedStoreName, setSelectedStoreName] = useState("");
+  const [selectedStores, setSelectedStores] = useState([]); // store ids as strings
+  const [selectedStoreName, setSelectedStoreName] = useState(""); // optional: keep for a display label
   const [isFavorite, setIsFavorite] = useState(false);
   const [onSale, setOnSale] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -78,7 +78,7 @@ function Home({ mode }) {
   const productsQueryKey = [
     "products",
     userId,
-    selectedStore,
+    (selectedStores.length ? selectedStores.join(",") : ""), // send CSV of selected store ids
     isFavorite,
     onSale,
     searchKeyword?.length > 2 ? searchKeyword : "",
@@ -242,14 +242,14 @@ useEffect(() => {
         console.log("[DEBUG] On Sale filter removed");
       }
     
-      if (selectedStore) {
+      if (selectedStores.length > 0) {
         addOrReplaceFilter("Store");
         console.log("[DEBUG] Store filter added");
       } else {
         removeFilter("Store");
         console.log("[DEBUG] Store filter removed");
       }
-    }, [isFavorite, onSale, selectedStore]);
+    }, [isFavorite, onSale, selectedStores]);
 
 
 useEffect(() => {
@@ -567,12 +567,15 @@ const settings = {
   return (
     <div
       style={{
-        width: "100%",
-        maxWidth: "100vw",
+         width: "100%",
+        maxWidth: "95vw",
         boxSizing: "border-box",
         margin: 0,
         padding: 0,
-        overflowX: "hidden", // prevent page-level horizontal scroll
+        overflowX: "hidden",
+        display: "flex",               // keeps header at top
+        flexDirection: "column",
+        minHeight: "100vh",  
       }}
     >
       <div className="container-fluid" id="home-container" style={{ marginTop: 0, position: "relative", top: 0, boxSizing: "border-box", 
@@ -583,6 +586,7 @@ const settings = {
           marginRight: "auto",
           paddingLeft: 12,
           paddingRight: 12,
+           flex: 1,   
         
         
         }}>
@@ -692,7 +696,7 @@ const settings = {
         
         />
 
-                <Button
+      <Button
           className="responsive-button"
           onClick={(e) => handleSearch(e.target.previousSibling.value)}
           style={{ marginLeft: 5 
@@ -702,8 +706,7 @@ const settings = {
         >
           Kerkoni
         </Button>
-     
-
+    
   </div>      
 
   </InputGroup>
@@ -756,50 +759,60 @@ const settings = {
     WebkitOverflowScrolling: "touch",
   }}
 >
-  {stores.map((store) => (
 
-        <div style={{ 
-
-          display: "inline-block",
-          
-          fontSize: 12,
-         color: "#333" ,
-          border: "0px solid #ccc",
-          borderRadius: 5,
-          padding: 10,
-          cursor: "pointer",
-          margin: "0 5px",
-          
-
-
-
-        }}
-        
+  {stores.map((store) => {
+    const idStr = String(store.storeId);
+    const isSelected = selectedStores.includes(idStr);
+    return (
+      <div
+        key={store.storeId}
+        role="button"
+        aria-pressed={isSelected}
         onClick={() => {
-          setSelectedStore(store.storeId);
-          setSelectedStoreName(store.storeName);
-        } }
-        
-        
-        
-        >
-          
-
-
-     {store.logoUrl ? (
-                <img src={`${store.logoUrl.replace('/upload/', '/upload/w_100,c_scale/')}`} alt="Store Logo" style={{ width: 50}} />
-               ) : (
-            <span style={{ color: "black", marginRight: 5 }}>
-              {store.storeName || 'N/A'}
-            </span>
-          )}    
-        
-        </div>
-
-
-
-))}
-
+          setSelectedStores((prev) =>
+            prev.includes(idStr) ? prev.filter((s) => s !== idStr) : [...prev, idStr]
+          );
+          // optional: keep last clicked store name for display
+          setSelectedStoreName((prevName) => (isSelected ? "" : store.storeName));
+        }}
+        style={{
+          width: 72,
+          height: 72,
+          boxSizing: "border-box",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 12,
+          color: "#333",
+          borderRadius: 8,
+          padding: 8,
+          cursor: "pointer",
+          margin: "0 6px",
+          border: isSelected ? "2px solid #0d6efd" : "2px solid transparent",
+          boxShadow: isSelected ? "0 4px 12px rgba(13,110,253,0.15)" : "none",
+          transform: isSelected ? "translateY(-2px)" : "none",
+          transition: "box-shadow 150ms ease, transform 120ms ease, border-color 150ms ease",
+          verticalAlign: "middle",
+          background: "white",
+        }}
+      >
+        {store.logoUrl ? (
+          <img
+            src={`${store.logoUrl.replace("/upload/", "/upload/w_100,c_scale/")}`}
+            alt={store.storeName || "Store"}
+            style={{
+              maxWidth: "100%",
+              maxHeight: 56,
+              objectFit: "contain",
+              display: "block",
+            }}
+          />
+        ) : (
+          <span style={{ color: "black", marginRight: 5 }}>{store.storeName || "N/A"}</span>
+        )}
+      </div>
+    );
+  })}
 </div>
 
 
@@ -839,21 +852,21 @@ style={{ width: "100%",
 
 )}
 
-{selectedStore > 0  && (
+{selectedStores.length > 0  && (
 <div className="select-description"
 
 style={{ marginLeft: 5, marginRight: 5, 
 
-border: selectedStore > 0 ? "0px solid #ccc" : "", padding:3 ,borderRadius: 5, marginBottom: 5 }}
+border: selectedStores.length > 0 ? "0px solid #ccc" : "", padding:3 ,borderRadius: 5, marginBottom: 5 }}
 >
   
-  {selectedStore > 0 ? `${selectedStoreName}` : ""}
+  {selectedStores.length > 0 ? `${selectedStoreName}` : ""}
 
 
 
   <span
   onClick={() => {
-    setSelectedStore(0);
+    setSelectedStores([]);
     document.getElementById("store").value = 0;
   }}
   style={{ marginLeft: 5, marginRight:5 , cursor: "pointer", color: "red" }}
@@ -954,7 +967,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
 <Row xs={1} sm={2} md={3} lg={4} className="g-2 justify-content-start">
   {onSaleProducts.map((product, idx) => (
           <Col key={`onsale-${idx}`} className="d-flex" style={{ minWidth: 0 /* allow shrink on small screens */ }}>
-            <Card className="h-100 p-1 product-card d-flex flex-column" style={{ width: "100%", borderColor: product.productOnSale ? "green" : null }}>
+            <Card className="h-100 pt-1 px-1 pb-0 product-card d-flex flex-column" style={{ width: "100%", borderColor: product.productOnSale ? "green" : null }}>
                 <div
                   style={{ position: "relative", width: "100%", height: "100%" }}
                 >
@@ -1096,15 +1109,35 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
               <Card.Body   style={{
                 display: "flex",
                 flexDirection: "column",
-                flex: 1,             // <-- body now expands to fill the card
+                flex: 1,    
+                //border: "1px solid #a12323ff",    
+                paddingBottom: 2,
+                paddingTop: 0,
+                // <-- body now expands to fill the card
               }}>
             <Card.Text className="product-description">
-              {product.product_description}
+
+              
+
+            <b>
+              {product.product_description.toUpperCase()}
+            </b>
+              
             </Card.Text>
 
 
             
-            <Card.Text className="product-description">
+            <Card.Text className="product-description"
+            
+            style={{
+
+              //border: "1px solid #ccc",
+
+
+             }}
+            
+            >
+              
               <span style={{ color: "red" }}>{product.old_price && product.old_price > 0 ? product.old_price + "€ - " : ""}</span>
               <span style={{ color: "green" }} className="bold-text">
                 {product.new_price > 0 ? `${product.new_price}€` : ''}
@@ -1137,13 +1170,18 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
             {/* Favorite toggle */}
             <div id="bottom-menu" style={{ display: "flex", width:"100%",
                flexDirection: "row", alignItems: "center", // add vertical alignment to bottom
-               border: "0px solid #ccc", // Optional: Add a border to separate the footer
-                alignItems: "center", 
+               //border: "1px solid #b9227fff", // Optional: Add a border to separate the footer
+           
+                paddingBottom: 0,
+                paddingTop: 0,
                 justifyContent: "space-between", // horizontal alignment to left
-                 borderRadius: 5,justifyContent: "space-between" }}>
+                 borderRadius: 0,
+                 justifyContent: "space-between" }}>
 
             <div style={{ display: "flex", flexDirection: "column",  alignItems: "center", // Centers items horizontally
                 justifyContent: "center", borderColor: "red", 
+
+                
                 //borderWidth: 1, // Border width
               // borderStyle: "solid", // Solid border style
 
@@ -1169,7 +1207,7 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
               </div>
 
 
-<div style={{ display: "flex", alignItems: "center", justifyContent: "center", alignContent: "center", marginBottom: 5, paddingTop: 5 
+ <div style={{ display: "flex", alignItems: "center", justifyContent: "center", alignContent: "center", marginBottom: 5, paddingTop: 5 
 
 
 
@@ -1281,7 +1319,12 @@ style={{
     
   return (
           <Col key={`notonsale-${idx}`} className="d-flex" style={{ minWidth: 0 }}>
-            <Card className="h-100 p-1 product-card d-flex flex-column" style={{ width: "100%", borderColor: product.productOnSale ? "green" : null }}>
+            <Card className="h-100 pt-1 px-1 pb-0 product-card d-flex flex-column" 
+            style={{ width: "100%", paddingBottom: 0, 
+            
+            
+           
+            borderColor: product.productOnSale ? "green" : null }}>
                     <div
             // NEW: keep absolute overlays contained
             style={{ position: "relative", width: "100%", height: "100%" }}
@@ -1340,6 +1383,8 @@ style={{
                 backgroundColor: "rgb(249, 245, 245)", // Semi-transparent background
                 padding: "15px", // Optional: Add padding around the image
                 borderRadius: "20%", // Optional: Make it circular
+
+                  
                 
               }}
             >
@@ -1442,7 +1487,9 @@ style={{
               <Card.Body   style={{
                 display: "flex",
                 flexDirection: "column",
-                flex: 1,             // <-- body now expands to fill the card
+                flex: 1,    
+
+
               }}>
             <Card.Text className="product-description">
               {product.product_description}
@@ -1584,5 +1631,7 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
     </div>
   );
 }
+
+
 
 export default Home;
