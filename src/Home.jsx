@@ -828,22 +828,44 @@ const settings = {
 
 
 
-<div className="d-flex flex-row align-items-center " 
-style={{ width: "100%", 
+<div
+  id="active-filters-container"
+  style={{
+    display: "flex",
+    alignItems: "center",
+    width: "100%",
+    boxSizing: "border-box",
+    overflowX: "auto",        // allow internal horizontal scrolling only
+    overflowY: "hidden",
+    whiteSpace: "nowrap",
+    WebkitOverflowScrolling: "touch",
+    padding: "6px 8px",
+    gap: 8,
+    msOverflowStyle: "none",
+    scrollbarWidth: "thin",
+  }}
+>
 
-//border: "1px solid #ccc" 
+  {searchKeyword.length > 2 && (
 
-}}>
-
-
-
-{searchKeyword.length > 2 && (
-
-<div className="select-description" 
-  style={{ marginLeft: 5, marginRight: 5, 
-    
+<div
+  className="select-description"
+  style={{
+    display: "inline-flex",
+    flex: "0 0 auto",
+    alignItems: "center",
+    marginLeft: 5,
+    marginRight: 5,
     border: searchKeyword.length > 2 ? "1px solid #ccc" : "",
-   padding:3 , borderRadius: 5 , marginBottom: 5 }}>
+    padding: 3,
+    borderRadius: 5,
+    marginBottom: 5,
+    maxWidth: 220,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  }}
+>
 {searchKeyword.length > 2 ? "" + searchKeyword  : "" }
 
 
@@ -955,16 +977,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
       width: "90%", // Set width to 90% of the parent container
       textAlign: "center", // Center the text inside
 
-     width: "100vw",                // use viewport width to avoid subtle vw/scrollbar mismatch
-        maxWidth: "100%",               // ensure wrapper never grows past viewport
-        boxSizing: "border-box",
-        margin: 0,
-        padding: 0,
-        overflowX: "hidden",            // hide any accidental horizontal overflow
-        WebkitOverflowScrolling: "touch",
-        display: "flex",
-        flexDirection: "column",
-        minHeight: "100vh",  
+
 
     }}
 
