@@ -982,7 +982,7 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
     }}
 
   >
-  Nuk u gjenden produkte me keta filtra.
+  Nuk u gjenden produkte.
   </div>
 )}
 
