@@ -567,32 +567,33 @@ const settings = {
   return (
     <div
       style={{
-         width: "100%",
-        maxWidth: "95vw",
+         width: "100vw",                // use viewport width to avoid subtle vw/scrollbar mismatch
+        maxWidth: "100%",               // ensure wrapper never grows past viewport
         boxSizing: "border-box",
         margin: 0,
         padding: 0,
-        overflowX: "hidden",
-        display: "flex",               // keeps header at top
+        overflowX: "hidden",            // hide any accidental horizontal overflow
+        WebkitOverflowScrolling: "touch",
+        display: "flex",
         flexDirection: "column",
         minHeight: "100vh",  
       }}
     >
       <div className="container-fluid" id="home-container" style={{ marginTop: 0, position: "relative", top: 0, boxSizing: "border-box", 
         border: "0px solid #060101ff",
-         // NEW: center the whole page content and cap width
+          // NEW: center the whole page content and cap width
           maxWidth: 1200,
-          marginLeft: "auto",
-          marginRight: "auto",
-          paddingLeft: 12,
-          paddingRight: 12,
-           flex: 1,   
+           marginLeft: "auto",
+           marginRight: "auto",
+           paddingLeft: 12,
+           paddingRight: 12,
+            flex: 1,   
         
         
         }}>
-        <Container fluid>
-
-      <div
+         <Container fluid>
+ 
+       <div
         role="button" 
         
        className="d-flex flex-row align-items-center justify-content-between"
@@ -609,12 +610,19 @@ const settings = {
       <img
                   src={"mainlogo.png"}
                   alt="Meniven.com"
-                  style={{ width: 250, cursor: "pointer", margin: 5 }}
+                  style={{
+                    width: "auto",
+                    maxWidth: 250,                // never larger than 250px
+                    height: "auto",
+                    cursor: "pointer",
+                    margin: 5,
+                    display: "block",
+                  }}
       />
 
       </div>
-        
-      </Container>
+         
+       </Container>
 
 
 {/* Search section - remove outer flex that could stretch width */}
@@ -740,6 +748,8 @@ const settings = {
 </div>
      
 {/* Store logos scroller - keep inside width and avoid vertical overflow */}
+
+
 <div
   id="store-filter-container"
   style={{

@@ -54,6 +54,37 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+/* Ensure consistent sizing model */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+/* Prevent viewport horizontal scrolling */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; /* critical: hide any page-level horizontal scroll */
+}
+
+/* Make images responsive and avoid overflow */
+img { max-width: 100%; height: auto; display: block; }
+
+/* Allow bootstrap flex columns to shrink on small screens */
+.row > [class*="col-"] {
+  min-width: 0;
+}
+
+/* Store scroller specific: horizontal scroll allowed inside container only */
+#store-filter-container {
+  -webkit-overflow-scrolling: touch;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+}
+
+/* Hide global horizontal scrollbar on mobile browsers that add 100vw quirks */
+body::-webkit-scrollbar { /* keep default vertical scrollbar; this selector can be left empty */ }
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
