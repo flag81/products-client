@@ -949,11 +949,23 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
     id="no-products-message"
     style={{
       borderRadius: 5,
-      border: "1px solid #ccc",
+      border: "0px solid #ccc",
       margin: "10px auto", // Center the div horizontally
       padding: "10px",
       width: "90%", // Set width to 90% of the parent container
       textAlign: "center", // Center the text inside
+
+     width: "100vw",                // use viewport width to avoid subtle vw/scrollbar mismatch
+        maxWidth: "100%",               // ensure wrapper never grows past viewport
+        boxSizing: "border-box",
+        margin: 0,
+        padding: 0,
+        overflowX: "hidden",            // hide any accidental horizontal overflow
+        WebkitOverflowScrolling: "touch",
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh",  
+
     }}
 
   >
