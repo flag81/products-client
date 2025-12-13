@@ -52,6 +52,26 @@ function Home({ mode }) {
   const [modalImageUrl, setModalImageUrl] = useState("");
   const observerRef = useRef(null);
 
+  // Prevent iOS from zooming/introducing horizontal scroll on input focus:
+  useEffect(() => {
+    const prevOverflowX = document.body.style.overflowX;
+    document.body.style.overflowX = "hidden";
+    return () => {
+      document.body.style.overflowX = prevOverflowX || "";
+    };
+  }, []);
+
+  // Keep horizontal overflow hidden while focusing the search field and avoid viewport jump
+  const handleSearchFocus = (e) => {
+    document.body.style.overflowX = "hidden";
+    // small timeout to avoid viewport jump on some iOS versions
+    setTimeout(() => window.scrollTo(0, window.scrollY), 0);
+  };
+  const handleSearchBlur = () => {
+    // keep hidden to avoid any accidental horizontal scrolling
+    document.body.style.overflowX = "hidden";
+  };
+
   const [flyerBookId, setFlyerBookId] = useState(null);
 
   const [modalProduct, setModalProduct] = useState({});
