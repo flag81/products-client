@@ -567,8 +567,8 @@ const settings = {
   return (
     <div
       style={{
-         width: "100vw",                // use viewport width to avoid subtle vw/scrollbar mismatch
-        maxWidth: "100%",               // ensure wrapper never grows past viewport
+         width: "100vw",
+        maxWidth: "100%",
         boxSizing: "border-box",
         margin: 0,
         padding: 0,
@@ -576,20 +576,20 @@ const settings = {
         WebkitOverflowScrolling: "touch",
         display: "flex",
         flexDirection: "column",
-        minHeight: "100vh",  
+        minHeight: "100vh",
+        // added rules to further prevent horizontal panning on iOS
+        overscrollBehaviorX: "contain",
+        touchAction: "pan-y",
       }}
     >
-      <div className="container-fluid" id="home-container" style={{ marginTop: 0, position: "relative", top: 0, boxSizing: "border-box", 
+      <div className="container-fluid" id="home-container" style={{ marginTop: 0, position: "relative", top: 0, boxSizing: "border-box",
         border: "0px solid #060101ff",
-          // NEW: center the whole page content and cap width
           maxWidth: 1200,
            marginLeft: "auto",
            marginRight: "auto",
            paddingLeft: 12,
            paddingRight: 12,
-            flex: 1,   
-        
-        
+            flex: 1,
         }}>
          <Container fluid>
  
@@ -678,12 +678,18 @@ const settings = {
 
         style={{
 
-          //width: "100%", // Ensure it fills the parent width
+          //ensure at least 16px to prevent iOS zoom on focus
+          fontSize: 16,
+          WebkitTextSizeAdjust: "100%",
+          // make sure it still fills width
+          width: "100%",
         }}
           type="text"
           id="search"
           maxLength={20}
           placeholder="Kerko produkte ne zbritje"
+          onFocus={handleSearchFocus}
+          onBlur={handleSearchBlur}
           onKeyDown={(e) => {
 
                   // Allow only alphanumeric characters, Backspace, and Enter
