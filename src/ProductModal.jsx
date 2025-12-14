@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import Placeholder from "react-bootstrap/Placeholder";
 import Button from "react-bootstrap/Button";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 const ProductModal = ({
   isOpen,
@@ -18,41 +19,28 @@ const ProductModal = ({
   const [computedImageStyle, setComputedImageStyle] = useState(null);
   const [modalContentStyle, setModalContentStyle] = useState(null);
 
-  // Zoom/Pan state
-  const [scale, setScale] = useState(1);
-  const [translate, setTranslate] = useState({ x: 0, y: 0 });
+  // react-zoom-pan-pinch control reference
+  const transformMethodsRef = useRef(null);
+
+  // small local flag so the UI can show zoom state (true when scale > 1)
   const [zoomEnabled, setZoomEnabled] = useState(false);
-  const panState = useRef({ isPanning: false, lastX: 0, lastY: 0, lastTouchDistance: null });
 
-  // NEW: container ref + pointer tracking for reliable pinch & pan
-  const containerRef = useRef(null);
-  const pointersRef = useRef(new Map()); // pointerId -> { x, y }
-  const initialPinchRef = useRef(null);
-  const lastScaleRef = useRef(scale);
-
-  useEffect(() => {
-    lastScaleRef.current = scale;
-  }, [scale]);
-
-  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-
+  // Reset transform: use library method to clear zoom & pan
   const resetZoom = () => {
-    setScale(1);
-    setTranslate({ x: 0, y: 0 });
-    panState.current = { isPanning: false, lastX: 0, lastY: 0, lastTouchDistance: null };
-    setZoomEnabled(false);
-    pointersRef.current.clear();
-    initialPinchRef.current = null;
-    lastScaleRef.current = 1;
+    if (transformMethodsRef.current?.resetTransform) {
+      transformMethodsRef.current.resetTransform();
+    }
   };
 
   // toggle zoom on button / double click
   const toggleZoom = () => {
-    if (zoomEnabled) {
-      resetZoom();
+    const m = transformMethodsRef.current;
+    if (!m) return;
+    const currentScale = m.state?.scale ?? 1;
+    if (currentScale > 1) {
+      m.resetTransform();
     } else {
-      setZoomEnabled(true);
-      setScale(2); // initial zoom level
+      m.zoomIn && m.zoomIn(); // zoomIn to next step
     }
   };
 
@@ -135,84 +123,18 @@ const ProductModal = ({
     img.src = modalImageUrl;
   }, [modalImageUrl, setIsImageLoaded]);
 
-  // --- Pointer & wheel handlers attached natively to allow passive:false ---
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-
-    const onPointerDown = (e) => {
-      // capture pointer for consistent moves
-      try { el.setPointerCapture && el.setPointerCapture(e.pointerId); } catch (_){}
-      pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      // mark pan start if single pointer
-      if (pointersRef.current.size === 1 && zoomEnabled) {
-        panState.current.isPanning = true;
-      }
-    };
-
-    const onPointerMove = (e) => {
-      if (!pointersRef.current.has(e.pointerId)) return;
-      // update pointer pos and compute gesture
-      const prev = pointersRef.current.get(e.pointerId);
-      const dx = e.clientX - prev.x;
-      const dy = e.clientY - prev.y;
-      pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-      const count = pointersRef.current.size;
-      if (count === 1) {
-        // single-pointer pan (only when zoomed)
-        if (!zoomEnabled) return;
-        setTranslate((t) => ({ x: t.x + dx, y: t.y + dy }));
-      } else if (count === 2) {
-        // pinch-to-zoom
-        const pts = Array.from(pointersRef.current.values());
-        const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-        if (!initialPinchRef.current) {
-          // store base ratio so scaling is smooth
-          initialPinchRef.current = dist / (lastScaleRef.current || 1);
-        } else {
-          const newScale = clamp(dist / initialPinchRef.current, 1, 4);
-          setScale(newScale);
-        }
-      }
-    };
-
-    const onPointerUpOrCancel = (e) => {
-      pointersRef.current.delete(e.pointerId);
-      initialPinchRef.current = null;
-      panState.current.isPanning = false;
-      try { el.releasePointerCapture && el.releasePointerCapture(e.pointerId); } catch (_){}
-    };
-
-    const onWheel = (e) => {
-      if (!zoomEnabled) return;
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.12 : 0.12;
-      setScale((s) => clamp(parseFloat((s + delta).toFixed(2)), 1, 4));
-    };
-
-    el.addEventListener("pointerdown", onPointerDown, { passive: false });
-    el.addEventListener("pointermove", onPointerMove, { passive: false });
-    el.addEventListener("pointerup", onPointerUpOrCancel, { passive: false });
-    el.addEventListener("pointercancel", onPointerUpOrCancel, { passive: false });
-    el.addEventListener("wheel", onWheel, { passive: false });
-
-    return () => {
-      el.removeEventListener("pointerdown", onPointerDown);
-      el.removeEventListener("pointermove", onPointerMove);
-      el.removeEventListener("pointerup", onPointerUpOrCancel);
-      el.removeEventListener("pointercancel", onPointerUpOrCancel);
-      el.removeEventListener("wheel", onWheel);
-      pointersRef.current.clear();
-      initialPinchRef.current = null;
-    };
-  }, [zoomEnabled]);
-
-  // Ensure modal close resets zoom
+  // Ensure modal close resets zoom (use wrapper reset if available)
   const handleClose = () => {
-    resetZoom();
+    if (transformMethodsRef.current?.resetTransform) transformMethodsRef.current.resetTransform();
     onClose();
   };
+
+  // Reset transform when external reset key changes
+  useEffect(() => {
+    if (typeof resetZoomKey !== "undefined" && transformMethodsRef.current?.resetTransform) {
+      transformMethodsRef.current.resetTransform();
+    }
+  }, [resetZoomKey]);
 
   return (
     <div
@@ -261,42 +183,43 @@ const ProductModal = ({
           </Placeholder>
         )}
 
-        {/* Image area: centered, no internal scrolling; image is pre-sized to fit modal */}
-        <div
-          ref={containerRef} // <-- attach native listeners here
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            overflow: "hidden",
-            padding: 8,
-            flex: "0 0 auto",
-            touchAction: zoomEnabled ? "none" : "auto", // prevent native gestures while zooming
-          }}
-        >
-          <img
-            src={modalImageUrl}
-            alt="Product Modal"
-            onLoad={() => setIsImageLoaded(true)}
-            onDoubleClick={(e) => {
-              e.stopPropagation();
-              toggleZoom();
+        {/* Image area: use react-zoom-pan-pinch for pinch/pan/zoom */}
+        <div style={{ padding: 8, flex: "0 0 auto", width: "100%" }}>
+          <TransformWrapper
+            options={{ limitToBounds: true, minScale: 1, maxScale: 4 }}
+            wheel={{ step: 0.2 }}
+            doubleClick={{ mode: "zoomIn", step: 1.5 }}
+            pinch={{ step: 5 }}
+            onInit={(methods) => {
+              transformMethodsRef.current = methods;
+              setZoomEnabled((methods.state?.scale ?? 1) > 1);
             }}
-            style={{
-              borderRadius: 5,
-              ...(computedImageStyle || {
-                maxWidth: "95vw",
-                maxHeight: "85vh",
-                width: "auto",
-                height: "auto",
-                objectFit: "contain",
-                display: isImageLoaded ? "block" : "none",
-              }),
-              transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
-              transition: panState.current.isPanning ? "none" : "transform 120ms ease-out",
-              cursor: zoomEnabled ? (panState.current.isPanning ? "grabbing" : "grab") : "auto",
+            onZoomStop={(ref) => {
+              setZoomEnabled((ref.state?.scale ?? 1) > 1);
             }}
-          />
+          >
+            {(methods) => {
+              transformMethodsRef.current = methods;
+              return (
+                <TransformComponent>
+                  <img
+                    src={modalImageUrl}
+                    alt="Product Modal"
+                    onLoad={() => setIsImageLoaded(true)}
+                    style={{
+                      display: isImageLoaded ? "block" : "none",
+                      width: computedImageStyle?.width || "100%",
+                      height: computedImageStyle?.height || "auto",
+                      objectFit: "contain",
+                      borderRadius: 5,
+                      margin: "0 auto",
+                      willChange: "transform",
+                    }}
+                  />
+                </TransformComponent>
+              );
+            }}
+          </TransformWrapper>
         </div>
 
         {/* Details area */}
@@ -478,7 +401,7 @@ const ProductModal = ({
             backgroundColor: "rgba(255, 255, 255, 0.9)",
             padding: 0,
           }}
-          onClick={onClose}
+          onClick={handleClose}
         >
           X
         </Button>
