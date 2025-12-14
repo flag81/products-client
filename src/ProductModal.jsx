@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Placeholder from "react-bootstrap/Placeholder";
 import Button from "react-bootstrap/Button";
 
@@ -11,11 +11,63 @@ const ProductModal = ({
   modalProduct,
   handleToggleFavorite,
   handleFlyerModal,
+  resetZoomKey, // <- new prop
 }) => {
   if (!isOpen) return null;
 
   const [computedImageStyle, setComputedImageStyle] = useState(null);
   const [modalContentStyle, setModalContentStyle] = useState(null);
+
+  // Zoom/Pan state
+  const [scale, setScale] = useState(1);
+  const [translate, setTranslate] = useState({ x: 0, y: 0 });
+  const [zoomEnabled, setZoomEnabled] = useState(false);
+  const panState = useRef({ isPanning: false, lastX: 0, lastY: 0, lastTouchDistance: null });
+
+  // NEW: container ref + pointer tracking for reliable pinch & pan
+  const containerRef = useRef(null);
+  const pointersRef = useRef(new Map()); // pointerId -> { x, y }
+  const initialPinchRef = useRef(null);
+  const lastScaleRef = useRef(scale);
+
+  useEffect(() => {
+    lastScaleRef.current = scale;
+  }, [scale]);
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+  const resetZoom = () => {
+    setScale(1);
+    setTranslate({ x: 0, y: 0 });
+    panState.current = { isPanning: false, lastX: 0, lastY: 0, lastTouchDistance: null };
+    setZoomEnabled(false);
+    pointersRef.current.clear();
+    initialPinchRef.current = null;
+    lastScaleRef.current = 1;
+  };
+
+  // toggle zoom on button / double click
+  const toggleZoom = () => {
+    if (zoomEnabled) {
+      resetZoom();
+    } else {
+      setZoomEnabled(true);
+      setScale(2); // initial zoom level
+    }
+  };
+
+  // Reset zoom when Home screen (or window) comes into focus and incremented key arrives
+  useEffect(() => {
+    if (!isOpen) return;
+    if (typeof resetZoomKey !== "undefined") {
+      resetZoom();
+    }
+  }, [resetZoomKey, isOpen]);
+
+  // also reset when modal is opened (focus)
+  useEffect(() => {
+    if (isOpen) resetZoom();
+  }, [isOpen]);
 
   useEffect(() => {
     if (!modalImageUrl) {
@@ -83,6 +135,85 @@ const ProductModal = ({
     img.src = modalImageUrl;
   }, [modalImageUrl, setIsImageLoaded]);
 
+  // --- Pointer & wheel handlers attached natively to allow passive:false ---
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const onPointerDown = (e) => {
+      // capture pointer for consistent moves
+      try { el.setPointerCapture && el.setPointerCapture(e.pointerId); } catch (_){}
+      pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      // mark pan start if single pointer
+      if (pointersRef.current.size === 1 && zoomEnabled) {
+        panState.current.isPanning = true;
+      }
+    };
+
+    const onPointerMove = (e) => {
+      if (!pointersRef.current.has(e.pointerId)) return;
+      // update pointer pos and compute gesture
+      const prev = pointersRef.current.get(e.pointerId);
+      const dx = e.clientX - prev.x;
+      const dy = e.clientY - prev.y;
+      pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      const count = pointersRef.current.size;
+      if (count === 1) {
+        // single-pointer pan (only when zoomed)
+        if (!zoomEnabled) return;
+        setTranslate((t) => ({ x: t.x + dx, y: t.y + dy }));
+      } else if (count === 2) {
+        // pinch-to-zoom
+        const pts = Array.from(pointersRef.current.values());
+        const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        if (!initialPinchRef.current) {
+          // store base ratio so scaling is smooth
+          initialPinchRef.current = dist / (lastScaleRef.current || 1);
+        } else {
+          const newScale = clamp(dist / initialPinchRef.current, 1, 4);
+          setScale(newScale);
+        }
+      }
+    };
+
+    const onPointerUpOrCancel = (e) => {
+      pointersRef.current.delete(e.pointerId);
+      initialPinchRef.current = null;
+      panState.current.isPanning = false;
+      try { el.releasePointerCapture && el.releasePointerCapture(e.pointerId); } catch (_){}
+    };
+
+    const onWheel = (e) => {
+      if (!zoomEnabled) return;
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.12 : 0.12;
+      setScale((s) => clamp(parseFloat((s + delta).toFixed(2)), 1, 4));
+    };
+
+    el.addEventListener("pointerdown", onPointerDown, { passive: false });
+    el.addEventListener("pointermove", onPointerMove, { passive: false });
+    el.addEventListener("pointerup", onPointerUpOrCancel, { passive: false });
+    el.addEventListener("pointercancel", onPointerUpOrCancel, { passive: false });
+    el.addEventListener("wheel", onWheel, { passive: false });
+
+    return () => {
+      el.removeEventListener("pointerdown", onPointerDown);
+      el.removeEventListener("pointermove", onPointerMove);
+      el.removeEventListener("pointerup", onPointerUpOrCancel);
+      el.removeEventListener("pointercancel", onPointerUpOrCancel);
+      el.removeEventListener("wheel", onWheel);
+      pointersRef.current.clear();
+      initialPinchRef.current = null;
+    };
+  }, [zoomEnabled]);
+
+  // Ensure modal close resets zoom
+  const handleClose = () => {
+    resetZoom();
+    onClose();
+  };
+
   return (
     <div
       id="product-modal"
@@ -100,7 +231,7 @@ const ProductModal = ({
         padding: 12,
         boxSizing: "border-box",
       }}
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
         style={{
@@ -132,19 +263,25 @@ const ProductModal = ({
 
         {/* Image area: centered, no internal scrolling; image is pre-sized to fit modal */}
         <div
+          ref={containerRef} // <-- attach native listeners here
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            overflow: "hidden", // prevent inner scrollbars
+            overflow: "hidden",
             padding: 8,
             flex: "0 0 auto",
+            touchAction: zoomEnabled ? "none" : "auto", // prevent native gestures while zooming
           }}
         >
           <img
             src={modalImageUrl}
             alt="Product Modal"
             onLoad={() => setIsImageLoaded(true)}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              toggleZoom();
+            }}
             style={{
               borderRadius: 5,
               ...(computedImageStyle || {
@@ -155,6 +292,9 @@ const ProductModal = ({
                 objectFit: "contain",
                 display: isImageLoaded ? "block" : "none",
               }),
+              transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
+              transition: panState.current.isPanning ? "none" : "transform 120ms ease-out",
+              cursor: zoomEnabled ? (panState.current.isPanning ? "grabbing" : "grab") : "auto",
             }}
           />
         </div>
@@ -348,8 +488,8 @@ const ProductModal = ({
             position: "absolute",
             top: 8,
             left: 8,
-            backgroundColor: "rgba(255,255,255,0.9)",
-            color: "#fff",
+            backgroundColor: zoomEnabled ? "rgba(0,0,0,0.75)" : "rgba(255,255,255,0.9)",
+            color: zoomEnabled ? "#fff" : "#000",
             border: "none",
             width: 40,
             height: 40,
@@ -360,8 +500,12 @@ const ProductModal = ({
             cursor: "pointer",
             padding: 0,
           }}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleZoom();
+          }}
         >
-          <img src={"/zoom.png"} style={{ width: 24, height: 24 }} alt="Zoom" />
+          <img src={zoomEnabled ? "/zoom-active.png" : "/zoom.png"} style={{ width: 24, height: 24 }} alt="Zoom" />
         </Button>
       </div>
     </div>

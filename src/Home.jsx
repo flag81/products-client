@@ -52,6 +52,9 @@ function Home({ mode }) {
   const [modalImageUrl, setModalImageUrl] = useState("");
   const observerRef = useRef(null);
 
+  // reset key to tell ProductModal to reset zoom when screen gets focus
+  const [zoomResetKey, setZoomResetKey] = useState(0);
+
   // Prevent iOS from zooming/introducing horizontal scroll on input focus:
   useEffect(() => {
     const prevOverflowX = document.body.style.overflowX;
@@ -64,12 +67,21 @@ function Home({ mode }) {
   // Keep horizontal overflow hidden while focusing the search field and avoid viewport jump
   const handleSearchFocus = (e) => {
     document.body.style.overflowX = "hidden";
-    // small timeout to avoid viewport jump on some iOS versions
     setTimeout(() => window.scrollTo(0, window.scrollY), 0);
   };
   const handleSearchBlur = () => {
-    // keep hidden to avoid any accidental horizontal scrolling
     document.body.style.overflowX = "hidden";
+  };
+
+  // Clear search field, reset state and trigger empty search
+  const clearSearch = () => {
+    setSearchKeyword("");
+    const el = document.getElementById("search");
+    if (el) {
+      el.value = "";
+      el.focus();
+    }
+    handleSearch("");
   };
 
   const [flyerBookId, setFlyerBookId] = useState(null);
@@ -673,83 +685,80 @@ const settings = {
     
     >
 
- <InputGroup className="w-100"
- 
- 
- 
- >
-  <div className="select-description flex-grow-1 form-control-lg" 
-  
-  
-  style={{ 
-    
-    width: "100%",
-    //border: "1px solid YELLOW", // Optional: Add a border for visibility
-    margin: "0", // Removes any left margin
-    padding: "0", // Removes any left padding
-
-    display: "flex",
-
-
-
-   }}>
-
-        <Form.Control className="select-description flex-grow-1 form-control-lg" 
-
-        style={{
-
-          //ensure at least 16px to prevent iOS zoom on focus
-          fontSize: 16,
-          WebkitTextSizeAdjust: "100%",
-          // make sure it still fills width
-          width: "100%",
-        }}
+ <InputGroup className="w-100">
+    <div className="select-description flex-grow-1 form-control-lg" style={{ width: "100%", margin: 0, padding: 0, display: "flex" }}>
+      {/* Controlled input so we can show an inline clear button */}
+      <div style={{ position: "relative", width: "100%", display: "flex", alignItems: "center" }}>
+        <Form.Control
+          className="select-description flex-grow-1 form-control-lg"
+          style={{
+            fontSize: 16,
+            WebkitTextSizeAdjust: "100%",
+            width: "100%",
+            paddingRight: 40, // space for clear button
+          }}
           type="text"
           id="search"
+          value={searchKeyword}
+          onChange={(e) => setSearchKeyword(e.target.value)}
           maxLength={20}
           placeholder="Kerko produkte ne zbritje"
           onFocus={handleSearchFocus}
           onBlur={handleSearchBlur}
           onKeyDown={(e) => {
-
-                  // Allow only alphanumeric characters, Backspace, and Enter
-                const isAlphanumeric = /^[a-zA-Z0-9\s-]$/.test(e.key);
-                if (!isAlphanumeric && e.key !== "Backspace" && e.key !== "Enter") {
-                  e.preventDefault();
-                }
-
-            // add condition if the field value is going from 1 to 0 to call the search function
-
+            const isAlphanumeric = /^[a-zA-Z0-9\s-]$/.test(e.key);
+            if (!isAlphanumeric && e.key !== "Backspace" && e.key !== "Enter") {
+              e.preventDefault();
+            }
             if (e.key === "Backspace" && e.target.value.length === 1) {
               handleSearch("");
             } else if (e.key === "Enter") handleSearch(e.target.value);
           }}
-
-          
-
-        
         />
 
+        {/* Inline clear button positioned inside the input area */}
+        {searchKeyword?.length > 0 && (
+          <button
+            type="button"
+            aria-label="Clear search"
+            onClick={clearSearch}
+            style={{
+              position: "absolute",
+              right: 6,
+              background: "transparent",
+              border: "none",
+              fontSize: 16,
+              cursor: "pointer",
+              padding: 6,
+              lineHeight: 1,
+            }}
+          >
+            ×
+          </button>
+        )}
+      </div>
+
+      {/* Use state for searching instead of DOM traversal */}
       <Button
-          className="responsive-button"
-          onClick={(e) => handleSearch(e.target.previousSibling.value)}
-          style={{ marginLeft: 5 
-
-
-          }}
-        >
-          Kerkoni
-        </Button>
-    
-  </div>      
-
+        className="responsive-button"
+        onClick={() => handleSearch(searchKeyword)}
+        style={{ marginLeft: 5 }}
+      >
+        Kerko
+      </Button>
+    </div>
   </InputGroup>
       
       <div 
         role="button"
         style={{
           margin: 0,
-          padding: 0
+          padding: 0,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          
         }}
 
         onClick={() => setIsFavorite((prev) => !prev)}
@@ -760,7 +769,7 @@ const settings = {
           className="icon-image"
           
         />
-        <span  className="icon-description" >Favoritet</span>
+     
 
       </div>
 
@@ -1285,6 +1294,21 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
 
 </div>  
 
+   <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => handleFlyerModal(modalProduct.flyer_book_id)}
+                >
+                  <img src={"/flyer.png"} alt="Fletushka" style={{ width: 24, height: 24 }} />
+                  <span className="icon-description">Fletushka</span>
+                </div>
+
+
 
                  {/* Sale icon */}
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }} role="button">
@@ -1657,6 +1681,7 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
   modalProduct={modalProduct}
   handleToggleFavorite={handleToggleFavorite}
   handleFlyerModal={handleFlyerModal}
+  resetZoomKey={zoomResetKey} // <- new prop
 />
 
 
