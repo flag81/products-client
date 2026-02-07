@@ -168,7 +168,7 @@ const ProductModal = ({
           flexDirection: "column",
           overflow: "hidden",
           boxSizing: "border-box",
-          padding: 12,
+          padding: 1,
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -356,29 +356,7 @@ const ProductModal = ({
                 </div>
               )}
 
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                }}
-              >
-                <img
-                  src={modalProduct?.productOnSale ? "/sale-fill-2.png" : "/sale-empty.jpg"}
-                  alt={modalProduct?.productOnSale ? "On sale" : "Not on sale"}
-                  style={{ width: 24, height: 24 }}
-                />
-                <span
-                  className="icon-description"
-                  style={{
-                    color: modalProduct?.productOnSale ? "green" : "red",
-                  }}
-                >
-                  {modalProduct?.productOnSale ? "Aktive" : "Skaduariii"}
-                </span>
-              </div>
+
             </div>
           </div>
         </div>

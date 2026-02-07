@@ -921,29 +921,35 @@ const settings = {
 
 {selectedStores.length > 0  && (
 <div className="select-description"
-
-style={{ marginLeft: 5, marginRight: 5, 
-
-border: selectedStores.length > 0 ? "0px solid #ccc" : "", padding:3 ,borderRadius: 5, marginBottom: 5 }}
->
-  
-  {selectedStores.length > 0 ? `${selectedStoreName}` : ""}
-
-
-
-  <span
-  onClick={() => {
-    setSelectedStores([]);
-    document.getElementById("store").value = 0;
+  style={{
+    marginLeft: 5,
+    marginRight: 5,
+    padding: 3,
+    borderRadius: 5,
+    marginBottom: 0,
+    display: "flex",
+    alignItems: "center",
+    gap: 2,
+    maxWidth: 320,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
   }}
-  style={{ marginLeft: 5, marginRight:5 , cursor: "pointer", color: "red" }}
 >
-  X
-</span>
+  {/* Render all selected store names by resolving ids from stores state */}
+  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "inline-block", maxWidth: "240px" }}>
+    {selectedStores
+      .map((id) => {
+        const s = stores.find((st) => String(st.storeId) === id);
+        return s ? s.storeName : null;
+      })
+      .filter(Boolean)
+      .join(" - ")}
+  </span>
 
-  
-  </div>
+  {/* clear selection */}
 
+</div>
 )}
 
 { isFavorite  && (
@@ -1294,52 +1300,45 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
 
 </div>  
 
-   <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                  }}
-                  onClick={() => handleFlyerModal(modalProduct.flyer_book_id)}
-                >
-                  <img src={"/flyer.png"} alt="Fletushka" style={{ width: 24, height: 24 }} />
-                  <span className="icon-description">Fletushka</span>
-                </div>
 
 
 
                  {/* Sale icon */}
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }} role="button">
+                  <div style={{ display: "flex",  verticalAlign: "middle"
+
+                   }} role="button">
 
 
-         {product.sale_end_date ? (
-                
-
-                <><span style={{ color: product.productOnSale ? "green" : "red" }} className="bold-text">
-
-
-
-{product.productOnSale ? "Deri" : "Skaduari" } :  
-               
-
-              {new Date(product.sale_end_date).toLocaleDateString(
-                "en-GB",
-                {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "2-digit",
-                }
-              )}
-
-
-              <br />
-              </span>
-                </>
-              ) 
-              
-              : null}
+{product.sale_end_date ? (
+  <>
+    <div style={{ display: "flex", alignItems: "center", gap: 6 ,
+      
+      
+      verticalAlign: "middle"}}>
+      <img
+        src={"/expire2.png"}
+        alt="Expires"
+        style={{
+          width: 30,
+          height: 30,
+          objectFit: "contain"
+        }}
+      />
+      <span style={{ color: product.productOnSale ? "green" : "red" }} className="bold-text">
+        {new Date(product.sale_end_date).toLocaleDateString(
+          "en-GB",
+          {
+            day: "2-digit",
+            month: "2-digit",
+            year: "2-digit",
+          }
+        )}
+      </span>
+    </div>
+    <br />
+  </>
+) 
+: null}
 
 
                 
@@ -1594,34 +1593,20 @@ style={{
             </Card.Text>
             <Card.Text className="sale-date">
               {product.sale_end_date ? (
-                
-
                 <><span style={{ color: product.productOnSale ? "green" : "red" }}>
-
-
-
-{product.productOnSale ? "Deriiiii" : "Skaduar" } :  
-               
-
-              {new Date(product.sale_end_date).toLocaleDateString(
-                "en-GB",
-                {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "2-digit",
-                }
-              )}
-
-
-              <br />
-              </span>
-                </>
+                  {product.productOnSale ? "Deri" : "Skaduar"} :
+                  {new Date(product.sale_end_date).toLocaleDateString(
+                    "en-GB",
+                    {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "2-digit",
+                    }
+                  )}
+                  <br />
+                </span></>
               ) 
-              
               : null}
-
-              
-              
             </Card.Text>
 
 

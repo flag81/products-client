@@ -1,4 +1,4 @@
-import React, { lazy, useState } from "react";
+import React, { lazy, useState, useEffect } from "react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -15,10 +15,22 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
     console.log('[DEBUG] baseUrl:', baseUrl);
     console.log('[DEBUG] isFlyerModalOpen:', isFlyerModalOpen);
 
-
+    // current slide index and per-slide loaded flags
+    const [currentSlide, setCurrentSlide] = useState(0);
+    const [loaded, setLoaded] = useState(() => Array(flyerBook?.length || 0).fill(false));
     
+    useEffect(() => {
+      setLoaded(Array(flyerBook?.length || 0).fill(false));
+      setCurrentSlide(0);
+    }, [flyerBook]);
 
-    // Check if flyerBook is an array and has elements
+    // helper: map any slick index (including clones) to the original slide index
+    const getRealIndex = (index) => {
+      const n = flyerBook?.length || 1;
+      return ((index % n) + n) % n;
+    };
+
+  // Check if flyerBook is an array and has elements
   const settings = {
     dots: true,
     infinite: true,
@@ -27,10 +39,9 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
     slidesToScroll: 1,
     adaptiveHeight: true,
     lazyLoad: true, // Enable lazy loading for images
- 
-    
-    
-
+    // handle cloned slides by mapping to the real index
+    beforeChange: (_oldIndex, nextIndex) => setCurrentSlide(getRealIndex(nextIndex)),
+    afterChange: (index) => setCurrentSlide(getRealIndex(index)),
   };
 
   return (
@@ -74,29 +85,35 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
   style={{ width: '100%', maxWidth: '400px', margin: '0 auto' }} // Added styles
 >
 
+  {/* slide counter */}
+  {Array.isArray(flyerBook) && flyerBook.length > 0 && (
+    <div style={{ color: '#fff', textAlign: 'center', marginBottom: 8 }}>
+      {currentSlide + 1}/{flyerBook.length}
+    </div>
+  )}
 
   {flyerBook?.length > 0 ? (
     <Slider key={flyerBook?.length} {...settings}>
       {flyerBook.map((item, i) => {
-        const [isLoading, setIsLoading] = useState(true);
+        // per-slide loading uses the loaded[] array
         const url = item.image_url.startsWith('http')
           ? item.image_url
           : `<span class="math-inline">\{baseUrl\}/</span>{item.image_url}`;
         //console.log('[DEBUG] slide img URL:', url);
 
         console.log('[DEBUG] Image URL:', url);
-        console.log('[DEBUG] isLoading:', isLoading);
+        console.log('[DEBUG] isLoaded:', loaded[i]);
 
         return (
           <div id="ardita" key={i} style={{ textAlign: 'center' }}>
-            {isLoading && (
+            {!loaded[i] && (
     <>
         {console.log('[DEBUG] Rendering PlaceholderImage')}
         <Placeholder as="div" animation="glow">
                 <Placeholder
                   style={{
                     width: "100%",
-                    height: "400px", // Adjust to match the image dimensions
+                    height: 400, // Adjust to match the image dimensions
                     backgroundColor: 'lightgray'
                   }}
                   className="rounded" // Optional: Add rounded corners
@@ -112,22 +129,27 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
             <img
               src={url}
               alt={`Flyer ${i}`}
-              style={{ display: isLoading ? 'none' : 'inline-block',
-                width: '400px', 
-                maxHeight: '80vh', 
-                objectFit: 'contain' }} // Adjusted image styles for better fitting
+              loading="lazy"
+              style={{
+                opacity: loaded[i] ? 1 : 0,
+                transition: 'opacity 140ms ease-out',
+                width: '400px',
+                maxHeight: '80vh',
+                objectFit: 'contain',
+                display: 'block',
+              }} // Adjusted image styles for better fitting
                // add lazy loading placeholder component onload
 
                onLoad={() => {
-
                 console.log('[DEBUG] Image loaded:', url);
-                setIsLoading(false)
-
-               } 
-
-
+                setLoaded(prev => {
+                  const copy = [...prev];
+                  copy[i] = true;
+                  return copy;
+                });
+               }  
                } // Hide placeholder on successful load
-               onError={() => setIsLoading(false)} // Hide placeholder on error
+               onError={() => setLoaded(prev => { const copy = [...prev]; copy[i] = true; return copy; })} // Hide placeholder on error
             />
 
       

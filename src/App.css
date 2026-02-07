@@ -218,7 +218,7 @@ body {
 
 @media (max-width: 576px) {
   .select-description {
-    font-size: 14px; /* Minimum size on small screens */
+    font-size: 10px; /* Minimum size on small screens */
     margin: 0%;
   }
 }
