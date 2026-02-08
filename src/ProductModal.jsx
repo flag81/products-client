@@ -299,9 +299,25 @@ const ProductModal = ({
               )}
 
               <span style={{ color: "black" }}>
+
+
                 {modalProduct?.sale_end_date && new Date(modalProduct.sale_end_date) > new Date() ? (
-                  <span style={{ color: "green" }}>
-                    Deri:{" "}
+
+
+
+                  
+                  <span style={{ color: "green", display: "flex", alignItems: "center", gap: 4 }}>
+                   
+                    <img
+                      src={"/expire2.png"}
+                      alt="Expires"
+                      style={{
+                        width: 30,
+                        height: 30,
+                        objectFit: "contain"
+                      }}
+                    />
+
                     {new Date(modalProduct.sale_end_date).toLocaleDateString("en-GB", {
                       day: "2-digit",
                       month: "2-digit",

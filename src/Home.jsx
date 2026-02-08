@@ -1341,7 +1341,6 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
 : null}
 
 
-                
                 </div>
               </div>  
 </div>
@@ -1353,7 +1352,7 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
 </Row>
 
 
-      {/* Not On Sale Products */}
+{/* Not On Sale Products */}
       
 
 {
