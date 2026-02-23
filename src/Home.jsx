@@ -11,7 +11,7 @@ import FlyerSlider from "./FlyerSlider";
 import RegistrationModal from "./RegistrationModal";
 import ProductModal from "./ProductModal";
 
-
+import { enablePushNotifications } from './pushNotifications';
 
 
 import Container from "react-bootstrap/Container";
@@ -115,6 +115,35 @@ function Home({ mode }) {
     onSale,
     searchKeyword?.length > 2 ? searchKeyword : "",
   ];
+
+  // Initialize anonymous session (sets `jwt` cookie for web clients)
+  useEffect(() => {
+    const initialize = async () => {
+      try {
+        console.log('[INIT] Calling /initialize to ensure anonymous session');
+        const res = await fetch(`${node_url}/initialize`, { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          console.log('[INIT] initialize response:', data);
+          if (data.userId) setUserId(data.userId);
+          // Persist token for Authorization header fallback (cross-site POSTs)
+          if (data.token) {
+            try {
+              localStorage.setItem('jwtToken', data.token);
+              console.log('[INIT] Stored token in localStorage');
+            } catch (e) {
+              console.warn('[INIT] Could not store token in localStorage', e);
+            }
+          }
+        } else {
+          console.warn('[INIT] initialize failed', res.status);
+        }
+      } catch (err) {
+        console.error('[INIT] Error calling /initialize', err);
+      }
+    };
+    initialize();
+  }, []);
 
   
 
@@ -312,7 +341,16 @@ console.log("[DEBUG] Active Filters:", activeFilters);
       const method = productIsCurrentlyFavorite ? "DELETE" : "POST";
       const res = await fetch(`${node_url}${url}`, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: (function(){
+          const base = { "Content-Type": "application/json" };
+          try {
+            const t = localStorage.getItem('jwtToken');
+            if (t) return { ...base, Authorization: `Bearer ${t}` };
+          } catch (e) {
+            console.warn('Could not read token from localStorage', e);
+          }
+          return base;
+        })(),
         credentials: "include",
         body: JSON.stringify({ userId, productId }),
       });
@@ -773,6 +811,32 @@ const settings = {
 
       </div>
 
+            <div 
+        role="button"
+        style={{
+          margin: 0,
+          padding: 0,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          
+        }}
+
+        onClick={() => setIsFavorite((prev) => !prev)}
+      >
+
+
+<img
+  src="/bell.png"
+  alt="Enable notifications"
+  style={{ cursor: 'pointer' }}
+  onClick={enablePushNotifications}
+/>
+     
+
+      </div>
+
       
     </Col>
 
@@ -1165,13 +1229,11 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
             
               style={{
                 position: "absolute",
-
                 top: "5px",
                 right: "5px",
                 
                 //background: "rgba(0, 0, 0, 0.2)",
-                backgroundColor: "rgba(255, 255, 255, 0.9)", // Semi-transparent white background 
-               
+                backgroundColor: "rgba(255, 255, 255, 0.9)", // Semi-transparent white background              
                 borderRadius: "20%", // Optional: Make it circular
                 
               }}
@@ -1246,7 +1308,7 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
             {/* Favorite toggle */}
             <div id="bottom-menu" style={{ display: "flex", width:"100%",
                flexDirection: "row", alignItems: "center", // add vertical alignment to bottom
-               //border: "1px solid #b9227fff", // Optional: Add a border to separate the footer
+               //border: "1px solid #ccc", // Optional: Add a border to separate the footer
            
                 paddingBottom: 0,
                 paddingTop: 0,
@@ -1256,8 +1318,6 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
 
             <div style={{ display: "flex", flexDirection: "column",  alignItems: "center", // Centers items horizontally
                 justifyContent: "center", borderColor: "red", 
-
-                
                 //borderWidth: 1, // Border width
               // borderStyle: "solid", // Solid border style
 
@@ -1622,7 +1682,9 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
             <div id="bottom-menu" style={{ display: "flex", width:"100%",
                flexDirection: "row", alignItems: "center", // add vertical alignment to bottom
                //border: "1px solid #ccc", // Optional: Add a border to separate the footer
-                alignItems: "flex-end", 
+           
+                paddingBottom: 0,
+                paddingTop: 0,
                 justifyContent: "space-between", // horizontal alignment to left
                  borderRadius: 5,justifyContent: "space-between" }}>
 
