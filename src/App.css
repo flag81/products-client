@@ -134,14 +134,14 @@ body {
 @media (max-width: 576px) {
   .icon-image {
     width: 25px; /* Minimum size on small screens */
-    height: 25px; /* Minimum size on small screens */
+    
   }
 }
 
 @media (min-width: 1200px) {
   .icon-image {
     width: 32px; /* Maximum size on large screens */
-    height: 32px;
+    
   }
 }
 

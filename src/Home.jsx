@@ -52,6 +52,28 @@ function Home({ mode }) {
   const [modalImageUrl, setModalImageUrl] = useState("");
   const observerRef = useRef(null);
 
+  // Store scroller ref + desktop arrows
+  const storeScrollRef = useRef(null);
+  const [canScrollStoresLeft, setCanScrollStoresLeft] = useState(false);
+  const [canScrollStoresRight, setCanScrollStoresRight] = useState(false);
+
+  const updateStoreScrollButtons = () => {
+    const el = storeScrollRef.current;
+    if (!el) return;
+    const maxScrollLeft = el.scrollWidth - el.clientWidth;
+    const left = el.scrollLeft;
+    const epsilon = 2;
+    setCanScrollStoresLeft(left > epsilon);
+    setCanScrollStoresRight(maxScrollLeft - left > epsilon);
+  };
+
+  const scrollStoresBy = (direction) => {
+    const el = storeScrollRef.current;
+    if (!el) return;
+    const amount = Math.max(180, Math.floor(el.clientWidth * 0.7));
+    el.scrollBy({ left: direction * amount, behavior: "smooth" });
+  };
+
   // reset key to tell ProductModal to reset zoom when screen gets focus
   const [zoomResetKey, setZoomResetKey] = useState(0);
 
@@ -63,6 +85,23 @@ function Home({ mode }) {
       document.body.style.overflowX = prevOverflowX || "";
     };
   }, []);
+
+  // Keep store scroller arrows in sync (desktop)
+  useEffect(() => {
+    // Defer until after layout so scrollWidth/clientWidth are correct
+    const id = window.requestAnimationFrame(() => updateStoreScrollButtons());
+    const el = storeScrollRef.current;
+    if (!el) return () => window.cancelAnimationFrame(id);
+
+    const handle = () => updateStoreScrollButtons();
+    el.addEventListener("scroll", handle, { passive: true });
+    window.addEventListener("resize", handle);
+    return () => {
+      window.cancelAnimationFrame(id);
+      el.removeEventListener("scroll", handle);
+      window.removeEventListener("resize", handle);
+    };
+  }, [stores.length]);
 
   // Keep horizontal overflow hidden while focusing the search field and avoid viewport jump
   const handleSearchFocus = (e) => {
@@ -791,7 +830,7 @@ const settings = {
         role="button"
         style={{
           margin: 0,
-          padding: 0,
+          padding: 10,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -831,6 +870,7 @@ const settings = {
   src="/bell.png"
   alt="Enable notifications"
   style={{ cursor: 'pointer' }}
+  className="icon-image"
   onClick={enablePushNotifications}
 />
      
@@ -850,78 +890,143 @@ const settings = {
 
 
 <div
-  id="store-filter-container"
+
   style={{
-    overflowX: "auto",
-    overflowY: "hidden",
-    whiteSpace: "nowrap",
-    margin: "10px 0",
-    padding: "2px 0",
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
     width: "100%",
     maxWidth: "100%",
     boxSizing: "border-box",
-    scrollbarWidth: "none",
-    msOverflowStyle: "none",
-    cursor: "grab",
-     // NEW: keep scroll contained and smooth on mobile
-    overscrollBehaviorX: "contain",
-    WebkitOverflowScrolling: "touch",
   }}
 >
+  {/* Desktop arrows to indicate more stores */}
+  <Button
+    type="button"
+    variant="light"
+    className="d-inline-flex"
+    aria-label="Scroll stores left"
+    disabled={!canScrollStoresLeft}
+    onClick={() => scrollStoresBy(-1)}
+    style={{
+      flex: "0 0 auto",
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 0,
+      lineHeight: 1,
+      opacity: canScrollStoresLeft ? 1 : 0,
+      pointerEvents: canScrollStoresLeft ? "auto" : "none",
+    }}
+    aria-hidden={!canScrollStoresLeft}
+    tabIndex={canScrollStoresLeft ? 0 : -1}
+  >
+    ‹
+  </Button>
 
-  {stores.map((store) => {
-    const idStr = String(store.storeId);
-    const isSelected = selectedStores.includes(idStr);
-    return (
-      <div
-        key={store.storeId}
-        role="button"
-        aria-pressed={isSelected}
-        onClick={() => {
-          setSelectedStores((prev) =>
-            prev.includes(idStr) ? prev.filter((s) => s !== idStr) : [...prev, idStr]
-          );
-          // optional: keep last clicked store name for display
-          setSelectedStoreName((prevName) => (isSelected ? "" : store.storeName));
-        }}
-        style={{
-          width: 72,
-          height: 72,
-          boxSizing: "border-box",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 12,
-          color: "#333",
-          borderRadius: 8,
-          padding: 8,
-          cursor: "pointer",
-          margin: "0 6px",
-          border: isSelected ? "2px solid #0d6efd" : "2px solid transparent",
-          boxShadow: isSelected ? "0 4px 12px rgba(13,110,253,0.15)" : "none",
-          transform: isSelected ? "translateY(-2px)" : "none",
-          transition: "box-shadow 150ms ease, transform 120ms ease, border-color 150ms ease",
-          verticalAlign: "middle",
-          background: "white",
-        }}
-      >
-        {store.logoUrl ? (
-          <img
-            src={`${store.logoUrl.replace("/upload/", "/upload/w_100,c_scale/")}`}
-            alt={store.storeName || "Store"}
-            style={{
-              maxWidth: "100%",
-              maxHeight: 56,
-              objectFit: "contain",
-              display: "block",
-            }}
-          />
-        ) : (
-          <span style={{ color: "black", marginRight: 5 }}>{store.storeName || "N/A"}</span>
-        )}
-      </div>
-    );
-  })}
+  <div
+    id="store-filter-container"
+    ref={storeScrollRef}
+    style={{
+      flex: "1 1 auto",
+      minWidth: 0,
+      overflowX: "auto",
+      overflowY: "hidden",
+      whiteSpace: "nowrap",
+      margin: "10px 0",
+      padding: "2px 0",
+      width: "100%",
+      maxWidth: "100%",
+      boxSizing: "border-box",
+      scrollbarWidth: "none",
+      msOverflowStyle: "none",
+      cursor: "grab",
+      // keep scroll contained and smooth on mobile
+      overscrollBehaviorX: "contain",
+      WebkitOverflowScrolling: "touch",
+    }}
+  >
+    {stores.map((store) => {
+      const idStr = String(store.storeId);
+      const isSelected = selectedStores.includes(idStr);
+      return (
+        <div
+          key={store.storeId}
+          role="button"
+          aria-pressed={isSelected}
+          onClick={() => {
+            setSelectedStores((prev) =>
+              prev.includes(idStr) ? prev.filter((s) => s !== idStr) : [...prev, idStr]
+            );
+            // optional: keep last clicked store name for display
+            setSelectedStoreName((prevName) => (isSelected ? "" : store.storeName));
+          }}
+          style={{
+            width: 72,
+            height: 72,
+            boxSizing: "border-box",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 12,
+            color: "#333",
+            borderRadius: 8,
+            padding: 8,
+            cursor: "pointer",
+            margin: "0 6px",
+            border: isSelected ? "2px solid #0d6efd" : "2px solid transparent",
+            boxShadow: isSelected ? "0 4px 12px rgba(13,110,253,0.15)" : "none",
+            transform: isSelected ? "translateY(-2px)" : "none",
+            transition: "box-shadow 150ms ease, transform 120ms ease, border-color 150ms ease",
+            verticalAlign: "middle",
+            background: "white",
+          }}
+        >
+          {store.logoUrl ? (
+            <img
+              src={`${store.logoUrl.replace("/upload/", "/upload/w_100,c_scale/")}`}
+              alt={store.storeName || "Store"}
+              style={{
+                maxWidth: "100%",
+                maxHeight: 56,
+                objectFit: "contain",
+                display: "block",
+              }}
+            />
+          ) : (
+            <span style={{ color: "black", marginRight: 5 }}>{store.storeName || "N/A"}</span>
+          )}
+        </div>
+      );
+    })}
+  </div>
+
+  <Button
+    type="button"
+    variant="light"
+    className="d-inline-flex"
+    aria-label="Scroll stores right"
+    disabled={!canScrollStoresRight}
+    onClick={() => scrollStoresBy(1)}
+    style={{
+      flex: "0 0 auto",
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 0,
+      lineHeight: 1,
+      opacity: canScrollStoresRight ? 1 : 0,
+      pointerEvents: canScrollStoresRight ? "auto" : "none",
+    }}
+    aria-hidden={!canScrollStoresRight}
+    tabIndex={canScrollStoresRight ? 0 : -1}
+  >
+    ›
+  </Button>
 </div>
 
 
@@ -1000,18 +1105,7 @@ const settings = {
     whiteSpace: "nowrap",
   }}
 >
-  {/* Render all selected store names by resolving ids from stores state */}
-  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "inline-block", maxWidth: "240px" }}>
-    {selectedStores
-      .map((id) => {
-        const s = stores.find((st) => String(st.storeId) === id);
-        return s ? s.storeName : null;
-      })
-      .filter(Boolean)
-      .join(" - ")}
-  </span>
 
-  {/* clear selection */}
 
 </div>
 )}
