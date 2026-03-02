@@ -1,18 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQueryClient,
-  useQuery
-} from "@tanstack/react-query";
-
+import { useQueryClient , useInfiniteQuery, useQuery, useMutation} from "@tanstack/react-query";
 
 import FlyerSlider from "./FlyerSlider";
 import RegistrationModal from "./RegistrationModal";
 import ProductModal from "./ProductModal";
 
 import { enablePushNotifications } from './pushNotifications';
-
+import { apiFetch } from "./api/apiFetch";
 
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -29,10 +23,45 @@ import { Spinner } from "react-bootstrap";
 
 
 
+export default function Home({ mode }) {
 
 
 
-function Home({ mode }) {
+  const initStartedRef = useRef(false);
+
+    const initialize = async () => {
+  // Was: POST /initialize (server only has GET)
+  const res = await apiFetch("/initialize", { method: "GET" });
+  const data = await res.json();
+
+  if (data?.token) localStorage.setItem("token", data.token);
+  return data;
+  };
+
+
+
+useEffect(() => {
+  if (initStartedRef.current) return; // prevents StrictMode double-run
+  initStartedRef.current = true;
+
+  (async () => {
+    // One single bootstrap flow:
+    // 1) check current session
+    // 2) only if not logged in, call /initialize
+    // 3) re-check session to get canonical user id
+    const session = await checkSession();
+    if (!session?.isLoggedIn) {
+      await initialize();
+      await checkSession();
+    }
+    await getStores();
+  })();
+}, []);
+
+
+
+
+
   // ─── State & Refs ─────────────────────────────────────────────────────────────
   const [stores, setStores] = useState([]);
   const [flyerBook, setFlyerBook] = useState([]);
@@ -155,34 +184,7 @@ function Home({ mode }) {
     searchKeyword?.length > 2 ? searchKeyword : "",
   ];
 
-  // Initialize anonymous session (sets `jwt` cookie for web clients)
-  useEffect(() => {
-    const initialize = async () => {
-      try {
-        console.log('[INIT] Calling /initialize to ensure anonymous session');
-        const res = await fetch(`${node_url}/initialize`, { credentials: 'include' });
-        if (res.ok) {
-          const data = await res.json();
-          console.log('[INIT] initialize response:', data);
-          if (data.userId) setUserId(data.userId);
-          // Persist token for Authorization header fallback (cross-site POSTs)
-          if (data.token) {
-            try {
-              localStorage.setItem('jwtToken', data.token);
-              console.log('[INIT] Stored token in localStorage');
-            } catch (e) {
-              console.warn('[INIT] Could not store token in localStorage', e);
-            }
-          }
-        } else {
-          console.warn('[INIT] initialize failed', res.status);
-        }
-      } catch (err) {
-        console.error('[INIT] Error calling /initialize', err);
-      }
-    };
-    initialize();
-  }, []);
+  // NOTE: Anonymous initialization is handled by the single bootstrap effect at the top of this component.
 
   
 
@@ -383,7 +385,7 @@ console.log("[DEBUG] Active Filters:", activeFilters);
         headers: (function(){
           const base = { "Content-Type": "application/json" };
           try {
-            const t = localStorage.getItem('jwtToken');
+            const t = localStorage.getItem('token') || localStorage.getItem('jwtToken');
             if (t) return { ...base, Authorization: `Bearer ${t}` };
           } catch (e) {
             console.warn('Could not read token from localStorage', e);
@@ -457,10 +459,14 @@ console.log("[DEBUG] Active Filters:", activeFilters);
       }
   
       // console.log(`[DEBUG] Fetching products with URL: ${url.toString()}`);
-  
+
+      // Include Authorization fallback for cross-site requests where cookies may not be sent.
+      const token = localStorage.getItem('token') || localStorage.getItem('jwtToken');
       const res = await fetch(url.toString(), {
         method: "GET",
-        headers: { "Content-Type": "application/json" },
+        headers: token
+          ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+          : { "Content-Type": "application/json" },
         credentials: "include", // Important to send the jwt cookie
       });
   
@@ -521,37 +527,31 @@ console.log("[DEBUG] Active Filters:", activeFilters);
   };
 
     // --- Check User Session ---
-    const checkUserSession = async () => {
-      console.log("[DEBUG] checkUserSession called");
-      try {
-        // Use the /auth/check-session endpoint
-        const response = await fetch(`${node_url}/check-session`, {
-          credentials: "include", // Send cookies
-        });
-        const data = await response.json();
-        console.log("[DEBUG] /check-session response:", data);
-  
-        if (data.isLoggedIn) { // isLoggedIn means a valid userId exists
-          setUserId(data.userId); // Set userId (can be anonymous or registered)
-          setIsRegistered(!!data.isRegistered); // Update registration status
-          setEmail(data.email || ""); // Set email if available
-        } else {
-          // No valid session, potentially first visit or expired token
-          setUserId(null);
-          setIsRegistered(false);
-          setEmail("");
-          // Attempt to initialize an anonymous session if no userId yet
-          if (!userId) { // Avoid loop if already tried initializing
-              console.log("[DEBUG] No user ID found, calling /initialize...");
-              initializeAnonymousSession();
-          }
-        }
-      } catch (error) {
-        console.error("Error checking session:", error);
-        setUserId(null); // Reset on error
-        setIsRegistered(false);
-        setEmail("");
+    const checkSession = async () => {
+      console.log("[DEBUG] checkSession called");
+
+      const t = localStorage.getItem("jwtToken") || localStorage.getItem("token");
+      const response = await fetch(`${node_url}/check-session`, {
+        credentials: "include",
+        headers: t ? { Authorization: `Bearer ${t}` } : undefined,
+      });
+
+      const data = await response.json();
+      console.log("[DEBUG] /check-session response:", data);
+
+      if (data.isLoggedIn) {
+        setIsLoggedIn(true);
+        setUserId(data.userId);
+        setIsRegistered(!!data.isRegistered);
+        setEmail(data.email || "");
+        return data;
       }
+
+      setIsLoggedIn(false);
+      setUserId(null);
+      setIsRegistered(false);
+      setEmail("");
+      return data;
     };
 
 
@@ -559,26 +559,21 @@ console.log("[DEBUG] Active Filters:", activeFilters);
        // --- Initialize Anonymous Session ---
    const initializeAnonymousSession = async () => {
     try {
-        const response = await fetch(`${node_url}/initialize`, {
-             method: 'GET', // Or POST if needed
-             credentials: 'include'
-         });
-         const data = await response.json();
-         if (response.ok && data.userId) {
-             console.log("[DEBUG] Anonymous session initialized, userId:", data.userId);
-             // Set the user ID, but mark as not registered
-             setUserId(data.userId);
-             //setIsRegistered(false);
-             //setEmail("");
-             // Optionally refetch data if needed now that userId is set
-             // queryClient.invalidateQueries({ queryKey: ['products'] });
-         } else {
-             console.error("[ERROR] Failed to initialize anonymous session:", data.message);
-         }
-     } catch (error) {
-         console.error("Error initializing anonymous session:", error);
-     }
- };
+      const session = await checkSession();
+      if (session?.isLoggedIn) return session;
+
+      console.log('[INIT] Calling /initialize to ensure anonymous session');
+      await initialize();
+      const session2 = await checkSession();
+      if (!session2?.isLoggedIn) {
+        console.error('[ERROR] Anonymous session initialization did not result in a logged-in session.');
+      }
+      return session2;
+    } catch (error) {
+      console.error('Error initializing anonymous session:', error);
+      return null;
+    }
+  };
 
 
 
@@ -625,11 +620,7 @@ console.log("[DEBUG] Active Filters:", activeFilters);
   };
 
   // ─── Effects ─────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    checkUserSession();
-    getStores();
-    //getUsers();
-  }, []);
+  // Session + stores bootstrap is handled in the single init effect near the top.
 
   useEffect(() => {
     if (!observerRef.current || !hasNextPage) return;
@@ -1273,6 +1264,9 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
                     
                   }}
 
+                
+
+                  onClick={() => openModal(imgUrl, product)}
                 />
 
 
@@ -1311,6 +1305,9 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
                     
                   }}
 
+              
+
+                  onClick={() => openModal(imgUrl, product)}
                  
                 />
 
@@ -1639,6 +1636,7 @@ style={{
 
                     
                   }}
+
                 
 
                   onClick={() => openModal(imgUrl, product)}
@@ -1858,6 +1856,3 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
   );
 }
 
-
-
-export default Home;
