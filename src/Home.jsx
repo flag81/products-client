@@ -49,10 +49,21 @@ useEffect(() => {
     // 1) check current session
     // 2) only if not logged in, call /initialize
     // 3) re-check session to get canonical user id
-    const session = await checkSession();
+    let session = await checkSession();
     if (!session?.isLoggedIn) {
       await initialize();
-      await checkSession();
+      session = await checkSession();
+
+      // Production-safe fallback: if still logged out but a token exists, the token may be stale.
+      // Clear it once and retry initialization.
+      const hasLocalToken = Boolean(localStorage.getItem('token') || localStorage.getItem('jwtToken'));
+      if (!session?.isLoggedIn && hasLocalToken) {
+        console.warn('[INIT] Still logged out after initialize; clearing local token and retrying once.');
+        localStorage.removeItem('token');
+        localStorage.removeItem('jwtToken');
+        await initialize();
+        await checkSession();
+      }
     }
     await getStores();
   })();
@@ -530,16 +541,25 @@ console.log("[DEBUG] Active Filters:", activeFilters);
     const checkSession = async () => {
       console.log("[DEBUG] checkSession called");
 
-      const t = localStorage.getItem("jwtToken") || localStorage.getItem("token");
-      const response = await fetch(`${node_url}/check-session`, {
-        credentials: "include",
-        headers: t ? { Authorization: `Bearer ${t}` } : undefined,
-      });
-
+      const response = await apiFetch('/check-session', { method: 'GET' });
       const data = await response.json();
       console.log("[DEBUG] /check-session response:", data);
 
-      if (data.isLoggedIn) {
+      // Backend may ask client to reinitialize (e.g., stale header token user not in DB)
+      if (data?.shouldReinitialize) {
+        console.warn('[DEBUG] /check-session requested reinitialize:', data);
+        if (data?.authSource === 'header') {
+          localStorage.removeItem('token');
+          localStorage.removeItem('jwtToken');
+        }
+        setIsLoggedIn(false);
+        setUserId(null);
+        setIsRegistered(false);
+        setEmail('');
+        return data;
+      }
+
+      if (data?.isLoggedIn) {
         setIsLoggedIn(true);
         setUserId(data.userId);
         setIsRegistered(!!data.isRegistered);
