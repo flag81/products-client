@@ -405,7 +405,7 @@ const ProductModal = ({
             position: "absolute",
             top: 8,
             left: 8,
-            backgroundColor: zoomEnabled ? "rgba(0,0,0,0.75)" : "rgba(255,255,255,0.9)",
+            backgroundColor: zoomEnabled ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.9)",
             color: zoomEnabled ? "#fff" : "#000",
             border: "none",
             width: 40,
@@ -422,7 +422,7 @@ const ProductModal = ({
             toggleZoom();
           }}
         >
-          <img src={zoomEnabled ? "/zoom-active.png" : "/zoom.png"} style={{ width: 24, height: 24 }} alt="Zoom" />
+          <img src={zoomEnabled ? "/zoom.png" : "/zoom.png"} style={{ width: 24, height: 24 }} alt="Zoom" />
         </Button>
       </div>
     </div>

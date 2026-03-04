@@ -901,59 +901,60 @@ const settings = {
 
 
 <div
-
   style={{
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
+    position: "relative",
     width: "100%",
     maxWidth: "100%",
     boxSizing: "border-box",
+    
   }}
 >
-  {/* Desktop arrows to indicate more stores */}
-  <Button
-    type="button"
-    variant="light"
-    className="d-inline-flex"
-    aria-label="Scroll stores left"
-    disabled={!canScrollStoresLeft}
-    onClick={() => scrollStoresBy(-1)}
-    style={{
-      flex: "0 0 auto",
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      alignItems: "center",
-      justifyContent: "center",
-      padding: 0,
-      lineHeight: 1,
-      opacity: canScrollStoresLeft ? 1 : 0,
-      pointerEvents: canScrollStoresLeft ? "auto" : "none",
-    }}
-    aria-hidden={!canScrollStoresLeft}
-    tabIndex={canScrollStoresLeft ? 0 : -1}
-  >
-    ‹
-  </Button>
+  {/* Desktop arrows (do not reserve space) */}
+  {canScrollStoresLeft && (
+    <Button
+      type="button"
+      variant="light"
+      className="d-inline-flex"
+      aria-label="Scroll stores left"
+      onClick={() => scrollStoresBy(-1)}
+      style={{
+        position: "absolute",
+        left: 0,
+        top: "50%",
+        transform: "translateY(-50%)",
+        zIndex: 2,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 0,
+        lineHeight: 1,
+      }}
+    >
+      ‹
+    </Button>
+  )}
 
   <div
     id="store-filter-container"
     ref={storeScrollRef}
     style={{
-      flex: "1 1 auto",
-      minWidth: 0,
       overflowX: "auto",
       overflowY: "hidden",
       whiteSpace: "nowrap",
       margin: "10px 0",
       padding: "2px 0",
       width: "100%",
+     
       maxWidth: "100%",
       boxSizing: "border-box",
       scrollbarWidth: "none",
       msOverflowStyle: "none",
       cursor: "grab",
+      paddingLeft: canScrollStoresLeft ? 40 : 0,
+      paddingRight: canScrollStoresRight ? 40 : 0,
+      
       // keep scroll contained and smooth on mobile
       overscrollBehaviorX: "contain",
       WebkitOverflowScrolling: "touch",
@@ -986,8 +987,8 @@ const settings = {
             borderRadius: 8,
             padding: 8,
             cursor: "pointer",
-            margin: "0 6px",
-            border: isSelected ? "2px solid #0d6efd" : "2px solid transparent",
+            margin: "0 2px",
+            border: isSelected ? "2px solid #0d6efd" : "1px solid #999797",
             boxShadow: isSelected ? "0 4px 12px rgba(13,110,253,0.15)" : "none",
             transform: isSelected ? "translateY(-2px)" : "none",
             transition: "box-shadow 150ms ease, transform 120ms ease, border-color 150ms ease",
@@ -1014,30 +1015,31 @@ const settings = {
     })}
   </div>
 
-  <Button
-    type="button"
-    variant="light"
-    className="d-inline-flex"
-    aria-label="Scroll stores right"
-    disabled={!canScrollStoresRight}
-    onClick={() => scrollStoresBy(1)}
-    style={{
-      flex: "0 0 auto",
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      alignItems: "center",
-      justifyContent: "center",
-      padding: 0,
-      lineHeight: 1,
-      opacity: canScrollStoresRight ? 1 : 0,
-      pointerEvents: canScrollStoresRight ? "auto" : "none",
-    }}
-    aria-hidden={!canScrollStoresRight}
-    tabIndex={canScrollStoresRight ? 0 : -1}
-  >
-    ›
-  </Button>
+  {canScrollStoresRight && (
+    <Button
+      type="button"
+      variant="light"
+      className="d-inline-flex"
+      aria-label="Scroll stores right"
+      onClick={() => scrollStoresBy(1)}
+      style={{
+        position: "absolute",
+        right: 0,
+        top: "50%",
+        transform: "translateY(-50%)",
+        zIndex: 2,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 0,
+        lineHeight: 1,
+      }}
+    >
+      ›
+    </Button>
+  )}
 </div>
 
 
