@@ -667,6 +667,23 @@ console.log("[DEBUG] Active Filters:", activeFilters);
   const onSaleProducts = allProducts.filter(p => p.productOnSale);
   const notOnSaleProducts = allProducts.filter(p => !p.productOnSale);
 
+  const getDisplayDiscountPercentage = (product) => {
+    const explicit = product?.discount_percentage;
+    if (explicit !== null && explicit !== undefined && explicit !== "") {
+      const explicitNumber = Number(explicit);
+      return Number.isFinite(explicitNumber) ? Math.ceil(explicitNumber) : null;
+    }
+
+    const oldPrice = Number.parseFloat(product?.old_price);
+    const newPrice = Number.parseFloat(product?.new_price);
+    if (!Number.isFinite(oldPrice) || !Number.isFinite(newPrice)) return null;
+    if (oldPrice <= 0) return null;
+    if (newPrice < 0) return null;
+    if (newPrice >= oldPrice) return null;
+
+    return Math.ceil(((oldPrice - newPrice) / oldPrice) * 100);
+  };
+
 
 
 const settings = {
@@ -1395,7 +1412,10 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
               </span>
 
                 <span style={{ color: "green" }} className="bold-text">
-                {product.discount_percentage ? ` (-${Math.round(product.discount_percentage)}%)` : ''}
+                  {(() => {
+                    const pct = getDisplayDiscountPercentage(product);
+                    return pct > 0 ? ` (-${pct}%)` : "";
+                  })()}
               </span>
             </Card.Text>
 
@@ -1727,13 +1747,8 @@ style={{
 
           <span style={{ color: "green", fontWeight: "bold"}}>
                 {(() => {
-                  const oldPrice = parseFloat(product.old_price);
-                  const newPrice = parseFloat(product.new_price);
-                  if (oldPrice > 0 && newPrice && oldPrice > newPrice) {
-                    const percentage = Math.round(((oldPrice - newPrice) / oldPrice) * 100);
-                    return <>-{percentage}%</>;
-                  }
-                  return null;
+                  const pct = getDisplayDiscountPercentage(product);
+                  return pct > 0 ? <>-{pct}%</> : null;
                 })()}
               </span>
 
