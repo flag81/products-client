@@ -16,9 +16,7 @@ import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Placeholder from "react-bootstrap/Placeholder";
-import Toast from 'react-bootstrap/Toast';
-import Slider from "react-slick";
-import { Spinner } from "react-bootstrap";
+
 
 
 
@@ -717,6 +715,7 @@ const settings = {
         // added rules to further prevent horizontal panning on iOS
         overscrollBehaviorX: "contain",
         touchAction: "pan-y",
+       
       }}
     >
       <div className="container-fluid" id="home-container" style={{ marginTop: 0, position: "relative", top: 0, boxSizing: "border-box",
@@ -923,6 +922,8 @@ const settings = {
     width: "100%",
     maxWidth: "100%",
     boxSizing: "border-box",
+     background: "#d7d8db",
+     borderRadius: 10,
     
   }}
 >
@@ -963,6 +964,7 @@ const settings = {
       margin: "10px 0",
       padding: "2px 0",
       width: "100%",
+      
      
       maxWidth: "100%",
       boxSizing: "border-box",
@@ -1005,7 +1007,7 @@ const settings = {
             padding: 8,
             cursor: "pointer",
             margin: "0 2px",
-            border: isSelected ? "2px solid #0d6efd" : "1px solid #999797",
+            border: isSelected ? "2px solid #0d6efd" : "1px solid #c6c4c4",
             boxShadow: isSelected ? "0 4px 12px rgba(13,110,253,0.15)" : "none",
             transform: isSelected ? "translateY(-2px)" : "none",
             transition: "box-shadow 150ms ease, transform 120ms ease, border-color 150ms ease",
@@ -1098,6 +1100,7 @@ const settings = {
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
+    
   }}
 >
 {searchKeyword.length > 2 ? "" + searchKeyword  : "" }
@@ -1205,6 +1208,10 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
       padding: "10px",
       width: "90%", // Set width to 90% of the parent container
       textAlign: "center", // Center the text inside
+      borderRadius: 8,
+background: "#d7d8db",  
+
+      
 
 
 
@@ -1228,10 +1235,14 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
 
 
 {/* FIX: Updated Row props for a standard responsive grid. */}
-<Row xs={1} sm={2} md={3} lg={4} className="g-2 justify-content-start">
+<Row xs={1} sm={2} md={3} lg={4} className="g-2 justify-content-start"
+
+style={{ background: "#d7d8db" , borderRadius: 8}}
+
+>
   {onSaleProducts.map((product, idx) => (
           <Col key={`onsale-${idx}`} className="d-flex" style={{ minWidth: 0 /* allow shrink on small screens */ }}>
-            <Card className="h-100 pt-1 px-1 pb-0 product-card d-flex flex-column" style={{ width: "100%", borderColor: product.productOnSale ? "green" : null }}>
+            <Card className="h-100 pt-1 px-1 pb-0 product-card d-flex flex-column" style={{ width: "100%", borderColor: null }}>
                 <div
                   style={{ position: "relative", width: "100%", height: "100%" }}
                 >
