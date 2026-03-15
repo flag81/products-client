@@ -288,6 +288,7 @@ const ProductModal = ({
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
+                marginLeft: 4,
               }}
             >
               {modalProduct?.logoUrl ? (
@@ -364,6 +365,7 @@ const ProductModal = ({
                     alignItems: "center",
                     justifyContent: "center",
                     cursor: "pointer",
+                    marginRight: 5,
                   }}
                   onClick={() => handleFlyerModal(modalProduct.flyer_book_id)}
                 >

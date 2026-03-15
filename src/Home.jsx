@@ -76,7 +76,6 @@ useEffect(() => {
   const [flyerBook, setFlyerBook] = useState([]);
   const [users, setUsers] = useState([]);
   const [selectedStores, setSelectedStores] = useState([]); // store ids as strings
-  const [selectedStoreName, setSelectedStoreName] = useState(""); // optional: keep for a display label
   const [isFavorite, setIsFavorite] = useState(false);
   const [onSale, setOnSale] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -806,7 +805,7 @@ const settings = {
           value={searchKeyword}
           onChange={(e) => setSearchKeyword(e.target.value)}
           maxLength={20}
-          placeholder="Kerko produkte ne zbritje"
+          placeholder="Kerko produkte ..."
           onFocus={handleSearchFocus}
           onBlur={handleSearchBlur}
           onKeyDown={(e) => {
@@ -991,10 +990,9 @@ const settings = {
             setSelectedStores((prev) =>
               prev.includes(idStr) ? prev.filter((s) => s !== idStr) : [...prev, idStr]
             );
-            // optional: keep last clicked store name for display
-            setSelectedStoreName((prevName) => (isSelected ? "" : store.storeName));
           }}
           style={{
+            position: "relative",
             width: 72,
             height: 72,
             boxSizing: "border-box",
@@ -1015,6 +1013,38 @@ const settings = {
             background: "white",
           }}
         >
+          {isSelected && (
+            <button
+              type="button"
+              aria-label={`Deselect ${store.storeName || "store"}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setSelectedStores((prev) => prev.filter((s) => s !== idStr));
+              }}
+              style={{
+                position: "absolute",
+                top: 2,
+                right: 2,
+                width: 18,
+                height: 18,
+                borderRadius: 9,
+                border: "1px solid #ccc",
+                background: "white",
+                color: "red",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 14,
+                lineHeight: 1,
+                padding: 0,
+                zIndex: 3,
+                cursor: "pointer",
+              }}
+            >
+              ×
+            </button>
+          )}
           {store.logoUrl ? (
             <img
               src={`${store.logoUrl.replace("/upload/", "/upload/w_100,c_scale/")}`}
@@ -1119,28 +1149,6 @@ const settings = {
 
 </div>
 
-)}
-
-{selectedStores.length > 0  && (
-<div className="select-description"
-  style={{
-    marginLeft: 5,
-    marginRight: 5,
-    padding: 3,
-    borderRadius: 5,
-    marginBottom: 0,
-    display: "flex",
-    alignItems: "center",
-    gap: 2,
-    maxWidth: 320,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-  }}
->
-
-
-</div>
 )}
 
 { isFavorite  && (
@@ -1834,7 +1842,19 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
               // borderStyle: "solid", // Solid border style
 
             }} role="button">
-
+                  <img
+                    src={product.isFavorite ? "star-fill-2.png" : "star-empty.jpg"}
+                    alt={product.isFavorite ? "Unfavorite" : "Favorite"}
+                    style={{
+                     
+                      width: 24,
+                      height: 24,
+                      
+                    }}
+                    onClick={() =>
+                      handleToggleFavorite(product.productId, product.isFavorite)
+                    }
+                  />
 
 
                   

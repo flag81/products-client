@@ -439,30 +439,50 @@ const extractTextSingle = async () => {
 
   
 
-const group = groupedByPostId[postId];
-// Take imageData from the first item (all items have the same imageData for this post)
-const imageDataArr = group[0]?.imageData || [];
+const group = groupedByPostId[postId] || [];
 
-console.log(`Processing postId group "${postId}" with imageData:`, imageDataArr);
+// IMPORTANT: Build the Gemini payload from the CURRENT group items (not group[0].imageData)
+// so that removing photos in the UI truly removes them from processing.
+const seenKeys = new Set();
+const uniquePhotos = [];
 
-if (!Array.isArray(imageDataArr) || imageDataArr.length === 0) {
-  console.warn(`No imageData found for postId "${postId}", skipping...`);
-  continue; // Skip this group if no imageData
+for (const photo of group) {
+  const key = photo?.imageId ?? photo?.uri ?? photo?.image;
+  if (!key) continue;
+  const keyStr = String(key);
+  if (seenKeys.has(keyStr)) continue;
+  seenKeys.add(keyStr);
+  uniquePhotos.push(photo);
 }
 
+console.log(`Processing postId group "${postId}" with ${uniquePhotos.length} images (after dedupe).`);
 
-const imagesPayload = imageDataArr.map((imgObj, imgIdx) => ({
-  imageUrl: imgObj.uri,
-  imageId: imgObj.id,
-  storeId: group[0].storeId,
-  flyerBookId: group[0].flyerBookId || Math.floor(100000 + Math.random() * 900000),
-  facebookUrl: facebookUrl || group[0].facebookUrl || '',
-  postText: group[0].message || '',
-  created_time: group[0].created_time || null,
-  userId: group[0].userId || userId || 1,
-  postId: postId,
-  timestamp: group[0].timestamp, // Use the first item's timestamp or current time
-}));
+if (uniquePhotos.length === 0) {
+  console.warn(`No images found for postId "${postId}", skipping...`);
+  continue;
+}
+
+const flyerBookIdForPost = group[0]?.flyerBookId || Math.floor(100000 + Math.random() * 900000);
+
+const imagesPayload = uniquePhotos
+  .map((photo, imgIdx) => {
+    const imageUrl = photo?.uri || photo?.image;
+    const imageIdValue = photo?.imageId ?? imageUrl ?? `${postId}-${imgIdx}`;
+
+    return {
+      imageUrl,
+      imageId: imageIdValue,
+      storeId: photo?.storeId ?? group[0]?.storeId,
+      flyerBookId: flyerBookIdForPost,
+      facebookUrl: facebookUrl || photo?.facebookUrl || group[0]?.facebookUrl || '',
+      postText: group[0]?.message || '',
+      created_time: group[0]?.created_time || null,
+      userId: group[0]?.userId || userId || 1,
+      postId: postId,
+      timestamp: group[0]?.timestamp,
+    };
+  })
+  .filter(img => Boolean(img.imageUrl));
 
 
 
@@ -511,6 +531,32 @@ imagesPayload.forEach(img => {
   // Optionally, update state or display results as needed
   // setExtractedText(JSON.stringify(results, null, 2));
   return results;
+};
+
+
+// Remove ALL queued facebook photos for a particular store (by storeId)
+const removeAllFacebookPhotosForStore = (storeIdToRemove) => {
+  const storeIdStr = String(storeIdToRemove);
+  if (!storeIdStr || storeIdStr === '0' || storeIdStr === 'undefined' || storeIdStr === 'null') {
+    setStatus('Please select a valid store to remove photos for.');
+    return;
+  }
+
+  const storeName = stores.find(s => String(s.storeId) === storeIdStr)?.storeName;
+  const before = facebookPhotos.length;
+  const next = facebookPhotos.filter(p => String(p.storeId) !== storeIdStr);
+  const removed = before - next.length;
+
+  if (removed <= 0) {
+    setStatus(`No queued photos found for ${storeName || `store ${storeIdStr}`}.`);
+    return;
+  }
+
+  const confirmMsg = `Remove ${removed} photo(s) for ${storeName || `store ${storeIdStr}`} from the processing queue?`;
+  if (!window.confirm(confirmMsg)) return;
+
+  setFacebookPhotos(next);
+  setStatus(`Removed ${removed} photo(s) for ${storeName || `store ${storeIdStr}`}.`);
 };
 
 // ...existing code...
@@ -2083,6 +2129,39 @@ onClick={() => {
 
 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
   <h3>Facebook Posts - {selectedStoreName}</h3>
+  <div style={{ display: 'flex', flexDirection: 'row', gap: '8px', flexWrap: 'wrap' }}>
+    {(() => {
+      if (!facebookPhotos || facebookPhotos.length === 0) return null;
+
+      const byStore = {};
+      facebookPhotos.forEach(p => {
+        const sid = p?.storeId;
+        if (sid === undefined || sid === null) return;
+        const key = String(sid);
+        if (!byStore[key]) {
+          byStore[key] = {
+            storeId: key,
+            storeName: p?.storeName || stores.find(s => String(s.storeId) === key)?.storeName || `Store ${key}`,
+            count: 0,
+          };
+        }
+        byStore[key].count += 1;
+      });
+
+      const entries = Object.values(byStore).sort((a, b) => a.storeName.localeCompare(b.storeName));
+      if (entries.length === 0) return null;
+
+      return entries.map(s => (
+        <button
+          key={s.storeId}
+          onClick={() => removeAllFacebookPhotosForStore(s.storeId)}
+          title={`Remove all queued photos for ${s.storeName}`}
+        >
+          Remove {s.storeName} ({s.count})
+        </button>
+      ));
+    })()}
+  </div>
   {(() => {
     const postsMap = {};
     facebookPhotos.forEach(photo => {
