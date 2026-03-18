@@ -1,7 +1,7 @@
 export async function enablePushNotifications() {
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') {
-    alert('You must allow notifications to receive offers!');
+    alert('Ju duhet të lejoni njoftimet për të marrë oferta!');
     return;
   }
 
@@ -28,8 +28,8 @@ export async function enablePushNotifications() {
     credentials: 'include',
   });
 
-  activeRegistration.showNotification('Notifications enabled!', {
-    body: 'You will receive new offers.',
+  activeRegistration.showNotification('Njoftimet janë aktivizuar!', {
+    body: 'Do të merrni oferta të reja.',
     icon: '/bell.png',
   });
 }

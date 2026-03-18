@@ -89,6 +89,29 @@ useEffect(() => {
   const [modalImageUrl, setModalImageUrl] = useState("");
   const observerRef = useRef(null);
 
+  // Show notification bell only when site notifications are allowed
+  const [notificationsAllowed, setNotificationsAllowed] = useState(false);
+
+  const refreshNotificationsAllowed = () => {
+    try {
+      if (typeof window === "undefined") return;
+      if (!("Notification" in window)) {
+        setNotificationsAllowed(false);
+        return;
+      }
+      setNotificationsAllowed(window.Notification.permission === "granted");
+    } catch (_e) {
+      setNotificationsAllowed(false);
+    }
+  };
+
+  const handleEnableNotifications = async (e) => {
+    // Avoid triggering any parent click handlers
+    e?.stopPropagation?.();
+    await enablePushNotifications();
+    refreshNotificationsAllowed();
+  };
+
   // Store scroller ref + desktop arrows
   const storeScrollRef = useRef(null);
   const [canScrollStoresLeft, setCanScrollStoresLeft] = useState(false);
@@ -113,6 +136,34 @@ useEffect(() => {
 
   // reset key to tell ProductModal to reset zoom when screen gets focus
   const [zoomResetKey, setZoomResetKey] = useState(0);
+
+  // Keep `notificationsAllowed` in sync with browser permission (where supported)
+  useEffect(() => {
+    refreshNotificationsAllowed();
+
+    let permStatus;
+    try {
+      const permissionsApi = navigator?.permissions;
+      if (permissionsApi?.query) {
+        permissionsApi
+          .query({ name: "notifications" })
+          .then((status) => {
+            permStatus = status;
+            setNotificationsAllowed(status.state === "granted");
+            status.onchange = () => setNotificationsAllowed(status.state === "granted");
+          })
+          .catch(() => {
+            // Ignore; not supported consistently across browsers
+          });
+      }
+    } catch (_e) {
+      // Ignore
+    }
+
+    return () => {
+      if (permStatus) permStatus.onchange = null;
+    };
+  }, []);
 
   // Prevent iOS from zooming/introducing horizontal scroll on input focus:
   useEffect(() => {
@@ -855,12 +906,14 @@ const settings = {
       <div 
         role="button"
         style={{
-          margin: 0,
-          padding: 10,
+          marginRight: 10,
+          marginLeft: 10,
+          padding: 0,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
+          border: "0px solid #060101ff",
           
         }}
 
@@ -869,7 +922,7 @@ const settings = {
         <img
           src={isFavorite ? "/star-fill-2.png" : "/star-empty.jpg"}
           alt="Favoritet"
-          className="icon-image"
+            style={{ height: 40, width: "auto", objectFit: "contain", display: "block" }}
           
         />
      
@@ -881,24 +934,25 @@ const settings = {
         style={{
           margin: 0,
           padding: 0,
+            marginLeft: 10,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
+          border: "0px solid #060101ff"
           
         }}
-
-        onClick={() => setIsFavorite((prev) => !prev)}
       >
 
 
-<img
-  src="/bell.png"
-  alt="Enable notifications"
-  style={{ cursor: 'pointer' }}
-  className="icon-image"
-  onClick={enablePushNotifications}
-/>
+{!notificationsAllowed && (
+  <img
+    src="/bell.png"
+    alt="Enable notifications"
+    style={{ height: 40, width: "auto", objectFit: "contain", display: "block", cursor: "pointer" }}
+    onClick={handleEnableNotifications}
+  />
+)}
      
 
       </div>
