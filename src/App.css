@@ -161,14 +161,14 @@ body {
 
 @media (max-width: 576px) {
   .product-description {
-    font-size: 14px; /* Minimum size on small screens */
+    font-size: 16px; /* Minimum size on small screens */
     margin: 0%;
   }
 }
 
 @media (min-width: 1200px) {
   .product-description {
-    font-size: 16px; /* Maximum size on large screens */
+    font-size: 18px; /* Maximum size on large screens */
     margin: 0%;
   }
 }

@@ -1166,44 +1166,7 @@ const settings = {
   }}
 >
 
-  {searchKeyword.length > 2 && (
 
-<div
-  className="select-description"
-  style={{
-    display: "inline-flex",
-    flex: "0 0 auto",
-    alignItems: "center",
-    marginLeft: 5,
-    marginRight: 5,
-    border: searchKeyword.length > 2 ? "1px solid #ccc" : "",
-    padding: 3,
-    borderRadius: 5,
-    marginBottom: 5,
-    maxWidth: 220,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    
-  }}
->
-{searchKeyword.length > 2 ? "" + searchKeyword  : "" }
-
-
-<span
-  onClick={() => {
-    setSearchKeyword("");
-    document.getElementById("search").value = "";
-  }}
-  style={{ marginLeft: 5, marginRight:5 , cursor: "pointer", color: "red" }}
->
-  X
-
-</span>
-
-</div>
-
-)}
 
 { isFavorite  && (
 <div className="select-description"
@@ -1472,19 +1435,20 @@ style={{ background: "#d7d8db" , borderRadius: 8}}
             
             style={{
 
-              //border: "1px solid #ccc",
-
+              border: "1px solid #ccc",
+              borderRadius: 9,
+              backgroundColor: "#f9f5f5",
 
              }}
             
             >
               
-              <span style={{ color: "red" }}>{product.old_price && product.old_price > 0 ? product.old_price + "€ - " : ""}</span>
-              <span style={{ color: "green" }} className="bold-text">
+              <span style={{ color: "red", fontWeight: "bold", fontSize: "15px"}}>{product.old_price && product.old_price > 0 ? product.old_price + "€  - " : ""}</span>
+              <span style={{ color: "green", fontWeight: "bold", fontSize: "20px" }} className="bold-text">
                 {product.new_price > 0 ? `${product.new_price}€` : ''}
               </span>
 
-                <span style={{ color: "green" }} className="bold-text">
+                <span style={{ color: "green", fontWeight: "bold", fontSize: "20px" }} className="bold-text">
                   {(() => {
                     const pct = getDisplayDiscountPercentage(product);
                     return pct > 0 ? ` (-${pct}%)` : "";
