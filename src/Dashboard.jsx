@@ -559,6 +559,32 @@ const removeAllFacebookPhotosForStore = (storeIdToRemove) => {
   setStatus(`Removed ${removed} photo(s) for ${storeName || `store ${storeIdStr}`}.`);
 };
 
+// Remove ALL queued facebook photos for a particular post (by postId), regardless of store
+const removeAllFacebookPhotosForPost = (postIdToRemove) => {
+  const postIdStr = String(postIdToRemove);
+  if (!postIdStr || postIdStr === 'undefined' || postIdStr === 'null') {
+    setStatus('Invalid postId; cannot remove photos for this post.');
+    return;
+  }
+
+  const before = facebookPhotos.length;
+  const next = facebookPhotos.filter(p => String(p.postId) !== postIdStr);
+  const removed = before - next.length;
+
+  if (removed <= 0) {
+    setStatus(`No queued photos found for post ${postIdStr}.`);
+    return;
+  }
+
+  const sample = facebookPhotos.find(p => String(p.postId) === postIdStr);
+  const messagePreview = (sample?.message || '').trim().slice(0, 60);
+  const confirmMsg = `Remove ${removed} photo(s) for post ${postIdStr}${messagePreview ? ` ("${messagePreview}${(sample?.message || '').length > 60 ? '…' : ''}")` : ''} from the processing queue?`;
+  if (!window.confirm(confirmMsg)) return;
+
+  setFacebookPhotos(next);
+  setStatus(`Removed ${removed} photo(s) for post ${postIdStr}.`);
+};
+
 // ...existing code...
 
 
@@ -2176,8 +2202,17 @@ onClick={() => {
     });
     return Object.entries(postsMap).map(([postId, post]) => (
       <div key={postId} style={{ border: '0px solid #ccc', borderRadius: 5, marginBottom: 20, padding: 10 }}>
-        <div style={{ marginBottom: 8, fontWeight: 'bold', color: '#333' }}>
-          {post.message || <span style={{ color: '#888' }}>[No message]</span>}
+        <div style={{ display: 'flex', flexDirection: 'row', gap: 10, alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div style={{ marginBottom: 8, fontWeight: 'bold', color: '#333', flex: 1 }}>
+            {post.message || <span style={{ color: '#888' }}>[No message]</span>}
+          </div>
+          <button
+            onClick={() => removeAllFacebookPhotosForPost(postId)}
+            title={`Remove all queued photos for post ${postId}`}
+            style={{ height: 28 }}
+          >
+            Remove post ({post.images.length})
+          </button>
         </div>
         <div style={{ fontSize: 11, color: '#888', marginBottom: 8 }}>
           {post.created_time ? `Posted: ${new Date(post.created_time * 1000).toLocaleString()}` : ''}
@@ -2207,8 +2242,8 @@ onClick={() => {
                 }}
                 title="Remove photo"
                 onClick={() => {
-                  setFacebookPhotos(facebookPhotos.filter(p => !(p.postId === postId && p.uri === uri)));
-                  setStatus(`Removed photo from post ${postId}`);
+                  setFacebookPhotos(prev => prev.filter(p => !(String(p.postId) === String(postId) && p.uri === uri)));
+                  setStatus(`Removed 1 photo from post ${postId}`);
                 }}
               >
                 ×
