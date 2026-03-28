@@ -806,6 +806,16 @@ const settings = {
                   }}
       />
 
+
+{!notificationsAllowed && (
+  <img
+    src="/bell.png"
+    alt="Enable notifications"
+    style={{ height: 30, width: "auto", objectFit: "contain", display: "block", cursor: "pointer" }}
+    onClick={handleEnableNotifications}
+  />
+)}
+
       </div>
          
        </Container>
@@ -821,6 +831,7 @@ const settings = {
         width: "100%",
         justifyContent: "flex-start",
         boxSizing: "border-box",
+        border: "0px solid rgb(65, 14, 142)",
       }}
     >
       {/* Search */}
@@ -832,14 +843,38 @@ const settings = {
       display: "flex",
       flexDirection: "row",
       justifyContent: "flex-start",
+      gap: 10,
       marginLeft: "0", // Removes any left margin
       paddingLeft: "0", // Removes any left padding
+       border: "0px solid rgb(80, 19, 19)" 
 
     }}
     
     >
 
- <InputGroup className="w-100">
+<div style={{ display: "flex", 
+
+// keep search and buttons together alignt to left , but the favorite and notification icons to the right with space in between
+
+ width: "100%",
+  
+
+  flexDirection: "row", border: "0px solid #060101ff" }}>
+
+<div style={{
+  display: "flex",
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 10,
+  border: "0px solid #060101ff",
+  flex: 1,
+minWidth: 0,
+  boxSizing: "border-box",
+}}>
+
+
+
+ <InputGroup className="flex-grow-1" style={{ minWidth: 0 }}>
     <div className="select-description flex-grow-1 form-control-lg" style={{ width: "100%", margin: 0, padding: 0, display: "flex" }}>
       {/* Controlled input so we can show an inline clear button */}
       <div style={{ position: "relative", width: "100%", display: "flex", alignItems: "center" }}>
@@ -903,11 +938,26 @@ const settings = {
     </div>
   </InputGroup>
       
+
+      </div>
+
+<div
+  style={{
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    marginLeft: "auto",
+    border: "0px solid #060101ff",
+    padding: 0,
+  }}
+>
+
       <div 
         role="button"
         style={{
-          marginRight: 10,
-          marginLeft: 10,
+          marginRight: 5,
+          marginLeft: 5,
           padding: 0,
           display: "flex",
           flexDirection: "column",
@@ -922,7 +972,7 @@ const settings = {
         <img
           src={isFavorite ? "/star-fill-2.png" : "/star-empty.jpg"}
           alt="Favoritet"
-            style={{ height: 40, width: "auto", objectFit: "contain", display: "block" }}
+            style={{ height: 35, width: "auto", objectFit: "contain", display: "block" }}
           
         />
      
@@ -934,7 +984,7 @@ const settings = {
         style={{
           margin: 0,
           padding: 0,
-            marginLeft: 10,
+            marginLeft: 5,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -945,18 +995,15 @@ const settings = {
       >
 
 
-{!notificationsAllowed && (
-  <img
-    src="/bell.png"
-    alt="Enable notifications"
-    style={{ height: 40, width: "auto", objectFit: "contain", display: "block", cursor: "pointer" }}
-    onClick={handleEnableNotifications}
-  />
-)}
+
      
 
       </div>
 
+      </div>
+
+
+</div>
       
     </Col>
 
