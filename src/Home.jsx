@@ -1243,7 +1243,7 @@ style={{ marginLeft: 5, marginRight: 5, border: isFavorite ? "1px solid #ccc" : 
 
 <div className="select-description"
 
-style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,borderRadius: 5 , marginBottom: 5}}>
+style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:30 ,borderRadius: 5 , marginBottom: 5}}>
 
 {onSale ? " Zbritje" : "" }
 
@@ -1275,12 +1275,12 @@ style={{ marginLeft: 5, marginRight: 5, border: "1px solid #ccc", padding:3 ,bor
     id="no-products-message"
     style={{
       borderRadius: 5,
-      border: "0px solid #ccc",
+      border: "1px solid #a33535",
       margin: "10px auto", // Center the div horizontally
       padding: "10px",
       width: "90%", // Set width to 90% of the parent container
       textAlign: "center", // Center the text inside
-      borderRadius: 8,
+    
 background: "#d7d8db",  
 
       
@@ -1307,14 +1307,29 @@ background: "#d7d8db",
 
 
 {/* FIX: Updated Row props for a standard responsive grid. */}
-<Row xs={1} sm={2} md={3} lg={4} className="g-2 justify-content-start"
+<Row xs={1} sm={2} md={3} lg={4} className="g-2  justify-content-start"
 
-style={{ background: "#d7d8db" , borderRadius: 8}}
+style={{ background: "#d7d8db" , 
+  borderRadius: 8,
+  padding: 0,
+   
+
+
+   border: "0px solid #060101ff",
+   
+}}
 
 >
   {onSaleProducts.map((product, idx) => (
-          <Col key={`onsale-${idx}`} className="d-flex" style={{ minWidth: 0 /* allow shrink on small screens */ }}>
-            <Card className="h-100 pt-1 px-1 pb-0 product-card d-flex flex-column" style={{ width: "100%", borderColor: null }}>
+          <Col key={`onsale-${idx}`} className="d-flex mb-3 mb-sm-0" style={{ minWidth: 0 /* allow shrink on small screens */ }}>
+            <Card className="h-100 pt-1 px-1 pb-0 product-card d-flex flex-column" 
+            style={{ width: "100%", borderColor: null ,
+              border: "0px solid #060101ff",
+              marginBottom: 30,
+
+             
+
+            }}>
                 <div
                   style={{ position: "relative", width: "100%", height: "100%" }}
                 >

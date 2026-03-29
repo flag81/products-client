@@ -177,7 +177,7 @@ const ProductModal = ({
             <Placeholder
               style={{
                 width: "100%",
-                height: 200,
+                height: computedImageStyle?.height || 320, // was 200
               }}
             />
           </Placeholder>
@@ -207,9 +207,10 @@ const ProductModal = ({
                     alt="Product Modal"
                     onLoad={() => setIsImageLoaded(true)}
                     style={{
-                      display: isImageLoaded ? "block" : "none",
-                      width: computedImageStyle?.width || "100%",
-                      height: computedImageStyle?.height || "auto",
+                      visibility: isImageLoaded ? "visible" : "hidden",
+                      //display: isImageLoaded ? "block" : "none",
+                      width: computedImageStyle?.width || "95vw",
+                      height: computedImageStyle?.height || "55vw",
                       objectFit: "contain",
                       borderRadius: 5,
                       margin: "0 auto",
