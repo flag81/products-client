@@ -66,6 +66,9 @@ html, body, #root {
   overflow-x: hidden; /* critical: hide any page-level horizontal scroll */
 }
 
+/* Prevent layout shift when the vertical scrollbar appears/disappears */
+html { scrollbar-gutter: stable; }
+
 /* Make images responsive and avoid overflow */
 img { max-width: 100%; height: auto; display: block; }
 

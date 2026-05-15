@@ -1984,12 +1984,23 @@ style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "fle
 )}
 
       <div ref={observerRef} style={{ height: 20, margin: "10px 0" }} />
-      {
-      isFetching && !isFetchingNextPage && <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Loading...</span>
-    </div>
-      
-      }
+      {isFetching && !isFetchingNextPage && (
+        <div
+          style={{
+            position: "fixed",
+            left: "50%",
+            bottom: 16,
+            transform: "translateX(-50%)",
+            zIndex: 1050,
+          }}
+          aria-live="polite"
+          aria-label="Loading"
+        >
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      )}
 
       <RegistrationModal
         show={showRegisterModal}
