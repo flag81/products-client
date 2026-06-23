@@ -158,7 +158,6 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
                 position: "absolute",
                 top: "5px",
                 left: "5px",
-                backgroundColor: "white",
                 color: "#fff",
                 border: "none",
                 width: 40,

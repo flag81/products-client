@@ -7,6 +7,7 @@ const ProductModal = ({
   isOpen,
   onClose,
   modalImageUrl,
+  modalImageFrame,
   isImageLoaded,
   setIsImageLoaded,
   modalProduct,
@@ -64,6 +65,37 @@ const ProductModal = ({
       return;
     }
 
+    // If Home provided exact dimensions from the clicked card image,
+    // use them immediately to keep placeholder and image the same size.
+    const frameW = Number(modalImageFrame?.width);
+    const frameH = Number(modalImageFrame?.height);
+    if (frameW > 0 && frameH > 0) {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const paddingX = 24;
+      const paddingY = 24 + 120;
+      const maxModalW = Math.max(32, Math.floor(vw * 0.95) - paddingX);
+      const maxModalH = Math.max(32, Math.floor(vh * 0.75) - paddingY);
+      const scale = Math.min(1, maxModalW / frameW || 1, maxModalH / frameH || 1);
+      const targetW = Math.max(32, Math.round(frameW * scale));
+      const targetH = Math.max(32, Math.round(frameH * scale));
+
+      setIsImageLoaded(false);
+      setComputedImageStyle({
+        width: `${targetW}px`,
+        height: `${targetH}px`,
+        objectFit: "contain",
+        display: "block",
+      });
+      setModalContentStyle({
+        width: `${targetW + 24}px`,
+        maxWidth: "95vw",
+        maxHeight: "95vh",
+        boxSizing: "border-box",
+      });
+      return;
+    }
+
     // Reset flags
     setIsImageLoaded(false);
     setComputedImageStyle(null);
@@ -80,8 +112,8 @@ const ProductModal = ({
       // Available space inside overlay (leave small padding)
       const paddingX = 24; // overlay + modal padding left/right
       const paddingY = 24 + 120; // overlay + modal padding top/bottom + space for details/buttons (approx)
-      const maxModalW = Math.floor(vw * 0.95) - paddingX;
-      const maxModalH = Math.floor(vh * 0.9) - paddingY;
+      const maxModalW = Math.max(32, Math.floor(vw * 0.95) - paddingX);
+      const maxModalH = Math.max(32, Math.floor(vh * 0.75) - paddingY);
 
       // Compute scale to fit while preserving aspect ratio, allow natural size if it fits
       const scale = Math.min(1, maxModalW / naturalW || 1, maxModalH / naturalH || 1);
@@ -121,7 +153,7 @@ const ProductModal = ({
       });
     };
     img.src = modalImageUrl;
-  }, [modalImageUrl, setIsImageLoaded]);
+  }, [modalImageUrl, modalImageFrame, setIsImageLoaded]);
 
   // Ensure modal close resets zoom (use wrapper reset if available)
   const handleClose = () => {
@@ -207,8 +239,7 @@ const ProductModal = ({
                     alt="Product Modal"
                     onLoad={() => setIsImageLoaded(true)}
                     style={{
-                      visibility: isImageLoaded ? "visible" : "hidden",
-                      //display: isImageLoaded ? "block" : "none",
+                      display: isImageLoaded ? "block" : "none",
                       width: computedImageStyle?.width || "95vw",
                       height: computedImageStyle?.height || "55vw",
                       objectFit: "contain",

@@ -13,6 +13,8 @@ import {
 } from "@tanstack/react-query";
 import { all } from 'axios';
 import { post } from 'jquery';
+import { filterOutExistingById } from './utils/idUtils';
+import { dedupePhotosByImageIdOrUri } from './utils/dedupe';
 
 
 
@@ -67,6 +69,7 @@ const [responseMessage, setResponseMessage ] = useState('');
 const [selectedStore, setSelectedStore] = useState('0'); // Default to "All Stores"
 const [selectedStoreName, setSelectedStoreName] = useState('All Stores'); // Default to "All Stores"
 const [selectedStoreFacebookPageId, setSelectedStoreFacebookPageId ] = useState(''); // State for selected store's Facebook URL
+const [ingestStoreIds, setIngestStoreIds] = useState([]); // Store IDs selected for ingest test
 
 
   const CLOUD_NAME = import.meta.env.CLOUDINARY_CLOUD_NAME;
@@ -259,25 +262,20 @@ const handleFetchFacebookPostsRapidApi = async (pageId) => {
 console.log('Filtering allPhotos. postIds:', postIds);
 console.log('allPhotos before filtering:', allPhotos);
 
-// Convert all postIds to string for reliable comparison
-const postIdSet = new Set(postIds.map(obj => String(obj.postId)));
-console.log('postIdSet for filtering:', postIdSet);
-
-// Filter out photos whose postId matches any in postIds
-const filteredPhotos = allPhotos.filter(photo => {
-  const match = postIdSet.has(String(photo.postId));
-  if (match) {
-    console.log(`Filtered out photo with postId: ${photo.postId}`);
-  }
-  return !match;
-});
+const filteredPhotos = filterOutExistingById(
+  allPhotos,
+  postIds,
+  (photo) => photo.postId,
+  (obj) => obj.postId
+);
 
 //filteredPhotos = allPhotos ;
 
-console.log('allPhotos after filtering:', allPhotos); // Log the correct array
+console.log('allPhotos after filtering:', filteredPhotos); // Log the correct array
 
 // --- FIX: Use the 'filteredPhotos' array instead of 'allPhotos' ---
-setFacebookPhotos(allPhotos);
+setFacebookPhotos(filteredPhotos);
+setFacebookPhotosCount(filteredPhotos.length);
 //setAllMessages(allMessages);
 setStatus(`Fetched ${allPhotos.length} total photos. After filtering, ${filteredPhotos.length} are new.`);
 
@@ -286,9 +284,6 @@ setStatus(`Fetched ${allPhotos.length} total photos. After filtering, ${filtered
 
 
 
-    setFacebookPhotos(allPhotos);
-    setFacebookPhotosCount(allPhotos.length);
-    setStatus(`Fetched ${allPhotos.length} Facebook post images via backend /facebook-posts.`);
     console.log('All messages:', allMessages);
   } catch (error) {
     setStatus('A critical error occurred in handleFetchFacebookPostsRapidApi.');
@@ -443,17 +438,7 @@ const group = groupedByPostId[postId] || [];
 
 // IMPORTANT: Build the Gemini payload from the CURRENT group items (not group[0].imageData)
 // so that removing photos in the UI truly removes them from processing.
-const seenKeys = new Set();
-const uniquePhotos = [];
-
-for (const photo of group) {
-  const key = photo?.imageId ?? photo?.uri ?? photo?.image;
-  if (!key) continue;
-  const keyStr = String(key);
-  if (seenKeys.has(keyStr)) continue;
-  seenKeys.add(keyStr);
-  uniquePhotos.push(photo);
-}
+const uniquePhotos = dedupePhotosByImageIdOrUri(group);
 
 console.log(`Processing postId group "${postId}" with ${uniquePhotos.length} images (after dedupe).`);
 
@@ -827,6 +812,34 @@ const getPostIds = async () => {
     }
   } catch (error) {
     console.error('Error fetching post IDs:', error);
+  }
+};
+
+// --- Handler to trigger the daily ingest pipeline ---
+const handleTriggerDailyIngest = async () => {
+  const storeLabel = ingestStoreIds.length > 0
+    ? `stores: ${ingestStoreIds.join(', ')}`
+    : 'ALL active stores';
+  if (!window.confirm(`Run daily ingest for ${storeLabel}? This will fetch Facebook posts, upload to Cloudinary, extract with Gemini, and insert into the DB.`)) {
+    return;
+  }
+  setStatus(<font style={{color:'orange'}}><b>Daily ingest started for {storeLabel}... check server logs for progress.</b></font>);
+  try {
+    const body = ingestStoreIds.length > 0 ? { storeIds: ingestStoreIds } : {};
+    const response = await fetch(`${node_url}/trigger-daily-ingest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const result = await response.json();
+    if (response.ok) {
+      setStatus(<font style={{color:'green'}}><b>{result.message}</b></font>);
+    } else {
+      setStatus(<font style={{color:'red'}}><b>Error: {result.error}</b></font>);
+    }
+  } catch (error) {
+    console.error('Error triggering daily ingest:', error);
+    setStatus(<font style={{color:'red'}}><b>Network error triggering daily ingest.</b></font>);
   }
 };
 
@@ -2089,6 +2102,31 @@ Search Products: <input type="text" id="keyword_search" name="keyword_search" on
       Refresh Products
     </button>
   
+    {/* --- Daily Ingest: store selector + trigger button --- */}
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+      <select
+        multiple
+        size={3}
+        style={{ fontSize: 12, minWidth: 160 }}
+        value={ingestStoreIds.map(String)}
+        onChange={e => {
+          const selected = Array.from(e.target.selectedOptions).map(o => parseInt(o.value, 10));
+          setIngestStoreIds(selected);
+        }}
+      >
+        {stores.map(store => (
+          <option key={store.storeId} value={store.storeId}>{store.storeName}</option>
+        ))}
+      </select>
+      <div style={{ fontSize: 11, color: '#555' }}>
+        {ingestStoreIds.length === 0 ? 'All stores' : `${ingestStoreIds.length} selected`}<br/>
+        <span style={{ color: '#888' }}>(Ctrl+click to multi-select)</span>
+      </div>
+      <button onClick={handleTriggerDailyIngest} style={{ backgroundColor: '#31708f', color: 'white', borderColor: '#245269', fontWeight: 'bold' }}>
+        Run Daily Ingest
+      </button>
+    </div>
+
     {/* --- NEW: Button to trigger notifications for all users --- */}
     <button onClick={handleSendAllNotifications} style={{ backgroundColor: '#c9302c', color: 'white', borderColor: '#ac2925', fontWeight: 'bold' }}>
       Dërgo Njoftime Për Të Gjithë
