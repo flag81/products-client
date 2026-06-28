@@ -64,12 +64,24 @@ const [email, setEmail] = useState('');
 
 const [mode, setMode] = useState('dashboard');
 
+const [jobLogs, setJobLogs] = useState([]);
+const [jobLogsLoading, setJobLogsLoading] = useState(false);
+const [showJobLogs, setShowJobLogs] = useState(false);
+
 const [responseMessage, setResponseMessage ] = useState('');
 
 const [selectedStore, setSelectedStore] = useState('0'); // Default to "All Stores"
 const [selectedStoreName, setSelectedStoreName] = useState('All Stores'); // Default to "All Stores"
 const [selectedStoreFacebookPageId, setSelectedStoreFacebookPageId ] = useState(''); // State for selected store's Facebook URL
 const [ingestStoreIds, setIngestStoreIds] = useState([]); // Store IDs selected for ingest test
+const [editingProductId, setEditingProductId] = useState(null);
+const [productEditForm, setProductEditForm] = useState({
+  description: '',
+  oldPrice: '',
+  newPrice: '',
+  saleEndDate: '',
+});
+const [isSavingProduct, setIsSavingProduct] = useState(false);
 
 
   const CLOUD_NAME = import.meta.env.CLOUDINARY_CLOUD_NAME;
@@ -812,6 +824,107 @@ const getPostIds = async () => {
     }
   } catch (error) {
     console.error('Error fetching post IDs:', error);
+  }
+};
+
+const loadLatestProducts = async () => {
+  const storeValue = document.querySelector('select[name="store"]')?.value ?? '0';
+  const favoritesChecked = document.getElementById('favorites')?.checked ?? false;
+  const onSaleChecked = document.getElementById('onSale')?.checked ?? false;
+
+  setCurrentPage(1);
+  await getAllProducts(1, loggedInUser, storeValue, favoritesChecked, onSaleChecked);
+};
+
+const startEditingProduct = (product) => {
+  const saleEndDate = product?.sale_end_date
+    ? new Date(product.sale_end_date).toISOString().slice(0, 10)
+    : '';
+
+  setEditingProductId(product.productId);
+  setProductEditForm({
+    description: product?.product_description || '',
+    oldPrice: product?.old_price ?? '',
+    newPrice: product?.new_price ?? '',
+    saleEndDate,
+  });
+};
+
+const cancelEditingProduct = () => {
+  setEditingProductId(null);
+  setProductEditForm({ description: '', oldPrice: '', newPrice: '', saleEndDate: '' });
+};
+
+const saveProductEdits = async (productId) => {
+  if (!productId) return;
+  if (!productEditForm.description?.trim()) {
+    setStatus('Description is required.');
+    return;
+  }
+  if (!productEditForm.saleEndDate) {
+    setStatus('Sale end date is required.');
+    return;
+  }
+
+  setIsSavingProduct(true);
+  try {
+    const requests = [
+      fetch(`${node_url}/editProductDescription`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, newDescription: productEditForm.description.trim() }),
+      }),
+      fetch(`${node_url}/updateProductPrices`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId,
+          oldPrice: productEditForm.oldPrice,
+          newPrice: productEditForm.newPrice,
+        }),
+      }),
+      fetch(`${node_url}/editProductSaleDate`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, sale_end_date: productEditForm.saleEndDate }),
+      }),
+    ];
+
+    const responses = await Promise.all(requests);
+    const failed = responses.find(r => !r.ok);
+    if (failed) {
+      const errorBody = await failed.json().catch(() => ({}));
+      throw new Error(errorBody?.error || errorBody?.message || 'Failed to save product changes.');
+    }
+
+    setStatus(`Product ${productId} updated successfully.`);
+    cancelEditingProduct();
+    await loadLatestProducts();
+  } catch (error) {
+    console.error('Error saving product edits:', error);
+    setStatus(`Failed to save product ${productId}: ${error.message}`);
+  } finally {
+    setIsSavingProduct(false);
+  }
+};
+
+// --- Handler to fetch job logs ---
+const fetchJobLogs = async () => {
+  setJobLogsLoading(true);
+  setShowJobLogs(true);
+  try {
+    const response = await fetch(`${node_url}/job-logs`);
+    const result = await response.json();
+    if (response.ok) {
+      setJobLogs(result.data || []);
+    } else {
+      setStatus('Failed to fetch job logs.');
+    }
+  } catch (error) {
+    console.error('Error fetching job logs:', error);
+    setStatus('Error fetching job logs.');
+  } finally {
+    setJobLogsLoading(false);
   }
 };
 
@@ -1728,7 +1841,7 @@ if (!productId || !keyword) {
 
   return (
 
-    
+<>
 
 <div style={{ margin: '0', padding: '0', width: '90vw', 
 
@@ -2101,6 +2214,10 @@ Search Products: <input type="text" id="keyword_search" name="keyword_search" on
     >
       Refresh Products
     </button>
+
+    <button onClick={loadLatestProducts} style={{ fontWeight: 'bold' }}>
+      Load Latest DB Products
+    </button>
   
     {/* --- Daily Ingest: store selector + trigger button --- */}
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -2130,6 +2247,11 @@ Search Products: <input type="text" id="keyword_search" name="keyword_search" on
     {/* --- NEW: Button to trigger notifications for all users --- */}
     <button onClick={handleSendAllNotifications} style={{ backgroundColor: '#c9302c', color: 'white', borderColor: '#ac2925', fontWeight: 'bold' }}>
       Dërgo Njoftime Për Të Gjithë
+    </button>
+
+    {/* --- Button to show job logs --- */}
+    <button onClick={fetchJobLogs} style={{ backgroundColor: '#5bc0de', color: 'white', borderColor: '#46b8da', fontWeight: 'bold' }}>
+      Show Job Logs
     </button>
 </div>  
     
@@ -2313,11 +2435,10 @@ onClick={() => {
             <tr>
               <th>Selected</th>
               <th>Product ID</th>
-              <th>Product Description</th>
+              <th>Product Info</th>
               <th>Image</th>
               <th>Keywords</th>
-              <th>Favorite</th>
-              <th>Delete</th>
+              <th>Actions</th>
 
             </tr>
             {products?.map(product => ( 
@@ -2356,10 +2477,43 @@ onClick={() => {
 
 
               <td>{product.productId}</td>
-                <td>{product.product_description}
-                <br /> { new Date(product.sale_end_date).toLocaleDateString('EN-UK')  }
-                <br /> { product.storeName }
-                <br /> { product.old_price } -  { product.new_price }
+                <td>
+                  {editingProductId === product.productId ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 280 }}>
+                      <input
+                        type="text"
+                        value={productEditForm.description}
+                        onChange={(e) => setProductEditForm(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Description"
+                      />
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <input
+                          type="text"
+                          value={productEditForm.oldPrice}
+                          onChange={(e) => setProductEditForm(prev => ({ ...prev, oldPrice: e.target.value }))}
+                          placeholder="Old price"
+                        />
+                        <input
+                          type="text"
+                          value={productEditForm.newPrice}
+                          onChange={(e) => setProductEditForm(prev => ({ ...prev, newPrice: e.target.value }))}
+                          placeholder="New price"
+                        />
+                      </div>
+                      <input
+                        type="date"
+                        value={productEditForm.saleEndDate}
+                        onChange={(e) => setProductEditForm(prev => ({ ...prev, saleEndDate: e.target.value }))}
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      {product.product_description}
+                      <br /> { new Date(product.sale_end_date).toLocaleDateString('EN-UK')  }
+                      <br /> { product.storeName }
+                      <br /> { product.old_price } -  { product.new_price }
+                    </>
+                  )}
                   </td> 
                   <td>       
 
@@ -2428,10 +2582,34 @@ onClick={() => {
 
              
 
-
-
-
-                <td><button onClick={() => handleDeleteProduct(product.productId)}>Delete</button></td>
+                <td>
+                  {editingProductId === product.productId ? (
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button
+                        onClick={() => saveProductEdits(product.productId)}
+                        disabled={isSavingProduct}
+                      >
+                        {isSavingProduct ? 'Saving...' : 'Save'}
+                      </button>
+                      <button onClick={cancelEditingProduct} disabled={isSavingProduct}>Cancel</button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button onClick={() => startEditingProduct(product)}>Edit</button>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm(`Delete product ${product.productId} and related keyword/favorite data?`)) {
+                            return;
+                          }
+                          await handleDeleteProduct(product.productId);
+                          await loadLatestProducts();
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </td>
               
               </tr>
             ))}
@@ -2449,6 +2627,74 @@ onClick={() => {
 
 
     </div>
+
+{/* --- Job Logs Modal Overlay --- */}
+{showJobLogs && (
+  <div style={{
+    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+    backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999,
+    display: 'flex', justifyContent: 'center', alignItems: 'center'
+  }}>
+    <div style={{
+      backgroundColor: 'white', borderRadius: 8, padding: 20,
+      maxWidth: '90vw', maxHeight: '90vh', overflow: 'auto'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <h3 style={{ margin: 0 }}>Job Logs</h3>
+        <button onClick={() => setShowJobLogs(false)} style={{ fontSize: 18, cursor: 'pointer', background: 'none', border: 'none' }}>✕</button>
+      </div>
+      {jobLogsLoading ? (
+        <p>Loading...</p>
+      ) : jobLogs.length === 0 ? (
+        <p>No job logs found.</p>
+      ) : (
+        <table border="1" cellPadding="8" cellSpacing="0" style={{ width: '100%', fontSize: 13 }}>
+          <thead>
+            <tr style={{ backgroundColor: '#f5f5f5' }}>
+              <th>ID</th>
+              <th>Job Name</th>
+              <th>Status</th>
+              <th>Message</th>
+              <th>Store</th>
+              <th>Posts</th>
+              <th>Images Disc.</th>
+              <th>Images Up.</th>
+              <th>Products Ins.</th>
+              <th>Errors</th>
+              <th>Created At</th>
+            </tr>
+          </thead>
+          <tbody>
+            {jobLogs.map((log, idx) => (
+              <tr key={`${log.job_log_id}-${log.ingest_log_id || idx}`} style={{ backgroundColor: log.ingest_log_id ? (idx % 2 === 0 ? '#fff' : '#f9f9f9') : '#f0f0f0' }}>
+                <td>{log.job_log_id}</td>
+                <td>{log.job_name}</td>
+                <td>
+                  <span style={{
+                    display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 'bold',
+                    backgroundColor: log.status === 'success' ? '#dff0d8' : log.status === 'failed' ? '#f2dede' : '#fcf8e3',
+                    color: log.status === 'success' ? '#3c763d' : log.status === 'failed' ? '#a94442' : '#8a6d3b'
+                  }}>
+                    {log.status}
+                  </span>
+                </td>
+                <td style={{ maxWidth: 250, wordBreak: 'break-word' }}>{log.job_message}</td>
+                <td>{log.storeName || (log.store_id ? `Store #${log.store_id}` : '-')}</td>
+                <td>{log.posts_fetched ?? '-'}</td>
+                <td>{log.images_discovered ?? '-'}</td>
+                <td>{log.images_uploaded ?? '-'}</td>
+                <td>{log.products_inserted ?? '-'}</td>
+                <td style={{ maxWidth: 150, wordBreak: 'break-word', color: log.ingest_errors ? '#a94442' : 'inherit' }}>{log.ingest_errors || '-'}</td>
+                <td>{log.job_created_at ? new Date(log.job_created_at).toLocaleString() : ''}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  </div>
+)}
+</>
   );
 }
 
