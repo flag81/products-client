@@ -621,7 +621,7 @@ const settings = {
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
             maxLength={20}
-            placeholder="Find related content"
+            placeholder="Kerko..."
             onFocus={handleSearchFocus}
             onBlur={handleSearchBlur}
             onKeyDown={(e) => {
@@ -778,7 +778,7 @@ minWidth: 0,
           value={searchKeyword}
           onChange={(e) => setSearchKeyword(e.target.value)}
           maxLength={20}
-          placeholder="Find related content"
+          placeholder="Kerko..."
           onFocus={handleSearchFocus}
           onBlur={handleSearchBlur}
           onKeyDown={(e) => {
