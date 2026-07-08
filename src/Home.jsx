@@ -592,11 +592,75 @@ const settings = {
             flex: 1,
         }}>
          <Container fluid>
+
+      {/* Desktop: single row header (logo + search + button + icons) */}
+      <div className="d-none d-md-flex align-items-center gap-3 mb-3" style={{ width: "100%" }}>
+        <img
+          src={"mainlogo.png"}
+          alt="Meniven.com"
+          style={{
+            width: "auto",
+            maxWidth: 220,
+            height: "auto",
+            cursor: "pointer",
+            margin: 0,
+            display: "block",
+            flexShrink: 0,
+          }}
+        />
+
+        <div className="d-flex align-items-center gap-2" style={{ flex: 1, minWidth: 0 }}>
+          <Form.Control
+            className="form-control-lg"
+            style={{
+              minWidth: 0,
+              borderRadius: 24,
+            }}
+            type="text"
+            id="search-desktop"
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            maxLength={20}
+            placeholder="Find related content"
+            onFocus={handleSearchFocus}
+            onBlur={handleSearchBlur}
+            onKeyDown={(e) => {
+              const isAlphanumeric = /^[a-zA-Z0-9\s-]$/.test(e.key);
+              if (!isAlphanumeric && e.key !== "Backspace" && e.key !== "Enter") {
+                e.preventDefault();
+              }
+              if (e.key === "Backspace" && e.target.value.length === 1) {
+                handleSearch("");
+              } else if (e.key === "Enter") {
+                handleSearch(e.target.value);
+              }
+            }}
+          />
+          <Button onClick={() => handleSearch(searchKeyword)}>Kerko</Button>
+        </div>
+
+        <div className="d-flex align-items-center gap-2" style={{ flexShrink: 0 }}>
+          {!notificationsAllowed && (
+            <img
+              src="/bell.png"
+              alt="Enable notifications"
+              style={{ height: 34, width: 34, objectFit: "contain", display: "block", cursor: "pointer" }}
+              onClick={handleEnableNotifications}
+            />
+          )}
+          <img
+            src={isFavorite ? "/star-fill-2.png" : "/star-empty.jpg"}
+            alt="Favoritet"
+            style={{ height: 34, width: 34, objectFit: "contain", display: "block", cursor: "pointer" }}
+            onClick={() => setIsFavorite((prev) => !prev)}
+          />
+        </div>
+      </div>
  
        <div
         role="button" 
-        
-       className="d-flex flex-row align-items-center justify-content-between"
+
+       className="d-flex d-md-none flex-row align-items-center justify-content-between"
 
        style={{  
         
@@ -612,7 +676,7 @@ const settings = {
                   alt="Meniven.com"
                   style={{
                     width: "auto",
-                    maxWidth: 250,                // never larger than 250px
+                    maxWidth: 220,                // never larger than 250px
                     height: "auto",
                     cursor: "pointer",
                     margin: 5,
@@ -625,21 +689,30 @@ const settings = {
   <img
     src="/bell.png"
     alt="Enable notifications"
-    style={{ height: 30, width: "auto", objectFit: "contain", display: "block", cursor: "pointer" }}
+    style={{ height: 34, width: 34, objectFit: "contain", display: "block", cursor: "pointer" }}
     onClick={handleEnableNotifications}
   />
 )}
 
+
+        <img
+          src={isFavorite ? "/star-fill-2.png" : "/star-empty.jpg"}
+          alt="Favoritet"
+            style={{ height: 34, width: 34, objectFit: "contain", display: "block", cursor: "pointer" }}
+          onClick={() => setIsFavorite((prev) => !prev)}
+        />
+
       </div>
+
          
        </Container>
 
 
 {/* Search section - remove outer flex that could stretch width */}
-<div id="search-container" style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
-  <Container style={{ width: "100%", boxSizing: "border-box" }}>
+<div id="search-container" className="home-search-shell d-md-none" style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
+  <Container className="home-search-container" style={{ width: "100%", boxSizing: "border-box" }}>
     {/* Search and Store Filter */}
-    <Row className="mb-3 d-flex flex-column flex-md-row"
+    <Row className="mb-3 d-flex flex-column flex-md-row home-search-row"
       style={{
         // Removed display:flex, flexWrap and flex:1 (Bootstrap handles this)
         width: "100%",
@@ -649,7 +722,7 @@ const settings = {
       }}
     >
       {/* Search */}
-      <Col xs={12} md={6} 
+      <Col xs={12} md={6} className="home-search-col"
    
     
     style={{
@@ -666,7 +739,7 @@ const settings = {
     
     >
 
-<div style={{ display: "flex", 
+<div className="home-search-inline" style={{ display: "flex", 
 
 // keep search and buttons together alignt to left , but the favorite and notification icons to the right with space in between
 
@@ -675,7 +748,7 @@ const settings = {
 
   flexDirection: "row", border: "0px solid #060101ff" }}>
 
-<div style={{
+<div className="home-search-input-area" style={{
   display: "flex",
   flexDirection: "row",
   alignItems: "center",
@@ -688,12 +761,12 @@ minWidth: 0,
 
 
 
- <InputGroup className="flex-grow-1" style={{ minWidth: 0 }}>
-    <div className="select-description flex-grow-1 form-control-lg" style={{ width: "100%", margin: 0, padding: 0, display: "flex" }}>
+ <InputGroup className="flex-grow-1 home-search-group" style={{ minWidth: 0 }}>
+    <div className="select-description flex-grow-1 form-control-lg home-search-control-wrap" style={{ width: "100%", margin: 0, padding: 0, display: "flex" }}>
       {/* Controlled input so we can show an inline clear button */}
-      <div style={{ position: "relative", width: "100%", display: "flex", alignItems: "center" }}>
+      <div className="home-search-field-frame" style={{ position: "relative", width: "100%", display: "flex", alignItems: "center" }}>
         <Form.Control
-          className="select-description flex-grow-1 form-control-lg"
+          className="select-description flex-grow-1 form-control-lg home-search-input"
           style={{
             fontSize: 16,
             WebkitTextSizeAdjust: "100%",
@@ -705,7 +778,7 @@ minWidth: 0,
           value={searchKeyword}
           onChange={(e) => setSearchKeyword(e.target.value)}
           maxLength={20}
-          placeholder="Kerko produkte ..."
+          placeholder="Find related content"
           onFocus={handleSearchFocus}
           onBlur={handleSearchBlur}
           onKeyDown={(e) => {
@@ -719,10 +792,13 @@ minWidth: 0,
           }}
         />
 
+        <span className="home-search-icon" aria-hidden="true" />
+
         {/* Inline clear button positioned inside the input area */}
         {searchKeyword?.length > 0 && (
           <button
             type="button"
+            className="home-search-clear-btn"
             aria-label="Clear search"
             onClick={clearSearch}
             style={{
@@ -743,7 +819,7 @@ minWidth: 0,
 
       {/* Use state for searching instead of DOM traversal */}
       <Button
-        className="responsive-button"
+        className="responsive-button home-search-action-btn"
         onClick={() => handleSearch(searchKeyword)}
         style={{ marginLeft: 5 }}
       >
@@ -756,6 +832,7 @@ minWidth: 0,
       </div>
 
 <div
+  className="home-search-actions"
   style={{
     display: "flex",
     flexDirection: "row",
@@ -767,31 +844,9 @@ minWidth: 0,
   }}
 >
 
-      <div 
-        role="button"
-        style={{
-          marginRight: 5,
-          marginLeft: 5,
-          padding: 0,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          border: "0px solid #060101ff",
-          
-        }}
 
-        onClick={() => setIsFavorite((prev) => !prev)}
-      >
-        <img
-          src={isFavorite ? "/star-fill-2.png" : "/star-empty.jpg"}
-          alt="Favoritet"
-            style={{ height: 35, width: "auto", objectFit: "contain", display: "block" }}
-          
-        />
-     
 
-      </div>
+
 
             <div 
         role="button"
