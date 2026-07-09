@@ -685,22 +685,23 @@ const settings = {
       />
 
 
-{!notificationsAllowed && (
-  <img
-    src="/bell.png"
-    alt="Enable notifications"
-    style={{ height: 34, width: 34, objectFit: "contain", display: "block", cursor: "pointer" }}
-    onClick={handleEnableNotifications}
-  />
-)}
+        <div className="mobile-header-icons d-flex align-items-center">
+          {!notificationsAllowed && (
+            <img
+              src="/bell.png"
+              alt="Enable notifications"
+              className="mobile-top-icon"
+              onClick={handleEnableNotifications}
+            />
+          )}
 
-
-        <img
-          src={isFavorite ? "/star-fill-2.png" : "/star-empty.jpg"}
-          alt="Favoritet"
-            style={{ height: 34, width: 34, objectFit: "contain", display: "block", cursor: "pointer" }}
-          onClick={() => setIsFavorite((prev) => !prev)}
-        />
+          <img
+            src={isFavorite ? "/star-fill-2.png" : "/star-empty.jpg"}
+            alt="Favoritet"
+            className="mobile-top-icon"
+            onClick={() => setIsFavorite((prev) => !prev)}
+          />
+        </div>
 
       </div>
 

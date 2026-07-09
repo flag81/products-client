@@ -195,4 +195,20 @@ body::-webkit-scrollbar { /* keep default vertical scrollbar; this selector can 
   .home-search-actions {
     display: none !important;
   }
+
+  .mobile-header-icons {
+    gap: 12px;
+    margin-left: 8px;
+    flex-shrink: 0;
+  }
+
+  .mobile-top-icon {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    display: block;
+    cursor: pointer;
+    padding: 3px;
+    box-sizing: content-box;
+  }
 }
