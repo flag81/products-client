@@ -197,18 +197,59 @@ body::-webkit-scrollbar { /* keep default vertical scrollbar; this selector can 
   }
 
   .mobile-header-icons {
-    gap: 12px;
-    margin-left: 8px;
+    gap: 8px;
+    margin-left: 6px;
     flex-shrink: 0;
   }
 
+  .mobile-topbar {
+    width: 100%;
+    min-width: 0;
+    gap: 6px;
+  }
+
+  .mobile-top-logo {
+    max-width: min(54vw, 190px) !important;
+    width: auto;
+    height: auto;
+    margin: 2px 0 !important;
+    flex-shrink: 1;
+  }
+
   .mobile-top-icon {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     object-fit: contain;
     display: block;
     cursor: pointer;
-    padding: 3px;
+    padding: 2px;
     box-sizing: content-box;
+  }
+}
+
+@media (max-width: 420px) {
+  .mobile-top-logo {
+    max-width: min(50vw, 170px) !important;
+  }
+
+  .mobile-header-icons {
+    gap: 6px;
+  }
+
+  .mobile-top-icon {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+@media (max-width: 360px) {
+  .mobile-top-logo {
+    max-width: min(47vw, 150px) !important;
+  }
+
+  .mobile-top-icon {
+    width: 22px;
+    height: 22px;
+    padding: 1px;
   }
 }

@@ -302,6 +302,7 @@ useEffect(() => {
       return {
         products: json.data || [], // Ensure products is always an array
         nextPage: json.nextPage, // Use nextPage directly from backend
+        totalItems: Number(json.totalItems ?? 0),
       };
     }
 
@@ -538,6 +539,18 @@ useEffect(() => {
   };
 
   const allProducts = data?.pages.flatMap(p => p.products) ?? [];
+  const totalItemsFound = Number(data?.pages?.[0]?.totalItems ?? 0);
+  const normalizedSearchKeyword = String(searchKeyword || "").trim();
+  const selectedStoreNames = (stores || [])
+    .filter((store) => (selectedStores || []).includes(String(store.storeId)))
+    .map((store) => store.storeName)
+    .filter(Boolean);
+  const selectedStoresSuffix =
+    selectedStoreNames.length === 0
+      ? ""
+      : selectedStoreNames.length === 1
+        ? ` te dyqani ${selectedStoreNames[0]}`
+        : ` te dyqanet ${selectedStoreNames.join(", ")}`;
 
   // REMOVED: The dynamic lgCols calculation is no longer needed.
   // const count       = allProducts.length;
@@ -660,7 +673,7 @@ const settings = {
        <div
         role="button" 
 
-       className="d-flex d-md-none flex-row align-items-center justify-content-between"
+      className="d-flex d-md-none flex-row align-items-center justify-content-between mobile-topbar"
 
        style={{  
         
@@ -674,6 +687,7 @@ const settings = {
       <img
                   src={"mainlogo.png"}
                   alt="Meniven.com"
+                  className="mobile-top-logo"
                   style={{
                     width: "auto",
                     maxWidth: 220,                // never larger than 250px
@@ -905,6 +919,23 @@ minWidth: 0,
   onSale={onSale}
   onClearOnSale={() => setOnSale(false)}
 />
+
+{normalizedSearchKeyword.length > 0 && (
+  <div
+    style={{
+      margin: "8px 0 10px 0",
+      padding: "8px 12px",
+      borderRadius: 8,
+      background: "#eef5ff",
+      color: "#1d3d72",
+      border: "1px solid #d5e6ff",
+      fontSize: 14,
+      fontWeight: 600,
+    }}
+  >
+    U gjet{totalItemsFound === 1 ? "" : "en"} {totalItemsFound} {totalItemsFound === 1 ? "artikull" : "artikuj"} per &quot;{normalizedSearchKeyword}&quot;{selectedStoresSuffix}.
+  </div>
+)}
 
 
 <NoProductsMessage show={data?.pages?.[0]?.products?.length === 0} />
