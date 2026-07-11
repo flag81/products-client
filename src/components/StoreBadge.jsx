@@ -1,22 +1,27 @@
-import React from "react";
+import PropTypes from "prop-types";
 
-export default function StoreBadge({ logoUrl, storeName }) {
+export default function StoreBadge({ logoUrl, storeName, size = 30 }) {
   return (
     <div
       style={{
         display: "flex",
-        alignItems: "center",
+        alignItems: "flex-end",
         justifyContent: "center",
-        alignContent: "center",
-        marginBottom: 5,
-        paddingTop: 5,
+        height: 34,
       }}
     >
       {logoUrl ? (
         <img
           src={`${logoUrl.replace("/upload/", "/upload/w_100,c_scale/")}`}
           alt="Store Logo"
-          style={{ width: 50 }}
+          style={{
+            width: size,
+            height: size,
+            objectFit: "contain",
+            objectPosition: "center",
+            borderRadius: 8,
+            display: "block",
+          }}
         />
       ) : (
         <span style={{ color: "black", marginRight: 5 }}>{storeName || "N/A"}</span>
@@ -24,3 +29,9 @@ export default function StoreBadge({ logoUrl, storeName }) {
     </div>
   );
 }
+
+StoreBadge.propTypes = {
+  logoUrl: PropTypes.string,
+  storeName: PropTypes.string,
+  size: PropTypes.number,
+};

@@ -35,6 +35,7 @@ export default function ProductCard({
   });
 
   const commonCardClass = "h-100 pt-1 px-1 pb-0 product-card d-flex flex-column";
+  const bottomIconSize = 30;
 
   if (variant === "onsale") {
     return (
@@ -146,24 +147,35 @@ export default function ProductCard({
                   display: "flex",
                   width: "100%",
                   flexDirection: "row",
-                  alignItems: "center",
+                  alignItems: "flex-end",
                   paddingBottom: 0,
                   paddingTop: 0,
                   justifyContent: "space-between",
                   borderRadius: 0,
+                  minHeight: 34,
                 }}
               >
-                <FavoriteToggle
-                  isFavorite={product.isFavorite}
-                  onClick={() => onToggleFavorite(product.productId, product.isFavorite)}
-                />
+                <div style={{ display: "flex", alignItems: "flex-end", height: 34 }}>
+                  <FavoriteToggle
+                    isFavorite={product.isFavorite}
+                    onClick={() => onToggleFavorite(product.productId, product.isFavorite)}
+                    size={bottomIconSize}
+                  />
+                </div>
 
-                <StoreBadge logoUrl={product.logoUrl} storeName={product.storeName} />
+                <div style={{ display: "flex", alignItems: "flex-end", height: 34 }}>
+                  <StoreBadge
+                    logoUrl={product.logoUrl}
+                    storeName={product.storeName}
+                    size={bottomIconSize}
+                  />
+                </div>
 
-                <div style={{ display: "flex", verticalAlign: "middle" }} role="button">
+                <div style={{ display: "flex", alignItems: "flex-end", height: 34 }} role="button">
                   <ExpiryBadge
                     saleEndDate={product.sale_end_date}
                     productOnSale={product.productOnSale}
+                    iconSize={bottomIconSize}
                   />
                 </div>
               </div>

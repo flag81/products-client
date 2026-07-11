@@ -88,6 +88,7 @@ useEffect(() => {
   const [selectedStores, setSelectedStores] = useState([]); // store ids as strings
   const [isFavorite, setIsFavorite] = useState(false);
   const [onSale, setOnSale] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
   const [searchKeyword, setSearchKeyword] = useState("");
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -220,6 +221,14 @@ useEffect(() => {
     onMutate: async ({ productId, productIsCurrentlyFavorite }) => {
       await queryClient.cancelQueries({ queryKey: productsQueryKey });
       const previous = queryClient.getQueryData(productsQueryKey);
+      const previousModalProduct = modalProduct;
+
+      setModalProduct((current) =>
+        current && current.productId === productId
+          ? { ...current, isFavorite: !productIsCurrentlyFavorite }
+          : current
+      );
+
       queryClient.setQueryData(
         { queryKey: productsQueryKey },
         (old) => {
@@ -237,7 +246,7 @@ useEffect(() => {
           };
         }
       );
-      return { previous };
+      return { previous, previousModalProduct };
     },
     onError: (_err, _vars, context) => {
       if (context?.previous) {
@@ -245,6 +254,10 @@ useEffect(() => {
           { queryKey: productsQueryKey },
           context.previous
         );
+      }
+
+      if (context?.previousModalProduct) {
+        setModalProduct(context.previousModalProduct);
       }
     },
     onSettled: () => {
@@ -524,6 +537,22 @@ useEffect(() => {
     return () => obs.disconnect();
   }, [fetchNextPage, hasNextPage]);
 
+  useEffect(() => {
+    const normalizedInput = String(searchInput || "").trim();
+
+    if (normalizedInput.length === 0) {
+      setSearchKeyword("");
+      return;
+    }
+
+    if (normalizedInput.length >= 3) {
+      setSearchKeyword(searchInput);
+      return;
+    }
+
+    setSearchKeyword("");
+  }, [searchInput]);
+
   const handleSearchFocus = () => {
     // Intentionally minimal: keep existing UX, just avoid missing handler errors.
   };
@@ -532,9 +561,19 @@ useEffect(() => {
     // Intentionally minimal: keep existing UX, just avoid missing handler errors.
   };
 
-  const handleSearch = (value) => setSearchKeyword(value);
+  const handleSearch = (value) => {
+    const normalizedValue = String(value || "").trim();
+    if (normalizedValue.length === 0) {
+      setSearchKeyword("");
+      return;
+    }
+    if (normalizedValue.length >= 3) {
+      setSearchKeyword(value);
+    }
+  };
 
   const clearSearch = () => {
+    setSearchInput("");
     setSearchKeyword("");
   };
 
@@ -631,8 +670,8 @@ const settings = {
             }}
             type="text"
             id="search-desktop"
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             maxLength={20}
             placeholder="Kerko..."
             onFocus={handleSearchFocus}
@@ -649,7 +688,7 @@ const settings = {
               }
             }}
           />
-          <Button onClick={() => handleSearch(searchKeyword)}>Kerko</Button>
+          <Button onClick={() => handleSearch(searchInput)}>Kerko</Button>
         </div>
 
         <div className="d-flex align-items-center gap-2" style={{ flexShrink: 0 }}>
@@ -790,8 +829,8 @@ minWidth: 0,
           }}
           type="text"
           id="search"
-          value={searchKeyword}
-          onChange={(e) => setSearchKeyword(e.target.value)}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
           maxLength={20}
           placeholder="Kerko..."
           onFocus={handleSearchFocus}
@@ -810,7 +849,7 @@ minWidth: 0,
         <span className="home-search-icon" aria-hidden="true" />
 
         {/* Inline clear button positioned inside the input area */}
-        {searchKeyword?.length > 0 && (
+        {searchInput?.length > 0 && (
           <button
             type="button"
             className="home-search-clear-btn"
@@ -835,7 +874,7 @@ minWidth: 0,
       {/* Use state for searching instead of DOM traversal */}
       <Button
         className="responsive-button home-search-action-btn"
-        onClick={() => handleSearch(searchKeyword)}
+        onClick={() => handleSearch(searchInput)}
         style={{ marginLeft: 5 }}
       >
         Kerko

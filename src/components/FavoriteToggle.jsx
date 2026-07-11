@@ -1,4 +1,4 @@
-import React from "react";
+import PropTypes from "prop-types";
 
 export default function FavoriteToggle({ isFavorite, onClick, size = 24 }) {
   return (
@@ -21,3 +21,9 @@ export default function FavoriteToggle({ isFavorite, onClick, size = 24 }) {
     </div>
   );
 }
+
+FavoriteToggle.propTypes = {
+  isFavorite: PropTypes.bool,
+  onClick: PropTypes.func,
+  size: PropTypes.number,
+};
