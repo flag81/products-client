@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card";
 import Placeholder from "react-bootstrap/Placeholder";
@@ -22,6 +22,7 @@ export default function ProductCard({
   onToggleFavorite,
 }) {
   const imageMetaRef = useRef(null);
+  const [imageLoadFailed, setImageLoadFailed] = useState(false);
 
   const openFromCard = (imageUrl, productToOpen) => {
     onOpenModal(imageUrl, productToOpen, imageMetaRef.current);
@@ -33,6 +34,8 @@ export default function ProductCard({
     autoTransformation,
     directory,
   });
+
+  if (!imgUrl || imageLoadFailed) return null;
 
   const commonCardClass = "h-100 pt-1 px-1 pb-0 product-card d-flex flex-column";
   const bottomIconSize = 30;
@@ -71,6 +74,7 @@ export default function ProductCard({
                 };
                 setIsCardImageLoaded(true);
               }}
+              onError={() => setImageLoadFailed(true)}
               onClick={() => openFromCard(imgUrl, product)}
               style={{
                 display: "block",
@@ -221,6 +225,7 @@ export default function ProductCard({
               };
               setIsCardImageLoaded(true);
             }}
+            onError={() => setImageLoadFailed(true)}
             onClick={() => openFromCard(imgUrl, product)}
             style={{
               display: "block",
