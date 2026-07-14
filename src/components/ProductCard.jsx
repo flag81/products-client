@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card";
 import Placeholder from "react-bootstrap/Placeholder";
@@ -23,6 +23,8 @@ export default function ProductCard({
 }) {
   const imageMetaRef = useRef(null);
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
+  const hasReportedBrokenRef = useRef(false);
+  const nodeUrl = import.meta.env.VITE_NODE_URL;
 
   const openFromCard = (imageUrl, productToOpen) => {
     onOpenModal(imageUrl, productToOpen, imageMetaRef.current);
@@ -34,6 +36,54 @@ export default function ProductCard({
     autoTransformation,
     directory,
   });
+
+  const reportBrokenImage = (reason, failingUrl = "") => {
+    if (hasReportedBrokenRef.current || !nodeUrl) return;
+    hasReportedBrokenRef.current = true;
+
+    fetch(`${nodeUrl}/report-broken-product-image`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        productId: product?.productId || null,
+        storeId: product?.storeId || null,
+        storeName: product?.storeName || null,
+        rawProductImageUrl: product?.image_url || "",
+        attemptedCloudinaryUrl: imgUrl || "",
+        failingUrl: failingUrl || imgUrl || product?.image_url || "",
+        facebookPostId: product?.postId || null,
+        facebookImageId: product?.imageId || null,
+        facebookTimestamp: product?.timestamp || null,
+        clientError: reason,
+        sourcePage: "home-product-card",
+        userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
+      }),
+    }).catch(() => {});
+  };
+
+  useEffect(() => {
+    if (!imgUrl && !hasReportedBrokenRef.current && nodeUrl) {
+      hasReportedBrokenRef.current = true;
+      fetch(`${nodeUrl}/report-broken-product-image`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId: product?.productId || null,
+          storeId: product?.storeId || null,
+          storeName: product?.storeName || null,
+          rawProductImageUrl: product?.image_url || "",
+          attemptedCloudinaryUrl: "",
+          failingUrl: product?.image_url || "",
+          facebookPostId: product?.postId || null,
+          facebookImageId: product?.imageId || null,
+          facebookTimestamp: product?.timestamp || null,
+          clientError: "missing-image-url",
+          sourcePage: "home-product-card",
+          userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
+        }),
+      }).catch(() => {});
+    }
+  }, [imgUrl, nodeUrl, product]);
 
   if (!imgUrl || imageLoadFailed) return null;
 
@@ -74,7 +124,10 @@ export default function ProductCard({
                 };
                 setIsCardImageLoaded(true);
               }}
-              onError={() => setImageLoadFailed(true)}
+              onError={() => {
+                reportBrokenImage("image-load-error", imgUrl);
+                setImageLoadFailed(true);
+              }}
               onClick={() => openFromCard(imgUrl, product)}
               style={{
                 display: "block",
@@ -225,7 +278,10 @@ export default function ProductCard({
               };
               setIsCardImageLoaded(true);
             }}
-            onError={() => setImageLoadFailed(true)}
+            onError={() => {
+              reportBrokenImage("image-load-error", imgUrl);
+              setImageLoadFailed(true);
+            }}
             onClick={() => openFromCard(imgUrl, product)}
             style={{
               display: "block",

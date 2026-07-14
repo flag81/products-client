@@ -1,8 +1,7 @@
-import React, { lazy, useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import { Placeholder } from "react-bootstrap";
 
 import Zoom from "react-medium-image-zoom";
 import "react-medium-image-zoom/dist/styles.css";
@@ -15,25 +14,82 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
     console.log('[DEBUG] baseUrl:', baseUrl);
     console.log('[DEBUG] isFlyerModalOpen:', isFlyerModalOpen);
 
+    const sliderRef = useRef(null);
+    const loadTimeoutsRef = useRef({});
+    const imageFrameStyle = {
+      width: '400px',
+      maxWidth: '100%',
+      maxHeight: '80vh',
+      aspectRatio: '3 / 4',
+      objectFit: 'contain',
+      display: 'block',
+    };
     // current slide index and per-slide loaded flags
     const [currentSlide, setCurrentSlide] = useState(0);
-    const [loaded, setLoaded] = useState(() => Array(flyerBook?.length || 0).fill(false));
+    const [loadedUrls, setLoadedUrls] = useState({});
+    const [failedUrls, setFailedUrls] = useState({});
+
+    const toImageUrl = (item) => {
+      const raw = String(item?.image_url || "").trim();
+      if (!raw) return "";
+      return raw.startsWith("http") ? raw : `${baseUrl}/${raw}`;
+    };
+
+    const visibleFlyers = useMemo(() => {
+      if (!Array.isArray(flyerBook)) return [];
+      return flyerBook.filter((item) => {
+        const url = toImageUrl(item);
+        return url && !failedUrls[url];
+      });
+    }, [flyerBook, failedUrls]);
+
+    const clearLoadTimeout = (url) => {
+      const timer = loadTimeoutsRef.current[url];
+      if (timer) {
+        clearTimeout(timer);
+        delete loadTimeoutsRef.current[url];
+      }
+    };
+
+    const markAsFailedAndSkip = (url) => {
+      clearLoadTimeout(url);
+      setLoadedUrls((prev) => ({ ...prev, [url]: true }));
+      setFailedUrls((prev) => ({ ...prev, [url]: true }));
+      requestAnimationFrame(() => {
+        sliderRef.current?.slickNext?.();
+      });
+    };
+
+    const scheduleLoadTimeout = (url) => {
+      if (!url || loadedUrls[url] || failedUrls[url] || loadTimeoutsRef.current[url]) return;
+      loadTimeoutsRef.current[url] = setTimeout(() => {
+        markAsFailedAndSkip(url);
+      }, 7000);
+    };
     
     useEffect(() => {
-      setLoaded(Array(flyerBook?.length || 0).fill(false));
+      setLoadedUrls({});
+      setFailedUrls({});
       setCurrentSlide(0);
+      Object.keys(loadTimeoutsRef.current).forEach((url) => clearLoadTimeout(url));
     }, [flyerBook]);
+
+    useEffect(() => {
+      return () => {
+        Object.keys(loadTimeoutsRef.current).forEach((url) => clearLoadTimeout(url));
+      };
+    }, []);
 
     // helper: map any slick index (including clones) to the original slide index
     const getRealIndex = (index) => {
-      const n = flyerBook?.length || 1;
+      const n = visibleFlyers.length || 1;
       return ((index % n) + n) % n;
     };
 
   // Check if flyerBook is an array and has elements
   const settings = {
     dots: true,
-    infinite: true,
+    infinite: visibleFlyers.length > 1,
     speed: 300,
     slidesToShow: 1,
     slidesToScroll: 1,
@@ -86,70 +142,77 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
 >
 
   {/* slide counter */}
-  {Array.isArray(flyerBook) && flyerBook.length > 0 && (
+  {Array.isArray(visibleFlyers) && visibleFlyers.length > 0 && (
     <div style={{ color: '#fff', textAlign: 'center', marginBottom: 8 }}>
-      {currentSlide + 1}/{flyerBook.length}
+      {currentSlide + 1}/{visibleFlyers.length}
     </div>
   )}
 
-  {flyerBook?.length > 0 ? (
-    <Slider key={flyerBook?.length} {...settings}>
-      {flyerBook.map((item, i) => {
-        // per-slide loading uses the loaded[] array
-        const url = item.image_url.startsWith('http')
-          ? item.image_url
-          : `<span class="math-inline">\{baseUrl\}/</span>{item.image_url}`;
+  {visibleFlyers?.length > 0 ? (
+    <Slider ref={sliderRef} key={visibleFlyers.length} {...settings}>
+      {visibleFlyers.map((item, i) => {
+        const url = toImageUrl(item);
         //console.log('[DEBUG] slide img URL:', url);
 
         console.log('[DEBUG] Image URL:', url);
-        console.log('[DEBUG] isLoaded:', loaded[i]);
+        console.log('[DEBUG] isLoaded:', Boolean(loadedUrls[url]));
 
         return (
-          <div id="ardita" key={i} style={{ textAlign: 'center' }}>
-            {!loaded[i] && (
-    <>
-        {console.log('[DEBUG] Rendering PlaceholderImage')}
-        <Placeholder as="div" animation="glow">
-                <Placeholder
-                  style={{
-                    width: "100%",
-                    height: 400, // Adjust to match the image dimensions
-                    backgroundColor: 'lightgray'
-                  }}
-                  className="rounded" // Optional: Add rounded corners
-                />
-              </Placeholder>
-    </>
-)}
-
+              <div id="ardita" key={url || i} style={{ textAlign: 'center' }}>
     <Zoom>
 
             <div style={{ position: "relative", display: "inline-block" }}>
 
+            {!loadedUrls[url] && (
+              <div
+                style={{
+                  ...imageFrameStyle,
+                  border: '1px solid rgba(255,255,255,0.25)',
+                  borderRadius: 6,
+                  position: 'relative',
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    fontSize: 13,
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  Loading image...
+                </div>
+              </div>
+            )}
+
             <img
+              ref={() => scheduleLoadTimeout(url)}
               src={url}
               alt={`Flyer ${i}`}
               loading="lazy"
               style={{
-                opacity: loaded[i] ? 1 : 0,
+                opacity: loadedUrls[url] ? 1 : 0,
                 transition: 'opacity 140ms ease-out',
-                width: '400px',
-                maxHeight: '80vh',
-                objectFit: 'contain',
-                display: 'block',
+                ...imageFrameStyle,
+                position: loadedUrls[url] ? 'static' : 'absolute',
+                top: 0,
+                left: 0,
               }} // Adjusted image styles for better fitting
                // add lazy loading placeholder component onload
 
                onLoad={() => {
                 console.log('[DEBUG] Image loaded:', url);
-                setLoaded(prev => {
-                  const copy = [...prev];
-                  copy[i] = true;
-                  return copy;
-                });
+                clearLoadTimeout(url);
+                setLoadedUrls((prev) => ({ ...prev, [url]: true }));
                }  
                } // Hide placeholder on successful load
-               onError={() => setLoaded(prev => { const copy = [...prev]; copy[i] = true; return copy; })} // Hide placeholder on error
+               onError={() => {
+                markAsFailedAndSkip(url);
+               }}
             />
 
       
@@ -192,7 +255,7 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
       })}
     </Slider>
   ) : (
-    <p style={{ color: '#fff' }}>Duke ngarkuar…</p>
+    <p style={{ color: '#fff' }}>No valid images found for this post.</p>
   )}
 </div>
       </div>

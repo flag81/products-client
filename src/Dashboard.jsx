@@ -67,6 +67,10 @@ const [mode, setMode] = useState('dashboard');
 const [jobLogs, setJobLogs] = useState([]);
 const [jobLogsLoading, setJobLogsLoading] = useState(false);
 const [showJobLogs, setShowJobLogs] = useState(false);
+const [brokenImageLogs, setBrokenImageLogs] = useState([]);
+const [brokenImageLogsLoading, setBrokenImageLogsLoading] = useState(false);
+const [brokenImageScanLoading, setBrokenImageScanLoading] = useState(false);
+const [brokenImageScanUrl, setBrokenImageScanUrl] = useState('');
 
 const [responseMessage, setResponseMessage ] = useState('');
 
@@ -80,6 +84,7 @@ const [productEditForm, setProductEditForm] = useState({
   oldPrice: '',
   newPrice: '',
   saleEndDate: '',
+  imageUrl: '',
 });
 const [isSavingProduct, setIsSavingProduct] = useState(false);
 
@@ -833,7 +838,7 @@ const loadLatestProducts = async () => {
   const onSaleChecked = document.getElementById('onSale')?.checked ?? false;
 
   setCurrentPage(1);
-  await getAllProducts(1, loggedInUser, storeValue, favoritesChecked, onSaleChecked);
+  await getAllProducts(1, loggedInUser, storeValue, favoritesChecked, onSaleChecked, 500);
 };
 
 const startEditingProduct = (product) => {
@@ -847,12 +852,13 @@ const startEditingProduct = (product) => {
     oldPrice: product?.old_price ?? '',
     newPrice: product?.new_price ?? '',
     saleEndDate,
+    imageUrl: product?.image_url || '',
   });
 };
 
 const cancelEditingProduct = () => {
   setEditingProductId(null);
-  setProductEditForm({ description: '', oldPrice: '', newPrice: '', saleEndDate: '' });
+  setProductEditForm({ description: '', oldPrice: '', newPrice: '', saleEndDate: '', imageUrl: '' });
 };
 
 const saveProductEdits = async (productId) => {
@@ -888,6 +894,14 @@ const saveProductEdits = async (productId) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId, sale_end_date: productEditForm.saleEndDate }),
       }),
+      fetch(`${node_url}/editProductImageUrl`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId,
+          imageUrl: productEditForm.imageUrl?.trim() || null,
+        }),
+      }),
     ];
 
     const responses = await Promise.all(requests);
@@ -905,6 +919,51 @@ const saveProductEdits = async (productId) => {
     setStatus(`Failed to save product ${productId}: ${error.message}`);
   } finally {
     setIsSavingProduct(false);
+  }
+};
+
+const fetchBrokenImageLogs = async () => {
+  setBrokenImageLogsLoading(true);
+  try {
+    const response = await fetch(`${node_url}/broken-image-logs?limit=300`);
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result?.error || 'Failed to fetch broken image logs.');
+    }
+    setBrokenImageLogs(Array.isArray(result?.data) ? result.data : []);
+  } catch (error) {
+    console.error('Error fetching broken image logs:', error);
+    setStatus(`Failed to load broken image logs: ${error.message}`);
+  } finally {
+    setBrokenImageLogsLoading(false);
+  }
+};
+
+const scanBrokenImageUrls = async () => {
+  setBrokenImageScanLoading(true);
+  try {
+    const trimmedUrl = brokenImageScanUrl.trim();
+    const response = await fetch(`${node_url}/scan-broken-product-images`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(
+        trimmedUrl ? { url: trimmedUrl } : { limit: 100 },
+      ),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(result?.error || 'Failed to scan broken image URLs.');
+    }
+
+    setStatus(
+      `Scanned ${result?.scanned || 0} products, found ${result?.broken || 0} broken URLs.`,
+    );
+    await fetchBrokenImageLogs();
+  } catch (error) {
+    console.error('Error scanning broken image URLs:', error);
+    setStatus(`Failed to scan broken image URLs: ${error.message}`);
+  } finally {
+    setBrokenImageScanLoading(false);
   }
 };
 
@@ -1283,7 +1342,7 @@ console.log('editStore called:', productId, storeId);
   //change getAllProducts to include a keyword sent to the server to filter products
 
 
-  const getAllProducts = async (page = 1, userId, storeId, isFavorite, onSale) => {
+  const getAllProducts = async (page = 1, userId, storeId, isFavorite, onSale, limit = 500) => {
     try {
 
       console.log('getAllProducts userId:', userId);
@@ -1297,7 +1356,8 @@ console.log('editStore called:', productId, storeId);
       &storeId=${encodeURIComponent(storeId)}
       &isFavorite=${encodeURIComponent(isFavorite)}
       &page=${page}
-      &onSale=${encodeURIComponent(onSale)}`, {
+      &onSale=${encodeURIComponent(onSale)}
+      &limit=${encodeURIComponent(limit)}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -1816,25 +1876,35 @@ if (!productId || !keyword) {
 
   if (!loggedInUser) {
     return (
-      <div style={{ margin: '50px', border: '1px solid black', marginBottom : '100px' }}>
-        <h2>Please Login</h2>
-        <input
-         style={{ margin:  '20px' }}
-          type="text"
-          placeholder="Username"
-          value={loginForm.username}
-          onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
-        />
-        <br />
-        <input
-          type="password"
-          placeholder="Password"
-          value={loginForm.password}
-          onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-        />
-        <br />
-        <button style={{ margin:  '20px' }} onClick={handleLogin}>Login</button>
-        <p style={{ color: 'red' }}>{loginError}</p>
+      <div
+        style={{
+          margin: '50px auto 100px',
+          border: '1px solid black',
+          borderRadius: 8,
+          width: 'min(420px, calc(100% - 40px))',
+          padding: 20,
+        }}
+      >
+        <h2 style={{ marginTop: 0 }}>Please Login</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <input
+            autoFocus
+            type="text"
+            placeholder="Username"
+            value={loginForm.username}
+            onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
+            style={{ width: '100%', height: 40, padding: '0 10px' }}
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={loginForm.password}
+            onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+            style={{ width: '100%', height: 40, padding: '0 10px' }}
+          />
+          <button style={{ alignSelf: 'flex-start' }} onClick={handleLogin}>Login</button>
+        </div>
+        <p style={{ color: 'red', minHeight: 20 }}>{loginError}</p>
       </div>
     );
   }
@@ -1843,11 +1913,7 @@ if (!productId || !keyword) {
 
 <>
 
-<div style={{ margin: '0', padding: '0', width: '90vw', 
-
-
-
- }}>
+<div className="dashboard-page">
 
 
 
@@ -1929,7 +1995,7 @@ if (!productId || !keyword) {
   <button onClick={requestNotificationPermission}>Enable Notifications</button>
   </div> */}
 
-<div>
+<div className="dashboard-status">
 <p>{status}</p>
   </div>
 
@@ -1940,230 +2006,49 @@ if (!productId || !keyword) {
 
 }
 
-<div style={{ display: 'flex', flexDirection: 'row', gap: '10px', 
-
-
-
-
- }}>
-
-  <div  style={{ display: 'flex', flexDirection: 'column', gap: '10px' , width : '50%' }}>
-
-    
-
-<div style={{ 
-
-border: '1px solid red', 
-padding: '10px', marginBottom: '20px', width: '100%' ,
-
-
- }}>
-
-<div style={{ display: 'flex', flexDirection: 'row', gap: '10px', 
-
-padding: '10px', marginBottom: '10px', width: '100%'
-
- }}>
-
-
-<input autofocus  type="date" id="sale_end_date" name="sale_end_date" style={{width:150}}  />
-
-
-
-
-
-
-
-<select name='store' id = 'store' style={{width : 100}}>
-{stores.map(store => (
-  <option value={store.storeId}>{store.storeName}</option>
-))}
-
-</select>
-</div>
-
-<div
-
-style={{ display: 'flex', flexDirection: 'row', gap: '10px', marginBottom: '10px' }}
-
->
-    <input
-      type="file"
-      id="imageUpload"
-      accept="image/*"
-      name="images" 
-      multiple // Allows selecting multiple images
-      onChange={handleFileChange}
-      ref={fileInputRef}
-     
-    />
-    <button onClick={handleUploadImagesManual}>Process Images manual</button>
-
-
-  
-
-
-    <div id="result" ref={resultDivRef}>
-      {extractedText && <p>{extractedText}</p>}
+<div className="dashboard-panel">
+  <div style={{ display: 'flex' }}>
+    <div className='scrollable-div2' style={{ width: '100%' }}>
+      <table name="media" border="1" cellPadding="10" cellSpacing="0">
+        <tbody>
+          {mediaFiles.map((file) => (
+            <tr key={file.public_id}>
+              <td style={{ width: '30' }}>
+                <img
+                  src={`https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_100/${file.public_id}.${file.format}`}
+                  alt={file.public_id}
+                  onClick={() => {
+                    const prodImageEl = document.getElementById('prod_image');
+                    if (prodImageEl) {
+                      prodImageEl.innerHTML = `<img id="largeImage" src="https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_600/${file.public_id}.${file.format}" />`;
+                    }
+                  }}
+                  onDoubleClick={() => {
+                    const prodImageEl = document.getElementById('prod_image');
+                    if (prodImageEl) {
+                      prodImageEl.innerHTML = '';
+                    }
+                  }}
+                />
+              </td>
+              <td style={{ fontSize: 10, width: '20%' }}>{file.public_id}.{file.format}</td>
+              <td style={{ width: '15%' }}>
+                <button onClick={() => handleDeleteImage(file.public_id)}>Delete</button>
+              </td>
+              <td style={{ width: '5%' }}>
+                <input
+                  type="checkbox"
+                  onChange={() => handleCheckboxChange(file.public_id.split('/').pop() + '.' + file.format)}
+                  checked={selectedImages.includes(file.public_id.split('/').pop() + '.' + file.format)}
+                />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
-</div>
-
-
-
-</div>
-  
-  <div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
-
-
-{/* 
-  <select name='user'>
-    {users.map(user => (
-      <option value={user.userId}>{user.userName}</option>
-    ))}
-
-  </select> */}
-
-<button onClick={() => updateProductSaleDate(selectedProduct, document.getElementById('sale_end_date').value, document.getElementById('newPrice').value)}>Update Date {selectedProduct}</button>
-
-
-
-
-
-  Favorite:
-      <input
-        type="checkbox"
-        id="favorites"
-        name="favorites"
-        onChange={() => {
-          setCurrentPage(1);
-          getAllProducts(
-            1,
-            loggedInUser,
-            document.getElementById('store').value,
-            document.getElementById('favorites').checked,
-            document.getElementById('onSale').checked
-          );
-        }}
-      />
-
-
-
-
-
-  On Sale:
-      <input
-        type="checkbox"
-        id="onSale"
-        name="onSale"
-        onChange={() => {
-          setCurrentPage(1);
-          getAllProducts(
-            1,
-            loggedInUser,
-            document.getElementById('store').value,
-            document.getElementById('favorites').checked,
-            document.getElementById('onSale').checked
-          );
-        }}
-      />
-
-  
-
   </div>
-
-{/* <button onClick={() => extractProducts(document.querySelector('select[name="store"]').value, document.getElementById('selectedImages').value)}>Extract Products</button> */}
-
-
-  <input type="text" id="keyword" name="keyword" placeholder='Pershkrimi ose keyword' style={{width : 400}}/>
-
-  <div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
-  <button onClick={() => addKeyword(selectedProduct, document.getElementById('keyword').value)}>Add Keyword to {selectedProduct}</button>
-  <button onClick={() => editProductDescription(selectedProduct, document.getElementById('keyword').value)}>Edit description for {selectedProduct}</button>
-  <button onClick={() => editStore(selectedProduct, document.getElementById('store').value)}>Edit Store for {selectedProduct}</button>
 </div>
-
-
-
-
-{/* add a div with two input fields to update old\-price and  */}
-
-<div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
-
-  <input type="text" id="oldPrice" name="oldPrice" style={{width:150}} placeholder='0.00' />
-  <input type="text" id="newPrice" name="newPrice" style={{width:150}} placeholder='0.00'/>
-  <button onClick={() => updateProductPrices(selectedProduct, document.getElementById('oldPrice').value, document.getElementById('newPrice').value)}>Update Prices for {selectedProduct}</button>
-
-</div>
-
-
-
-
-  </div>
-
-
-<div  style={{ display: 'flex' }}>
-
-<div className='scrollable-div2' style={{  width: '100%'}}> 
-
-
-        
-
-<table name = "media" border="1" cellPadding="10" cellSpacing="0" >
-
-  <tbody>
-    {mediaFiles.map((file) => (
-      <tr key={file.public_id}>
-        <td style={{width:"30"}}>
-
-          <img
-            src={`https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_100/${file.public_id}.${file.format}`}
-            alt={file.public_id}  onClick={() => {
-              document.getElementById('selectedImages').value = file.public_id;
-              document.getElementById('prod_image').innerHTML = `<img id="largeImage" src="https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_600/${file.public_id}.${file.format}" />`;
-              
-            }}
-
-            onDoubleClick={() => {
-              document.getElementById('selectedImages').value = file.public_id;
-              document.getElementById('prod_image').innerHTML = '';
-            }
-            }
-
-          />
-
-  
-
-
-
-
-        </td>
-        <td style={{fontSize:10, width: "20%"}}>{file.public_id}.{file.format}</td>
-
-        <td style={{width:"15%"}}>
-          <button onClick={() => handleDeleteImage(file.public_id)}>Delete</button>
-        </td>
-        <td style={{width:"5%"}}> {/* NEW: Checkbox for selecting images */}
-        
-          <input
-            type="checkbox"
-            onChange={() => handleCheckboxChange(file.public_id.split('/').pop() + '.'+ file.format)}
-            checked={selectedImages.includes(file.public_id.split('/').pop() + '.'+ file.format)}
-          />
-        </td>
-        
-      </tr>
-    ))}
-  </tbody>
-</table>
-
-</div>
-
-
-  </div>
-
-
-
-  </div>
 
 <pre>{}</pre>
 
@@ -2174,7 +2059,7 @@ style={{ display: 'flex', flexDirection: 'row', gap: '10px', marginBottom: '10px
 
 
 
-<div style={{ display: 'flex', flexDirection: 'row', gap: '10px', margin : '10px', justifyContent: 'center', alignItems: 'center' }}>
+<div className="dashboard-toolbar">
 
 Search Products: <input type="text" id="keyword_search" name="keyword_search" onKeyDown={(e) => { if (e.key === 'Enter') searchProducts(e.target.value); }} />
 
@@ -2190,9 +2075,9 @@ Search Products: <input type="text" id="keyword_search" name="keyword_search" on
         getAllProducts(
           next,
           loggedInUser,
-          document.querySelector('select[name="store"]').value,
-          document.getElementById('favorites').checked,
-          document.getElementById('onSale').checked
+          document.querySelector('select[name="store"]')?.value ?? '0',
+          document.getElementById('favorites')?.checked ?? false,
+          document.getElementById('onSale')?.checked ?? false
         );
       }}
     >
@@ -2206,9 +2091,9 @@ Search Products: <input type="text" id="keyword_search" name="keyword_search" on
         getAllProducts(
           next,
           loggedInUser,
-          document.querySelector('select[name="store"]').value,
-          document.getElementById('favorites').checked,
-          document.getElementById('onSale').checked
+          document.querySelector('select[name="store"]')?.value ?? '0',
+          document.getElementById('favorites')?.checked ?? false,
+          document.getElementById('onSale')?.checked ?? false
         );
       }}
     >
@@ -2313,9 +2198,11 @@ onClick={() => {
 
 
 
-<div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-  <h3>Facebook Posts - {selectedStoreName}</h3>
-  <div style={{ display: 'flex', flexDirection: 'row', gap: '8px', flexWrap: 'wrap' }}>
+<div className="dashboard-panel dashboard-feed-panel">
+  <div className="dashboard-feed-header">
+    <h3 className="dashboard-section-title">Facebook Posts - {selectedStoreName}</h3>
+  </div>
+  <div className="dashboard-toolbar" style={{ justifyContent: 'flex-start' }}>
     {(() => {
       if (!facebookPhotos || facebookPhotos.length === 0) return null;
 
@@ -2422,12 +2309,12 @@ onClick={() => {
 
 
 
-<div style={{ display: 'flex',flexDirection: 'row', gap: '10px', borderColor : "red", borderWidth: 1, width: '100%' }}>
+<div className="dashboard-panel dashboard-table-panel">
 
 
 
   
-      <div className='scrollable-div' style={{ flexGrow:1, width: '100vw' }}>
+      <div className='scrollable-div dashboard-table-shell' style={{ flexGrow:1, width: '100%' }}>
 
         
 
@@ -2441,16 +2328,19 @@ onClick={() => {
               <th>Actions</th>
 
             </tr>
-            {products?.map(product => ( 
+            {products?.map((product, idx) => ( 
 
 <tr
-  key={product.productId}
+  key={`${product.productId}-${product.imageId || 'noimg'}-${idx}`}
   style={{ backgroundColor: selectedProduct === product.productId ? 'lightblue' : 'white' }}
   onClick={() => {
     const newSelectedProduct = product.productId === selectedProduct ? '' : product.productId;
     setSelectedProduct(newSelectedProduct);
     if (newSelectedProduct) {
       copySelectedProduct(product); // Call copySelectedProduct after setting the selected product
+      startEditingProduct(product);
+    } else {
+      cancelEditingProduct();
     }
   }}
 >
@@ -2505,6 +2395,12 @@ onClick={() => {
                         value={productEditForm.saleEndDate}
                         onChange={(e) => setProductEditForm(prev => ({ ...prev, saleEndDate: e.target.value }))}
                       />
+                      <input
+                        type="text"
+                        value={productEditForm.imageUrl}
+                        onChange={(e) => setProductEditForm(prev => ({ ...prev, imageUrl: e.target.value }))}
+                        placeholder="Product image URL"
+                      />
                     </div>
                   ) : (
                     <>
@@ -2549,15 +2445,25 @@ onClick={() => {
                     <img
                       src={`${baseUrl}/${transformation}/${directory}/${product?.image_url?.split('/').pop()}`} alt={product.product_description}
                       onClick={() => {
-                    
-                      document.getElementById('prod_image').innerHTML = `<img id="largeImage" src="https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_600/uploads/${product.image_url.split('/').pop()}" />`;
-                      document.getElementById('selectedImages').value = product.image_url;
+                      const prodImageEl = document.getElementById('prod_image');
+                      const selectedImagesEl = document.getElementById('selectedImages');
+                      const imageName = product?.image_url?.split('/').pop();
+
+                      if (prodImageEl && imageName) {
+                        prodImageEl.innerHTML = `<img id="largeImage" src="https://res.cloudinary.com/dt7a4yl1x/image/upload/c_thumb,w_600/uploads/${imageName}" />`;
+                      }
+
+                      if (selectedImagesEl) {
+                        selectedImagesEl.value = product?.image_url || '';
+                      }
                     
                   }}
 
                   onDoubleClick={() => {
-                    
-                    document.getElementById('prod_image').innerHTML = '';
+                    const prodImageEl = document.getElementById('prod_image');
+                    if (prodImageEl) {
+                      prodImageEl.innerHTML = '';
+                    }
                   }
                 }
                  
@@ -2616,6 +2522,86 @@ onClick={() => {
           </table></div>
           
           <div id="prod_image" />
+
+          <div className="dashboard-panel dashboard-logs-panel" style={{ width: '100%', marginTop: 20 }}>
+            <div className="dashboard-section-header">
+              <h3 className="dashboard-section-title">Broken Image URL Logs</h3>
+              <button onClick={fetchBrokenImageLogs} disabled={brokenImageLogsLoading}>
+                {brokenImageLogsLoading ? 'Loading...' : 'Load Broken URL Cases'}
+              </button>
+              <input
+                type="text"
+                placeholder="Image URL"
+                value={brokenImageScanUrl}
+                onChange={(e) => setBrokenImageScanUrl(e.target.value)}
+                style={{ width: 280 }}
+              />
+              <button onClick={scanBrokenImageUrls} disabled={brokenImageScanLoading}>
+                {brokenImageScanLoading
+                  ? 'Scanning...'
+                  : brokenImageScanUrl.trim()
+                    ? 'Scan URL'
+                    : 'Scan Recent'}
+              </button>
+            </div>
+
+            <div className='scrollable-div dashboard-table-shell' style={{ maxHeight: 360 }}>
+              <table border="1" cellPadding="8" cellSpacing="0" borderColor="black">
+                <tr>
+                  <th>Created</th>
+                  <th>Product</th>
+                  <th>Store</th>
+                  <th>Facebook</th>
+                  <th>Cloudinary URL</th>
+                  <th>Failing URL</th>
+                  <th>Error</th>
+                </tr>
+                {brokenImageLogs.map((row) => (
+                  <tr key={row.id}>
+                    <td>{row.created_at ? new Date(row.created_at).toLocaleString('en-GB') : ''}</td>
+                    <td>
+                      ID: {row.product_id || '-'}
+                      <br />Post: {row.facebook_post_id || '-'}
+                      <br />Image: {row.facebook_image_id || '-'}
+                    </td>
+                    <td>
+                      {row.store_name || '-'}
+                      <br />Store ID: {row.store_id || '-'}
+                      <br />Page ID: {row.store_facebook_page_id || '-'}
+                    </td>
+                    <td>
+                      {row.store_facebook_url ? (
+                        <a href={row.store_facebook_url} target="_blank" rel="noreferrer">
+                          {row.store_facebook_url}
+                        </a>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                    <td>
+                      {row.attempted_cloudinary_url ? (
+                        <a href={row.attempted_cloudinary_url} target="_blank" rel="noreferrer">
+                          {row.attempted_cloudinary_url}
+                        </a>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                    <td>
+                      {row.failing_url ? (
+                        <a href={row.failing_url} target="_blank" rel="noreferrer">
+                          {row.failing_url}
+                        </a>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                    <td>{row.client_error || '-'}</td>
+                  </tr>
+                ))}
+              </table>
+            </div>
+          </div>
 
  
           <br />
