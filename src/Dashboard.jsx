@@ -71,6 +71,8 @@ const [brokenImageLogs, setBrokenImageLogs] = useState([]);
 const [brokenImageLogsLoading, setBrokenImageLogsLoading] = useState(false);
 const [brokenImageScanLoading, setBrokenImageScanLoading] = useState(false);
 const [brokenImageScanUrl, setBrokenImageScanUrl] = useState('');
+const [rejectedIngestLogs, setRejectedIngestLogs] = useState([]);
+const [rejectedIngestLogsLoading, setRejectedIngestLogsLoading] = useState(false);
 
 const [responseMessage, setResponseMessage ] = useState('');
 
@@ -964,6 +966,23 @@ const scanBrokenImageUrls = async () => {
     setStatus(`Failed to scan broken image URLs: ${error.message}`);
   } finally {
     setBrokenImageScanLoading(false);
+  }
+};
+
+const fetchRejectedIngestLogs = async () => {
+  setRejectedIngestLogsLoading(true);
+  try {
+    const response = await fetch(`${node_url}/ingest-rejected-products?limit=300`);
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result?.error || 'Failed to fetch rejected ingest rows.');
+    }
+    setRejectedIngestLogs(Array.isArray(result?.data) ? result.data : []);
+  } catch (error) {
+    console.error('Error fetching rejected ingest rows:', error);
+    setStatus(`Failed to load rejected ingest rows: ${error.message}`);
+  } finally {
+    setRejectedIngestLogsLoading(false);
   }
 };
 
@@ -2597,6 +2616,56 @@ onClick={() => {
                       )}
                     </td>
                     <td>{row.client_error || '-'}</td>
+                  </tr>
+                ))}
+              </table>
+            </div>
+          </div>
+
+          <div className="dashboard-panel dashboard-logs-panel" style={{ width: '100%', marginTop: 20 }}>
+            <div className="dashboard-section-header">
+              <h3 className="dashboard-section-title">Rejected Ingest Rows</h3>
+              <button onClick={fetchRejectedIngestLogs} disabled={rejectedIngestLogsLoading}>
+                {rejectedIngestLogsLoading ? 'Loading...' : 'Load Rejected Rows'}
+              </button>
+            </div>
+
+            <div className='scrollable-div dashboard-table-shell' style={{ maxHeight: 360 }}>
+              <table border="1" cellPadding="8" cellSpacing="0" borderColor="black">
+                <tr>
+                  <th>Created</th>
+                  <th>Source</th>
+                  <th>Reason</th>
+                  <th>Store/Post/Image</th>
+                  <th>Description</th>
+                  <th>Prices</th>
+                  <th>Image URL</th>
+                </tr>
+                {rejectedIngestLogs.map((row) => (
+                  <tr key={row.id}>
+                    <td>{row.created_at ? new Date(row.created_at).toLocaleString('en-GB') : ''}</td>
+                    <td>{row.source || '-'}</td>
+                    <td>{row.reason || '-'}</td>
+                    <td>
+                      Store: {row.store_id || '-'}
+                      <br />Post: {row.post_id || '-'}
+                      <br />Image: {row.image_id || '-'}
+                    </td>
+                    <td>{row.product_description || '-'}</td>
+                    <td>
+                      Old: {row.old_price_raw || '-'}
+                      <br />New: {row.new_price_raw || '-'}
+                      <br />Date: {row.sale_end_date_raw || '-'}
+                    </td>
+                    <td>
+                      {row.image_url ? (
+                        <a href={row.image_url} target="_blank" rel="noreferrer">
+                          {row.image_url}
+                        </a>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
                   </tr>
                 ))}
               </table>

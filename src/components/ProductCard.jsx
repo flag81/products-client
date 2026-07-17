@@ -154,7 +154,7 @@ export default function ProductCard({
               paddingTop: 0,
             }}
           >
-            <Card.Text className="product-description">
+            <Card.Text className="product-description" style={{ textAlign: "center" }}>
               <b>{product.product_description.toUpperCase()}</b>
             </Card.Text>
 
@@ -164,6 +164,7 @@ export default function ProductCard({
                 border: "1px solid #ccc",
                 borderRadius: 9,
                 backgroundColor: "#f9f5f5",
+                textAlign: "center",
               }}
             >
               <span style={{ color: "red", fontWeight: "bold", fontSize: "15px" }}>
@@ -307,9 +308,11 @@ export default function ProductCard({
             flex: 1,
           }}
         >
-          <Card.Text className="product-description">{product.product_description}</Card.Text>
+          <Card.Text className="product-description" style={{ textAlign: "center" }}>
+            {product.product_description}
+          </Card.Text>
 
-          <Card.Text className="product-description">
+          <Card.Text className="product-description" style={{ textAlign: "center" }}>
             <span style={{ color: "red" }}>
               {product.old_price && product.old_price > 0 ? product.old_price + "€ - " : ""}
             </span>
@@ -320,8 +323,10 @@ export default function ProductCard({
             </span>
           </Card.Text>
 
-          <Card.Text className="product-description bold-text">{product.storeName}</Card.Text>
-          <Card.Text className="sale-date">
+          <Card.Text className="product-description bold-text" style={{ textAlign: "center" }}>
+            {product.storeName}
+          </Card.Text>
+          <Card.Text className="sale-date" style={{ textAlign: "center" }}>
             {product.sale_end_date ? (
               <>
                 <span style={{ color: product.productOnSale ? "green" : "red" }}>

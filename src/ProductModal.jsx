@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import Placeholder from "react-bootstrap/Placeholder";
 import Button from "react-bootstrap/Button";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { getDisplayDiscountPercentage } from "./utils/pricing";
 
 const ProductModal = ({
   isOpen,
@@ -260,51 +261,61 @@ const ProductModal = ({
             flex: "0 0 auto",
             paddingTop: 8,
             overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
           }}
         >
           <span
+            className="product-description"
             style={{
               fontSize: 16,
-              fontWeight: "bold",
               whiteSpace: "pre-wrap",
               wordBreak: "break-word",
               overflowWrap: "break-word",
               width: "100%",
               lineHeight: 1.3,
               display: "block",
+              textAlign: "center",
             }}
           >
-            {modalProduct?.product_description}
+            <b>{String(modalProduct?.product_description || "").toUpperCase()}</b>
           </span>
 
-          <span
+          <div
+            className="product-description"
             style={{
-              whiteSpace: "nowrap",
-              display: "inline-flex",
+              border: "1px solid #ccc",
+              borderRadius: 9,
+              backgroundColor: "#f9f5f5",
+              marginTop: 6,
+              padding: "2px 8px",
+              display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              marginTop: 6,
+              whiteSpace: "nowrap",
+              width: "100%",
+              maxWidth: 420,
             }}
           >
-            {modalProduct?.old_price && modalProduct?.old_price > 0 ? (
-              <span style={{ color: "red" }}>{modalProduct.old_price}€ -</span>
-            ) : null}
-            <span style={{ color: "green" }}>
-              <span> {modalProduct?.new_price}€</span>
-              {modalProduct?.old_price > 0 &&
-                modalProduct?.new_price &&
-                modalProduct.old_price > modalProduct.new_price && (
-                  <span>
-                    {" "}
-                    (-{Math.round(
-                      ((modalProduct.old_price - modalProduct?.new_price) / modalProduct.old_price) *
-                        100
-                    )}
-                    %)
-                  </span>
-                )}
+            <span style={{ color: "red", fontWeight: "bold", fontSize: "15px" }}>
+              {modalProduct?.old_price && modalProduct?.old_price > 0
+                ? `${modalProduct.old_price}€  - `
+                : ""}
             </span>
-          </span>
+
+            <span style={{ color: "green", fontWeight: "bold", fontSize: "20px" }}>
+              {modalProduct?.new_price > 0 ? `${modalProduct.new_price}€` : ""}
+            </span>
+
+            <span style={{ color: "green", fontWeight: "bold", fontSize: "20px" }}>
+              {(() => {
+                const pct = getDisplayDiscountPercentage(modalProduct);
+                return pct > 0 ? ` (-${pct}%)` : "";
+              })()}
+            </span>
+          </div>
 
           <div
             style={{
