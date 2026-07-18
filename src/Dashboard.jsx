@@ -15,6 +15,7 @@ import { all } from 'axios';
 import { post } from 'jquery';
 import { filterOutExistingById } from './utils/idUtils';
 import { dedupePhotosByImageIdOrUri } from './utils/dedupe';
+import { getApiBaseUrl } from './api/apiFetch';
 
 
 
@@ -96,7 +97,7 @@ const [isSavingProduct, setIsSavingProduct] = useState(false);
   const API_SECRET = import.meta.env.CLOUDINARY_API_SECRET;
 
 
-  const node_url = import.meta.env.VITE_NODE_URL;
+  const node_url = getApiBaseUrl();
 
 
   const imageBaseUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/`;

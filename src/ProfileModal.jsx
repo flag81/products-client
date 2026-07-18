@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Modal, Form, Button } from "react-bootstrap";
+import { getApiBaseUrl } from "./api/apiFetch";
 
 function ProfileModal({ show, setShowRegisterModal, setUserId , setIsLoggedIn ,setEmail }) {
 
@@ -7,7 +8,7 @@ function ProfileModal({ show, setShowRegisterModal, setUserId , setIsLoggedIn ,s
   const [verificationCode, setVerificationCode] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [isLoginMode, setIsLoginMode] = useState(false);
-  const node_url = import.meta.env.VITE_NODE_URL;
+  const node_url = getApiBaseUrl();
 
   const sendVerificationCode = async () => {
 

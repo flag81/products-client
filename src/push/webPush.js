@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from "../api/apiFetch";
+
 const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY; // set in .env
 
 function urlBase64ToUint8Array(base64String) {
@@ -22,7 +24,7 @@ export async function enableWebPush() {
     applicationServerKey: urlBase64ToUint8Array(vapidKey),
   });
 
-  await fetch(`${import.meta.env.VITE_NODE_URL}/subscribe-webpush`, {
+  await fetch(`${getApiBaseUrl()}/subscribe-webpush`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ subscription }),

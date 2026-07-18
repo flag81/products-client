@@ -1,4 +1,5 @@
 import PropTypes from "prop-types";
+import { FiStar } from "react-icons/fi";
 
 export default function FavoriteToggle({ isFavorite, onClick, size = 24 }) {
   return (
@@ -9,14 +10,19 @@ export default function FavoriteToggle({ isFavorite, onClick, size = 24 }) {
         alignItems: "center",
         justifyContent: "center",
         borderColor: "red",
+        cursor: "pointer",
       }}
       role="button"
+      onClick={onClick}
     >
-      <img
-        src={isFavorite ? "star-fill-2.png" : "star-empty.jpg"}
-        alt={isFavorite ? "Unfavorite" : "Favorite"}
-        style={{ width: size, height: size }}
-        onClick={onClick}
+      <FiStar
+        aria-label={isFavorite ? "Unfavorite" : "Favorite"}
+        style={{
+          width: size,
+          height: size,
+          color: "#0f172a",
+          fill: isFavorite ? "#facc15" : "transparent",
+        }}
       />
     </div>
   );

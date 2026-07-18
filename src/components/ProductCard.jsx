@@ -5,6 +5,7 @@ import Placeholder from "react-bootstrap/Placeholder";
 
 import { getDisplayDiscountPercentage } from "../utils/pricing";
 import { buildProductImageUrl } from "../utils/cloudinary";
+import { getApiBaseUrl } from "../api/apiFetch";
 import ProductImageOverlays from "./ProductImageOverlays";
 import FavoriteToggle from "./FavoriteToggle";
 import StoreBadge from "./StoreBadge";
@@ -24,7 +25,7 @@ export default function ProductCard({
   const imageMetaRef = useRef(null);
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
   const hasReportedBrokenRef = useRef(false);
-  const nodeUrl = import.meta.env.VITE_NODE_URL;
+  const nodeUrl = getApiBaseUrl();
 
   const openFromCard = (imageUrl, productToOpen) => {
     onOpenModal(imageUrl, productToOpen, imageMetaRef.current);

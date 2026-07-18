@@ -1,8 +1,13 @@
+import { getApiBaseUrl } from "./api/apiFetch";
+
 export async function enablePushNotifications() {
+  if (typeof window === "undefined" || !("Notification" in window)) {
+    return { status: "unsupported" };
+  }
+
   const permission = await Notification.requestPermission();
-  if (permission !== 'granted') {
-    alert('Ju duhet të lejoni njoftimet për të marrë oferta!');
-    return;
+  if (permission !== "granted") {
+    return { status: "denied" };
   }
 
   // Use the service worker file that exists in the `public` folder.
@@ -21,17 +26,19 @@ export async function enablePushNotifications() {
   };
   const subscription = await activeRegistration.pushManager.subscribe(subscribeOptions);
 
-  await fetch(`${import.meta.env.VITE_NODE_URL}/subscribe-webpush`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  await fetch(`${getApiBaseUrl()}/subscribe-webpush`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ subscription }),
-    credentials: 'include',
+    credentials: "include",
   });
 
-  activeRegistration.showNotification('Njoftimet janë aktivizuar!', {
-    body: 'Do të merrni oferta të reja.',
-    icon: '/bell.png',
+  activeRegistration.showNotification("Njoftimet janë aktivizuar!", {
+    body: "Do të merrni oferta të reja.",
+    icon: "/bell.png",
   });
+
+  return { status: "granted" };
 }
 
 async function urlBase64ToUint8Array(base64String) {

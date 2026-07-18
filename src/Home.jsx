@@ -6,7 +6,7 @@ import RegistrationModal from "./RegistrationModal";
 import ProductModal from "./ProductModal";
 
 import { enablePushNotifications } from './pushNotifications';
-import { apiFetch } from "./api/apiFetch";
+import { apiFetch, getApiBaseUrl } from "./api/apiFetch";
 import { fetchFlyerBookImages, fetchStores, logoutRequest } from "./api/homeApi";
 import { fetchSession, initializeSession } from "./api/sessionApi";
 import { useHorizontalScrollButtons } from "./hooks/useHorizontalScrollButtons";
@@ -17,6 +17,7 @@ import ProductCard from "./components/ProductCard";
 import HomeModals from "./components/HomeModals";
 import SectionHeader from "./components/SectionHeader";
 import ProductsGrid from "./components/ProductsGrid";
+import TransientNotice from "./components/TransientNotice";
 
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -26,6 +27,7 @@ import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Placeholder from "react-bootstrap/Placeholder";
+import { FiBell, FiUser, FiStar } from "react-icons/fi";
 
 
 
@@ -36,6 +38,8 @@ export default function Home() {
 
 
   const initStartedRef = useRef(false);
+  const desktopProfileRef = useRef(null);
+  const mobileProfileRef = useRef(null);
 
   const initialize = async () => initializeSession(apiFetch);
 
@@ -75,7 +79,7 @@ useEffect(() => {
 
 
   // ─── State & Refs ─────────────────────────────────────────────────────────────
-  const node_url = import.meta.env.VITE_NODE_URL;
+  const node_url = getApiBaseUrl();
 
   // Cloudinary image URL builder pieces (used in product cards + flyer modal)
   const baseUrl = "https://res.cloudinary.com/dt7a4yl1x/image/upload";
@@ -117,6 +121,41 @@ useEffect(() => {
 
   // Show notification bell only when site notifications are allowed
   const [notificationsAllowed, setNotificationsAllowed] = useState(false);
+  const [notice, setNotice] = useState(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [profileData, setProfileData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+  });
+
+  const showNotice = (message, type = "success", duration = 2400) => {
+    setNotice({
+      id: `${Date.now()}-${Math.random()}`,
+      message,
+      type,
+      duration,
+    });
+  };
+
+  const desktopTopIconStyle = {
+    height: 34,
+    width: 34,
+    display: "block",
+    cursor: "pointer",
+    padding: 4,
+    borderRadius: 8,
+    backgroundColor: "#f8fafc",
+    border: "1px solid #dbe3ef",
+    color: "#0f172a",
+  };
+
+  const mobileTopIconStyle = {
+    borderRadius: 8,
+    backgroundColor: "#f8fafc",
+    border: "1px solid #dbe3ef",
+    color: "#0f172a",
+  };
 
   const refreshNotificationsAllowed = () => {
     try {
@@ -134,9 +173,79 @@ useEffect(() => {
   const handleEnableNotifications = async (e) => {
     // Avoid triggering any parent click handlers
     e?.stopPropagation?.();
-    await enablePushNotifications();
-    refreshNotificationsAllowed();
+    try {
+      const result = await enablePushNotifications();
+      refreshNotificationsAllowed();
+
+      if (result?.status === "granted") {
+        showNotice("Njoftimet u aktivizuan me sukses.", "success");
+        return;
+      }
+
+      if (result?.status === "denied") {
+        showNotice("Ju lutem lejoni njoftimet për të marrë oferta.", "info");
+        return;
+      }
+
+      if (result?.status === "unsupported") {
+        showNotice("Shfletuesi juaj nuk mbështet njoftime push.", "error");
+      }
+    } catch (_error) {
+      showNotice("Aktivizimi i njoftimeve dështoi. Provo përsëri.", "error");
+    }
   };
+
+  const startGoogleLogin = () => {
+    window.location.assign(`${node_url}/auth/google`);
+  };
+
+  const toggleProfilePanel = (e) => {
+    e?.stopPropagation?.();
+    setIsProfileOpen((prev) => !prev);
+  };
+
+  const handleShowFavoritesFromProfile = () => {
+    const linked = Boolean(String(profileData.email || email || "").trim());
+    if (!linked) {
+      showNotice("Për të përdorur favoritët, hyni nga profili me email ose Google.", "info", 3400);
+      setIsProfileOpen(true);
+      return;
+    }
+    setIsFavorite(true);
+    setIsProfileOpen(false);
+  };
+
+  const handleFavoriteFilterToggle = () => {
+    const linked = Boolean(String(profileData.email || email || "").trim());
+    if (!linked) {
+      showNotice("Për të përdorur favoritët, hyni nga profili me email ose Google.", "info", 3400);
+      setIsProfileOpen(true);
+      return;
+    }
+    setIsFavorite((prev) => !prev);
+  };
+
+  useEffect(() => {
+    if (!isProfileOpen) return undefined;
+
+    const handleOutsideClick = (event) => {
+      const target = event.target;
+      const clickedDesktop = desktopProfileRef.current?.contains(target);
+      const clickedMobile = mobileProfileRef.current?.contains(target);
+
+      if (!clickedDesktop && !clickedMobile) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("touchstart", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("touchstart", handleOutsideClick);
+    };
+  }, [isProfileOpen]);
 
   // Store scroller ref + desktop arrows
   const storeScrollRef = useRef(null);
@@ -223,6 +332,13 @@ useEffect(() => {
       const previous = queryClient.getQueryData(productsQueryKey);
       const previousModalProduct = modalProduct;
 
+      showNotice(
+        productIsCurrentlyFavorite
+          ? "Produkti u hoq nga favoritët."
+          : "Produkti u shtua te favoritët.",
+        "success"
+      );
+
       setModalProduct((current) =>
         current && current.productId === productId
           ? { ...current, isFavorite: !productIsCurrentlyFavorite }
@@ -259,6 +375,8 @@ useEffect(() => {
       if (context?.previousModalProduct) {
         setModalProduct(context.previousModalProduct);
       }
+
+      showNotice("Veprimi për favoritët dështoi. Provo përsëri.", "error");
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: productsQueryKey });
@@ -403,6 +521,12 @@ useEffect(() => {
 
   const handleToggleFavorite = (productId, productIsCurrentlyFavorite) => {
     if (!productId) return;
+    const linked = Boolean(String(profileData.email || email || "").trim());
+    if (!linked) {
+      showNotice("Për të përdorur favoritët, hyni nga profili me email ose Google.", "info", 3400);
+      setIsProfileOpen(true);
+      return;
+    }
     toggleFavMutation.mutate({ productId, productIsCurrentlyFavorite });
   };
 
@@ -429,12 +553,48 @@ useEffect(() => {
       const data = await fetchSession(apiFetch);
       console.log("[DEBUG] /check-session response:", data);
 
+      // If we are authenticated only via header token and it still looks anonymous,
+      // clear local tokens and retry once so cookie-based Google session can be used.
+      if (
+        data?.isLoggedIn &&
+        data?.authSource === "header" &&
+        !data?.email &&
+        (localStorage.getItem("token") || localStorage.getItem("jwtToken"))
+      ) {
+        console.warn("[DEBUG] Detected stale header session, clearing local token and retrying with cookie auth");
+        localStorage.removeItem("token");
+        localStorage.removeItem("jwtToken");
+
+        const cookieSession = await fetchSession(apiFetch);
+        console.log("[DEBUG] /check-session retry (cookie preferred):", cookieSession);
+
+        if (cookieSession?.isLoggedIn) {
+          setIsLoggedIn(true);
+          setUserId(cookieSession.userId);
+          setIsRegistered(Boolean(cookieSession.isRegistered || cookieSession.email));
+          setEmail(cookieSession.email || "");
+          return cookieSession;
+        }
+      }
+
       // Backend may ask client to reinitialize (e.g., stale header token user not in DB)
       if (data?.shouldReinitialize) {
         console.warn('[DEBUG] /check-session requested reinitialize:', data);
         if (data?.authSource === 'header') {
           localStorage.removeItem('token');
           localStorage.removeItem('jwtToken');
+
+          // A stale header token can mask a fresh cookie session (e.g., right after Google OAuth).
+          // Retry once immediately after clearing local tokens so cookie auth can take over.
+          const cookieSession = await fetchSession(apiFetch);
+          console.log("[DEBUG] /check-session retry after header clear:", cookieSession);
+          if (cookieSession?.isLoggedIn) {
+            setIsLoggedIn(true);
+            setUserId(cookieSession.userId);
+            setIsRegistered(Boolean(cookieSession.isRegistered || cookieSession.email));
+            setEmail(cookieSession.email || "");
+            return cookieSession;
+          }
         }
         setIsLoggedIn(false);
         setUserId(null);
@@ -446,7 +606,8 @@ useEffect(() => {
       if (data?.isLoggedIn) {
         setIsLoggedIn(true);
         setUserId(data.userId);
-        setIsRegistered(!!data.isRegistered);
+        // Treat users with a persisted email as registered for UI purposes.
+        setIsRegistered(Boolean(data.isRegistered || data.email));
         setEmail(data.email || "");
         return data;
       }
@@ -457,6 +618,60 @@ useEffect(() => {
       setEmail("");
       return data;
     };
+
+    useEffect(() => {
+      if (typeof window === "undefined") return;
+
+      const params = new URLSearchParams(window.location.search);
+      const authStatus = params.get("auth");
+      const authReason = params.get("reason");
+      if (!authStatus) return;
+
+      console.log("[GoogleOAuth][Client] auth redirect detected", {
+        authStatus,
+        authReason,
+        currentUrl: window.location.href,
+      });
+
+      const applyAuthStatus = async () => {
+        if (authStatus === "google_success") {
+          console.log("[GoogleOAuth][Client] google_success -> refreshing session");
+          // Force header token cleanup so fresh Google cookie session is not shadowed.
+          localStorage.removeItem("token");
+          localStorage.removeItem("jwtToken");
+
+          const session = await checkSession();
+          if (session?.isLoggedIn && session?.email) {
+            setShowRegisterModal(false);
+            showNotice("Hyrja me Google u krye me sukses.", "success", 2800);
+          } else {
+            showNotice("Hyrja me Google u krye, por sesioni nuk u rifreskua. Provo të rifreskosh faqen.", "error", 4200);
+          }
+        } else if (authStatus === "google_failed") {
+          console.warn("[GoogleOAuth][Client] google_failed", authReason);
+          showNotice(
+            authReason
+              ? `Hyrja me Google dështoi: ${decodeURIComponent(authReason)}`
+              : "Hyrja me Google dështoi.",
+            "error",
+            4000,
+          );
+        } else if (authStatus === "google_not_configured") {
+          showNotice("Google login nuk është konfiguruar ende.", "error", 3200);
+        } else if (authStatus === "google_missing_profile") {
+          showNotice("Profili Google nuk ktheu email të vlefshëm.", "error", 3200);
+        } else {
+          showNotice("Pati një problem gjatë hyrjes me Google.", "error", 3000);
+        }
+
+        params.delete("auth");
+        const nextQuery = params.toString();
+        const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash || ""}`;
+        window.history.replaceState({}, "", nextUrl);
+      };
+
+      applyAuthStatus();
+    }, []);
 
 
 
@@ -577,7 +792,56 @@ useEffect(() => {
     setSearchKeyword("");
   };
 
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setProfileData({ firstName: "", lastName: "", email: "" });
+      setIsProfileOpen(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await apiFetch("/user/profile", { method: "GET" });
+        if (!res.ok) {
+          if (!cancelled) {
+            setProfileData({
+              firstName: "",
+              lastName: "",
+              email: email || "",
+            });
+          }
+          return;
+        }
+
+        const data = await res.json();
+        if (!cancelled) {
+          setProfileData({
+            firstName: data?.firstName || "",
+            lastName: data?.lastName || "",
+            email: data?.email || email || "",
+          });
+        }
+      } catch (_error) {
+        if (!cancelled) {
+          setProfileData({ firstName: "", lastName: "", email: email || "" });
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoggedIn, email, userId]);
+
   const allProducts = data?.pages.flatMap(p => p.products) ?? [];
+  const favoriteProductsForProfile = allProducts.filter((p) => p.isFavorite).slice(0, 6);
+  const profileName = `${profileData.firstName || ""} ${profileData.lastName || ""}`.trim();
+  const usernameFromEmail = (profileData.email || email || "")
+    .split("@")[0]
+    .trim();
+  const hasLinkedAccount = Boolean(String(profileData.email || email || "").trim());
   const totalItemsFound = Number(data?.pages?.[0]?.totalItems ?? 0);
   const normalizedSearchKeyword = String(searchKeyword || "").trim();
   const selectedStoreNames = (stores || [])
@@ -634,6 +898,13 @@ const settings = {
        
       }}
     >
+      <TransientNotice
+        notice={notice}
+        onDone={(id) => {
+          setNotice((current) => (current?.id === id ? null : current));
+        }}
+      />
+
       <div className="container-fluid" id="home-container" style={{ marginTop: 0, position: "relative", top: 0, boxSizing: "border-box",
         border: "0px solid #060101ff",
           maxWidth: 1200,
@@ -691,21 +962,119 @@ const settings = {
           <Button onClick={() => handleSearch(searchInput)}>Kerko</Button>
         </div>
 
-        <div className="d-flex align-items-center gap-2" style={{ flexShrink: 0 }}>
+        <div
+          className="d-flex align-items-center gap-2"
+          style={{ flexShrink: 0, position: "relative" }}
+          ref={desktopProfileRef}
+        >
           {!notificationsAllowed && (
-            <img
-              src="/bell.png"
-              alt="Enable notifications"
-              style={{ height: 34, width: 34, objectFit: "contain", display: "block", cursor: "pointer" }}
+            <FiBell
+              aria-label="Enable notifications"
+              style={desktopTopIconStyle}
               onClick={handleEnableNotifications}
             />
           )}
-          <img
-            src={isFavorite ? "/star-fill-2.png" : "/star-empty.jpg"}
-            alt="Favoritet"
-            style={{ height: 34, width: 34, objectFit: "contain", display: "block", cursor: "pointer" }}
-            onClick={() => setIsFavorite((prev) => !prev)}
+          <FiStar
+            aria-label="Favoritet"
+            style={{
+              ...desktopTopIconStyle,
+              color: "#0f172a",
+              fill: isFavorite ? "#facc15" : "transparent",
+            }}
+            onClick={handleFavoriteFilterToggle}
           />
+
+          <FiUser
+            aria-label="Profili"
+            style={desktopTopIconStyle}
+            onClick={toggleProfilePanel}
+          />
+
+          {isProfileOpen && (
+            <div
+              style={{
+                position: "absolute",
+                top: 46,
+                right: 0,
+                width: 310,
+                maxWidth: "90vw",
+                background: "#ffffff",
+                border: "1px solid #d7dde8",
+                borderRadius: 10,
+                boxShadow: "0 12px 28px rgba(0,0,0,0.16)",
+                padding: 12,
+                zIndex: 1200,
+              }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>
+                Emri: {profileName || "Përdorues"}
+              </div>
+              <div style={{ fontSize: 13, color: "#334155", marginBottom: 10 }}>
+                Emri i përdoruesit: {usernameFromEmail || "anonim"}
+              </div>
+              <div style={{ fontSize: 13, color: "#334155", marginBottom: 8 }}>
+                Email: {profileData.email || email || "nuk ka"}
+              </div>
+
+              <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 8 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
+                  Produktet favorite ({favoriteProductsForProfile.length})
+                </div>
+                {!hasLinkedAccount && (
+                  <button
+                    type="button"
+                    onClick={startGoogleLogin}
+                    style={{
+                      marginBottom: 8,
+                      width: "100%",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: 8,
+                      background: "#ffffff",
+                      padding: "7px 10px",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "#1e293b",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Hyr me Google
+                  </button>
+                )}
+                {favoriteProductsForProfile.length > 0 ? (
+                  <ul style={{ margin: 0, paddingLeft: 18, maxHeight: 150, overflowY: "auto" }}>
+                    {favoriteProductsForProfile.map((p) => (
+                      <li key={`profile-fav-${p.productId}`} style={{ fontSize: 12, marginBottom: 4 }}>
+                        {p.product_description}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div style={{ fontSize: 12, color: "#64748b" }}>
+                    Nuk ka produkte favorite për momentin.
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleShowFavoritesFromProfile}
+                  style={{
+                    marginTop: 8,
+                    width: "100%",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: 8,
+                    background: "#f8fafc",
+                    padding: "7px 10px",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: "#1e293b",
+                    cursor: "pointer",
+                  }}
+                >
+                  Shiko të gjitha favoritët
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
  
@@ -738,22 +1107,123 @@ const settings = {
       />
 
 
-        <div className="mobile-header-icons d-flex align-items-center">
+        <div
+          className="mobile-header-icons d-flex align-items-center"
+          style={{ position: "relative" }}
+          ref={mobileProfileRef}
+        >
           {!notificationsAllowed && (
-            <img
-              src="/bell.png"
-              alt="Enable notifications"
+            <FiBell
+              aria-label="Enable notifications"
               className="mobile-top-icon"
+              style={mobileTopIconStyle}
               onClick={handleEnableNotifications}
             />
           )}
 
-          <img
-            src={isFavorite ? "/star-fill-2.png" : "/star-empty.jpg"}
-            alt="Favoritet"
+          <FiStar
+            aria-label="Favoritet"
             className="mobile-top-icon"
-            onClick={() => setIsFavorite((prev) => !prev)}
+            style={{
+              ...mobileTopIconStyle,
+              color: "#0f172a",
+              fill: isFavorite ? "#facc15" : "transparent",
+            }}
+            onClick={handleFavoriteFilterToggle}
           />
+
+          <FiUser
+            aria-label="Profili"
+            className="mobile-top-icon"
+            style={mobileTopIconStyle}
+            onClick={toggleProfilePanel}
+          />
+
+          {isProfileOpen && (
+            <div
+              style={{
+                position: "absolute",
+                top: 44,
+                right: 0,
+                width: 290,
+                maxWidth: "90vw",
+                background: "#ffffff",
+                border: "1px solid #d7dde8",
+                borderRadius: 10,
+                boxShadow: "0 12px 28px rgba(0,0,0,0.16)",
+                padding: 12,
+                zIndex: 1200,
+              }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>
+                Emri: {profileName || "Përdorues"}
+              </div>
+              <div style={{ fontSize: 13, color: "#334155", marginBottom: 10 }}>
+                Emri i përdoruesit: {usernameFromEmail || "anonim"}
+              </div>
+              <div style={{ fontSize: 13, color: "#334155", marginBottom: 8 }}>
+                Email: {profileData.email || email || "nuk ka"}
+              </div>
+
+              <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 8 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
+                  Produktet favorite ({favoriteProductsForProfile.length})
+                </div>
+                {!hasLinkedAccount && (
+                  <button
+                    type="button"
+                    onClick={startGoogleLogin}
+                    style={{
+                      marginBottom: 8,
+                      width: "100%",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: 8,
+                      background: "#ffffff",
+                      padding: "7px 10px",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "#1e293b",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Hyr me Google
+                  </button>
+                )}
+                {favoriteProductsForProfile.length > 0 ? (
+                  <ul style={{ margin: 0, paddingLeft: 18, maxHeight: 150, overflowY: "auto" }}>
+                    {favoriteProductsForProfile.map((p) => (
+                      <li key={`profile-fav-mobile-${p.productId}`} style={{ fontSize: 12, marginBottom: 4 }}>
+                        {p.product_description}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div style={{ fontSize: 12, color: "#64748b" }}>
+                    Nuk ka produkte favorite për momentin.
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleShowFavoritesFromProfile}
+                  style={{
+                    marginTop: 8,
+                    width: "100%",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: 8,
+                    background: "#f8fafc",
+                    padding: "7px 10px",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: "#1e293b",
+                    cursor: "pointer",
+                  }}
+                >
+                  Shiko të gjitha favoritët
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>
