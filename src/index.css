@@ -189,14 +189,22 @@ body::-webkit-scrollbar { /* keep default vertical scrollbar; this selector can 
     border-radius: 2px;
   }
 
-  .home-search-clear-btn,
+  .home-search-icon {
+    display: none !important;
+  }
+
+  .home-search-clear-btn {
+    display: block !important;
+    color: #6d6d6d;
+  }
+
   .home-search-action-btn,
   .home-search-actions {
     display: none !important;
   }
 
   .mobile-header-icons {
-    gap: 8px;
+    gap: 10px;
     margin-left: 6px;
     flex-shrink: 0;
   }
@@ -216,12 +224,12 @@ body::-webkit-scrollbar { /* keep default vertical scrollbar; this selector can 
   }
 
   .mobile-top-icon {
-    width: 26px;
-    height: 26px;
+    width: 30px;
+    height: 30px;
     object-fit: contain;
     display: block;
     cursor: pointer;
-    padding: 2px;
+    padding: 5px;
     box-sizing: content-box;
   }
 }
@@ -232,12 +240,12 @@ body::-webkit-scrollbar { /* keep default vertical scrollbar; this selector can 
   }
 
   .mobile-header-icons {
-    gap: 6px;
+    gap: 8px;
   }
 
   .mobile-top-icon {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
   }
 }
 
@@ -247,8 +255,8 @@ body::-webkit-scrollbar { /* keep default vertical scrollbar; this selector can 
   }
 
   .mobile-top-icon {
-    width: 22px;
-    height: 22px;
-    padding: 1px;
+    width: 26px;
+    height: 26px;
+    padding: 4px;
   }
 }

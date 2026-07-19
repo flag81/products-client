@@ -12,7 +12,6 @@ import { fetchSession, initializeSession } from "./api/sessionApi";
 import { useHorizontalScrollButtons } from "./hooks/useHorizontalScrollButtons";
 import StoreScroller from "./components/StoreScroller";
 import ActiveFiltersBar from "./components/ActiveFiltersBar";
-import NoProductsMessage from "./components/NoProductsMessage";
 import ProductCard from "./components/ProductCard";
 import HomeModals from "./components/HomeModals";
 import SectionHeader from "./components/SectionHeader";
@@ -139,22 +138,28 @@ useEffect(() => {
   };
 
   const desktopTopIconStyle = {
-    height: 34,
-    width: 34,
+    height: 40,
+    width: 40,
     display: "block",
     cursor: "pointer",
-    padding: 4,
-    borderRadius: 8,
+    padding: 7,
+    borderRadius: 10,
     backgroundColor: "#f8fafc",
     border: "1px solid #dbe3ef",
     color: "#0f172a",
   };
 
   const mobileTopIconStyle = {
-    borderRadius: 8,
+    width: 34,
+    height: 34,
+    padding: 5,
+    borderRadius: 10,
     backgroundColor: "#f8fafc",
     border: "1px solid #dbe3ef",
     color: "#0f172a",
+    display: "block",
+    cursor: "pointer",
+    boxSizing: "content-box",
   };
 
   const refreshNotificationsAllowed = () => {
@@ -932,34 +937,59 @@ const settings = {
           }}
         />
 
-        <div className="d-flex align-items-center gap-2" style={{ flex: 1, minWidth: 0 }}>
-          <Form.Control
-            className="form-control-lg"
-            style={{
-              minWidth: 0,
-              borderRadius: 24,
-            }}
-            type="text"
-            id="search-desktop"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            maxLength={20}
-            placeholder="Kerko..."
-            onFocus={handleSearchFocus}
-            onBlur={handleSearchBlur}
-            onKeyDown={(e) => {
-              const isAlphanumeric = /^[a-zA-Z0-9\s-]$/.test(e.key);
-              if (!isAlphanumeric && e.key !== "Backspace" && e.key !== "Enter") {
-                e.preventDefault();
-              }
-              if (e.key === "Backspace" && e.target.value.length === 1) {
-                handleSearch("");
-              } else if (e.key === "Enter") {
-                handleSearch(e.target.value);
-              }
-            }}
-          />
-          <Button onClick={() => handleSearch(searchInput)}>Kerko</Button>
+        <div className="d-flex align-items-center" style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ position: "relative", width: "100%" }}>
+            <Form.Control
+              className="form-control-lg"
+              style={{
+                minWidth: 0,
+                borderRadius: 24,
+                paddingRight: 40,
+              }}
+              type="text"
+              id="search-desktop"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              maxLength={20}
+              placeholder="Kerko..."
+              onFocus={handleSearchFocus}
+              onBlur={handleSearchBlur}
+              onKeyDown={(e) => {
+                const isAlphanumeric = /^[a-zA-Z0-9\s-]$/.test(e.key);
+                if (!isAlphanumeric && e.key !== "Backspace" && e.key !== "Enter") {
+                  e.preventDefault();
+                }
+                if (e.key === "Backspace" && e.target.value.length === 1) {
+                  handleSearch("");
+                } else if (e.key === "Enter") {
+                  handleSearch(e.target.value);
+                }
+              }}
+            />
+
+            {searchInput?.length > 0 && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={clearSearch}
+                style={{
+                  position: "absolute",
+                  right: 6,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "transparent",
+                  border: "none",
+                  fontSize: 16,
+                  cursor: "pointer",
+                  padding: 6,
+                  lineHeight: 1,
+                  color: "#6d6d6d",
+                }}
+              >
+                ×
+              </button>
+            )}
+          </div>
         </div>
 
         <div
@@ -1445,10 +1475,6 @@ minWidth: 0,
     U gjet{totalItemsFound === 1 ? "" : "en"} {totalItemsFound} {totalItemsFound === 1 ? "artikull" : "artikuj"} per &quot;{normalizedSearchKeyword}&quot;{selectedStoresSuffix}.
   </div>
 )}
-
-
-<NoProductsMessage show={data?.pages?.[0]?.products?.length === 0} />
-
 
 
 {
