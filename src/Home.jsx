@@ -138,24 +138,24 @@ useEffect(() => {
   };
 
   const desktopTopIconStyle = {
-    height: 40,
-    width: 40,
+    height: 28,
+    width: 28,
     display: "block",
     cursor: "pointer",
-    padding: 7,
-    borderRadius: 10,
-    backgroundColor: "#f8fafc",
-    border: "1px solid #dbe3ef",
+    padding: 0,
+    borderRadius: 0,
+    backgroundColor: "transparent",
+    border: "none",
     color: "#0f172a",
   };
 
   const mobileTopIconStyle = {
-    width: 34,
-    height: 34,
-    padding: 5,
-    borderRadius: 10,
-    backgroundColor: "#f8fafc",
-    border: "1px solid #dbe3ef",
+    width: 24,
+    height: 24,
+    padding: 0,
+    borderRadius: 0,
+    backgroundColor: "transparent",
+    border: "none",
     color: "#0f172a",
     display: "block",
     cursor: "pointer",
@@ -993,7 +993,7 @@ const settings = {
         </div>
 
         <div
-          className="d-flex align-items-center gap-2"
+          className="d-flex align-items-center gap-3"
           style={{ flexShrink: 0, position: "relative" }}
           ref={desktopProfileRef}
         >
@@ -1138,7 +1138,7 @@ const settings = {
 
 
         <div
-          className="mobile-header-icons d-flex align-items-center"
+          className="mobile-header-icons d-flex align-items-center gap-3"
           style={{ position: "relative" }}
           ref={mobileProfileRef}
         >
