@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card";
 import Placeholder from "react-bootstrap/Placeholder";
+import Zoom from "react-medium-image-zoom";
+import "react-medium-image-zoom/dist/styles.css";
 
 import { getDisplayDiscountPercentage } from "../utils/pricing";
 import { buildProductImageUrl } from "../utils/cloudinary";
@@ -113,30 +115,31 @@ export default function ProductCard({
               </Placeholder>
             )}
 
-            <img
-              className="card-img-top product-image"
-              src={imgUrl}
-              alt={product.product_description}
-              loading="lazy"
-              onLoad={(e) => {
-                imageMetaRef.current = {
-                  width: e.currentTarget?.naturalWidth,
-                  height: e.currentTarget?.naturalHeight,
-                };
-                setIsCardImageLoaded(true);
-              }}
-              onError={() => {
-                reportBrokenImage("image-load-error", imgUrl);
-                setImageLoadFailed(true);
-              }}
-              onClick={() => openFromCard(imgUrl, product)}
-              style={{
-                display: "block",
-                cursor: "pointer",
-                width: "100%",
-                height: "auto",
-              }}
-            />
+            <Zoom>
+              <img
+                className="card-img-top product-image"
+                src={imgUrl}
+                alt={product.product_description}
+                loading="lazy"
+                onLoad={(e) => {
+                  imageMetaRef.current = {
+                    width: e.currentTarget?.naturalWidth,
+                    height: e.currentTarget?.naturalHeight,
+                  };
+                  setIsCardImageLoaded(true);
+                }}
+                onError={() => {
+                  reportBrokenImage("image-load-error", imgUrl);
+                  setImageLoadFailed(true);
+                }}
+                style={{
+                  display: "block",
+                  cursor: "pointer",
+                  width: "100%",
+                  height: "auto",
+                }}
+              />
+            </Zoom>
 
             <ProductImageOverlays
               imgUrl={imgUrl}
@@ -268,31 +271,32 @@ export default function ProductCard({
             </Placeholder>
           )}
 
-          <img
-            className="card-img-top product-image"
-            src={imgUrl}
-            alt={product.product_description}
-            loading="lazy"
-            onLoad={(e) => {
-              imageMetaRef.current = {
-                width: e.currentTarget?.naturalWidth,
-                height: e.currentTarget?.naturalHeight,
-              };
-              setIsCardImageLoaded(true);
-            }}
-            onError={() => {
-              reportBrokenImage("image-load-error", imgUrl);
-              setImageLoadFailed(true);
-            }}
-            onClick={() => openFromCard(imgUrl, product)}
-            style={{
-              display: "block",
-              cursor: "pointer",
-              width: "100%",
-              height: "auto",
-              filter: "grayscale(100%)",
-            }}
-          />
+          <Zoom>
+            <img
+              className="card-img-top product-image"
+              src={imgUrl}
+              alt={product.product_description}
+              loading="lazy"
+              onLoad={(e) => {
+                imageMetaRef.current = {
+                  width: e.currentTarget?.naturalWidth,
+                  height: e.currentTarget?.naturalHeight,
+                };
+                setIsCardImageLoaded(true);
+              }}
+              onError={() => {
+                reportBrokenImage("image-load-error", imgUrl);
+                setImageLoadFailed(true);
+              }}
+              style={{
+                display: "block",
+                cursor: "pointer",
+                width: "100%",
+                height: "auto",
+                filter: "grayscale(100%)",
+              }}
+            />
+          </Zoom>
 
           <ProductImageOverlays
             imgUrl={imgUrl}
