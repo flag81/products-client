@@ -29,19 +29,18 @@ export default function ProductImageOverlays({ imgUrl, product, onOpenModal, dis
           position: "absolute",
           top: "5px",
           left: "5px",
-          backgroundColor: "rgba(255, 255, 255, 0.9)",
-          padding: "12px",
+          backgroundColor: "rgba(255, 255, 255, 0.5)",
+          padding: "8px",
           borderRadius: "20%",
+          display: "inline-flex",
         }}
       >
         <img
           src={"/click.png"}
           alt="Overlay"
           style={{
-            position: "absolute",
-            top: "0px",
-            left: "0px",
-            width: 24,
+            width: 72,
+            maxWidth: "none",
           }}
           onClick={() => onOpenModal(imgUrl, product)}
         />
