@@ -223,8 +223,8 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
                 left: "5px",
                 color: "#fff",
                 border: "none",
-                width: 67,
-                height: 67,
+                width: 54,
+                height: 54,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -236,8 +236,8 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
               <img
                 src={"/click.png"}
                 style={{
-                  width: 58,
-                  height: 58,
+                  width: 46,
+                  height: 46,
                   maxWidth: "none",
                 }}
                 alt="Zoom"
