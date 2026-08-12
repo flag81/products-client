@@ -993,7 +993,7 @@ const settings = {
         </div>
 
         <div
-          className="d-flex align-items-center gap-3"
+          className="d-flex align-items-center gap-4"
           style={{ flexShrink: 0, position: "relative" }}
           ref={desktopProfileRef}
         >
@@ -1138,7 +1138,7 @@ const settings = {
 
 
         <div
-          className="mobile-header-icons d-flex align-items-center gap-3"
+          className="mobile-header-icons d-flex align-items-center gap-4"
           style={{ position: "relative" }}
           ref={mobileProfileRef}
         >
