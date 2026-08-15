@@ -893,10 +893,11 @@ const settings = {
         margin: 0,
         padding: 0,
         overflowX: "hidden",            // hide any accidental horizontal overflow
+        overflowY: "hidden",            // page itself never scrolls; only the product grid does
         WebkitOverflowScrolling: "touch",
         display: "flex",
         flexDirection: "column",
-        minHeight: "100vh",
+        height: "100vh",
         // added rules to further prevent horizontal panning on iOS
         overscrollBehaviorX: "contain",
         touchAction: "pan-y",
@@ -918,7 +919,13 @@ const settings = {
            paddingLeft: 12,
            paddingRight: 12,
             flex: 1,
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
         }}>
+         {/* Pinned section: header, search, store filters - never scrolls */}
+         <div style={{ flexShrink: 0 }}>
          <Container fluid>
 
       {/* Desktop: single row header (logo + search + button + icons) */}
@@ -1476,13 +1483,9 @@ minWidth: 0,
   </div>
 )}
 
-
-{
-
-
-  
-}
-
+         </div>
+         {/* Scrollable section: only the product cards scroll */}
+         <div style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
 
 {/* Products */}
 
@@ -1597,6 +1600,8 @@ notOnSaleProducts.length > 0 && (
           </div>
         </div>
       )}
+
+         </div>
 
       <RegistrationModal
         show={showRegisterModal}
