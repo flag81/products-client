@@ -29,6 +29,15 @@ body {
   display: block;
 }
 
+/* Keeps scrolling functional while hiding the scrollbar visuals across browsers */
+.hide-scrollbar {
+  scrollbar-width: none;      /* Firefox */
+  -ms-overflow-style: none;   /* IE/Edge legacy */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;              /* Chrome/Safari/Edge */
+}
+
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
