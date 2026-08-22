@@ -17,6 +17,7 @@ import HomeModals from "./components/HomeModals";
 import SectionHeader from "./components/SectionHeader";
 import ProductsGrid from "./components/ProductsGrid";
 import TransientNotice from "./components/TransientNotice";
+import ScrollToTopButton from "./components/ScrollToTopButton";
 
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -39,6 +40,8 @@ export default function Home() {
   const initStartedRef = useRef(false);
   const desktopProfileRef = useRef(null);
   const mobileProfileRef = useRef(null);
+  const productsScrollRef = useRef(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
 
   const initialize = async () => initializeSession(apiFetch);
 
@@ -47,6 +50,9 @@ export default function Home() {
 useEffect(() => {
   if (initStartedRef.current) return; // prevents StrictMode double-run
   initStartedRef.current = true;
+
+  // Stores don't depend on session state, so fetch them in parallel instead of after.
+  const storesPromise = getStores();
 
   (async () => {
     // One single bootstrap flow:
@@ -69,7 +75,9 @@ useEffect(() => {
         await checkSession();
       }
     }
-    await getStores();
+    // Gate the products query until userId is resolved, so it fetches once instead of anonymous-then-real.
+    setSessionChecked(true);
+    await storesPromise;
   })();
 }, []);
 
@@ -454,6 +462,7 @@ useEffect(() => {
     queryFn: getAllProducts,
     initialPageParam: 1,
     getNextPageParam: (lastPage) => lastPage?.nextPage ?? undefined,
+    enabled: sessionChecked, // wait for the resolved userId so we fetch once, not anonymous-then-real
   });
 
   const openModal = (imageUrl, product, imageMeta) => {
@@ -1486,6 +1495,7 @@ minWidth: 0,
          </div>
          {/* Scrollable section: only the product cards scroll, scrollbar hidden */}
          <div
+           ref={productsScrollRef}
            className="hide-scrollbar"
            style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", WebkitOverflowScrolling: "touch" }}
          >
@@ -1605,6 +1615,8 @@ notOnSaleProducts.length > 0 && (
       )}
 
          </div>
+
+         <ScrollToTopButton scrollContainerRef={productsScrollRef} />
 
       <RegistrationModal
         show={showRegisterModal}

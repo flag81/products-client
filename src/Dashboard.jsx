@@ -74,6 +74,10 @@ const [brokenImageScanLoading, setBrokenImageScanLoading] = useState(false);
 const [brokenImageScanUrl, setBrokenImageScanUrl] = useState('');
 const [rejectedIngestLogs, setRejectedIngestLogs] = useState([]);
 const [rejectedIngestLogsLoading, setRejectedIngestLogsLoading] = useState(false);
+const [rejectedProductActionId, setRejectedProductActionId] = useState(null);
+const [flaggedProducts, setFlaggedProducts] = useState([]);
+const [flaggedProductsLoading, setFlaggedProductsLoading] = useState(false);
+const [flaggedProductActionId, setFlaggedProductActionId] = useState(null);
 
 const [responseMessage, setResponseMessage ] = useState('');
 
@@ -984,6 +988,95 @@ const fetchRejectedIngestLogs = async () => {
     setStatus(`Failed to load rejected ingest rows: ${error.message}`);
   } finally {
     setRejectedIngestLogsLoading(false);
+  }
+};
+
+const approveRejectedProduct = async (id) => {
+  setRejectedProductActionId(id);
+  try {
+    const response = await fetch(`${node_url}/ingest-rejected-products/${id}/approve`, { method: 'POST' });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result?.error || 'Failed to process rejected product.');
+    }
+    setRejectedIngestLogs((prev) => prev.filter((row) => row.id !== id));
+    setStatus('Rejected product processed and inserted.');
+  } catch (error) {
+    console.error('Error processing rejected product:', error);
+    setStatus(`Failed to process rejected product: ${error.message}`);
+  } finally {
+    setRejectedProductActionId(null);
+  }
+};
+
+const deleteRejectedProduct = async (id) => {
+  setRejectedProductActionId(id);
+  try {
+    const response = await fetch(`${node_url}/ingest-rejected-products/${id}`, { method: 'DELETE' });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result?.error || 'Failed to delete rejected product.');
+    }
+    setRejectedIngestLogs((prev) => prev.filter((row) => row.id !== id));
+    setStatus('Rejected product row deleted.');
+  } catch (error) {
+    console.error('Error deleting rejected product:', error);
+    setStatus(`Failed to delete rejected product: ${error.message}`);
+  } finally {
+    setRejectedProductActionId(null);
+  }
+};
+
+const fetchFlaggedProducts = async () => {
+  setFlaggedProductsLoading(true);
+  try {
+    const response = await fetch(`${node_url}/ingest-flagged-products?status=pending&limit=300`);
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result?.error || 'Failed to fetch flagged products.');
+    }
+    setFlaggedProducts(Array.isArray(result?.data) ? result.data : []);
+  } catch (error) {
+    console.error('Error fetching flagged products:', error);
+    setStatus(`Failed to load flagged products: ${error.message}`);
+  } finally {
+    setFlaggedProductsLoading(false);
+  }
+};
+
+const approveFlaggedProduct = async (id) => {
+  setFlaggedProductActionId(id);
+  try {
+    const response = await fetch(`${node_url}/ingest-flagged-products/${id}/approve`, { method: 'POST' });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result?.error || 'Failed to approve flagged product.');
+    }
+    setFlaggedProducts((prev) => prev.filter((row) => row.id !== id));
+    setStatus('Flagged product approved and inserted.');
+  } catch (error) {
+    console.error('Error approving flagged product:', error);
+    setStatus(`Failed to approve flagged product: ${error.message}`);
+  } finally {
+    setFlaggedProductActionId(null);
+  }
+};
+
+const rejectFlaggedProduct = async (id) => {
+  setFlaggedProductActionId(id);
+  try {
+    const response = await fetch(`${node_url}/ingest-flagged-products/${id}/reject`, { method: 'POST' });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result?.error || 'Failed to reject flagged product.');
+    }
+    setFlaggedProducts((prev) => prev.filter((row) => row.id !== id));
+    setStatus('Flagged product rejected.');
+  } catch (error) {
+    console.error('Error rejecting flagged product:', error);
+    setStatus(`Failed to reject flagged product: ${error.message}`);
+  } finally {
+    setFlaggedProductActionId(null);
   }
 };
 
@@ -2640,7 +2733,8 @@ onClick={() => {
                   <th>Store/Post/Image</th>
                   <th>Description</th>
                   <th>Prices</th>
-                  <th>Image URL</th>
+                  <th>Image</th>
+                  <th>Actions</th>
                 </tr>
                 {rejectedIngestLogs.map((row) => (
                   <tr key={row.id}>
@@ -2661,11 +2755,90 @@ onClick={() => {
                     <td>
                       {row.image_url ? (
                         <a href={row.image_url} target="_blank" rel="noreferrer">
-                          {row.image_url}
+                          <img src={row.image_url} alt="" style={{ maxWidth: 120, maxHeight: 90 }} />
                         </a>
                       ) : (
                         '-'
                       )}
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => approveRejectedProduct(row.id)}
+                        disabled={rejectedProductActionId === row.id}
+                      >
+                        {rejectedProductActionId === row.id ? '...' : 'Process'}
+                      </button>
+                      <button
+                        onClick={() => deleteRejectedProduct(row.id)}
+                        disabled={rejectedProductActionId === row.id}
+                        style={{ marginLeft: 6 }}
+                      >
+                        {rejectedProductActionId === row.id ? '...' : 'Delete'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </table>
+            </div>
+          </div>
+
+          <div className="dashboard-panel dashboard-logs-panel" style={{ width: '100%', marginTop: 20 }}>
+            <div className="dashboard-section-header">
+              <h3 className="dashboard-section-title">Flagged Products (Needs Review)</h3>
+              <button onClick={fetchFlaggedProducts} disabled={flaggedProductsLoading}>
+                {flaggedProductsLoading ? 'Loading...' : 'Load Flagged Products'}
+              </button>
+            </div>
+
+            <div className='scrollable-div dashboard-table-shell' style={{ maxHeight: 360 }}>
+              <table border="1" cellPadding="8" cellSpacing="0" borderColor="black">
+                <tr>
+                  <th>Created</th>
+                  <th>Reason</th>
+                  <th>Store/Post/Image</th>
+                  <th>Description</th>
+                  <th>Prices</th>
+                  <th>Image</th>
+                  <th>Actions</th>
+                </tr>
+                {flaggedProducts.map((row) => (
+                  <tr key={row.id}>
+                    <td>{row.created_at ? new Date(row.created_at).toLocaleString('en-GB') : ''}</td>
+                    <td>{row.reason || '-'}</td>
+                    <td>
+                      Store: {row.store_id || '-'}
+                      <br />Post: {row.post_id || '-'}
+                      <br />Image: {row.image_id || '-'}
+                    </td>
+                    <td>{row.product_description || '-'}</td>
+                    <td>
+                      Old: {row.old_price_raw || '-'}
+                      <br />New: {row.new_price_raw || '-'}
+                      <br />Date: {row.sale_end_date_raw || '-'}
+                    </td>
+                    <td>
+                      {row.image_url ? (
+                        <a href={row.image_url} target="_blank" rel="noreferrer">
+                          <img src={row.image_url} alt="" style={{ maxWidth: 120, maxHeight: 90 }} />
+                        </a>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => approveFlaggedProduct(row.id)}
+                        disabled={flaggedProductActionId === row.id}
+                      >
+                        {flaggedProductActionId === row.id ? '...' : 'Approve'}
+                      </button>
+                      <button
+                        onClick={() => rejectFlaggedProduct(row.id)}
+                        disabled={flaggedProductActionId === row.id}
+                        style={{ marginLeft: 6 }}
+                      >
+                        {flaggedProductActionId === row.id ? '...' : 'Delete'}
+                      </button>
                     </td>
                   </tr>
                 ))}
