@@ -1597,6 +1597,17 @@ notOnSaleProducts.length > 0 && (
       />
 
       <div ref={observerRef} style={{ height: 20, margin: "10px 0" }} />
+      {isFetchingNextPage && (
+        <div
+          style={{ display: "flex", justifyContent: "center", padding: "16px 0" }}
+          aria-live="polite"
+          aria-label="Loading more products"
+        >
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading more...</span>
+          </div>
+        </div>
+      )}
       {isFetching && !isFetchingNextPage && (
         <div
           style={{
