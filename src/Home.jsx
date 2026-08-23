@@ -405,6 +405,7 @@ useEffect(() => {
       // Construct URL, pass userId if available
       const url = new URL(`${node_url}/getProducts`);
       url.searchParams.append('page', pageParam);
+      url.searchParams.append('limit', 10); // smaller pages load faster
       if (currentUserId) {
           url.searchParams.append('userId', currentUserId);
       }
