@@ -212,6 +212,58 @@ useEffect(() => {
     window.location.assign(`${node_url}/auth/google`);
   };
 
+  const startAppleLogin = async () => {
+    try {
+      if (!window.AppleID) {
+        showNotice("Apple login nuk u ngarkua. Rifresko faqen.", "error", 4000);
+        return;
+      }
+
+      window.AppleID.auth.init({
+        clientId: import.meta.env.VITE_APPLE_CLIENT_ID || "com.meniven.web",
+        scope: "email",
+        usePopup: true,
+      });
+
+      const response = await window.AppleID.auth.signIn();
+      const idToken = response?.authorization?.id_token;
+      if (!idToken) throw new Error("Missing Apple id_token");
+
+      const res = await fetch(`${node_url}/auth/apple/callback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ id_token: idToken }),
+      });
+      if (!res.ok) throw new Error(`Apple callback failed (${res.status})`);
+
+      // Clear stale anonymous header token so the fresh Apple cookie session wins.
+      localStorage.removeItem("token");
+      localStorage.removeItem("jwtToken");
+
+      const sessionRes = await fetch(`${node_url}/check-session`, {
+        method: "GET",
+        credentials: "include",
+      });
+      const session = await sessionRes.json();
+
+      if (session?.isLoggedIn) {
+        setIsLoggedIn(true);
+        setUserId(session.userId);
+        setIsRegistered(Boolean(session.isRegistered || session.email));
+        setEmail(session.email || "");
+        setShowRegisterModal(false);
+        showNotice("Hyrja me Apple u krye me sukses.", "success", 2800);
+      } else {
+        showNotice("Hyrja me Apple dështoi. Provo përsëri.", "error", 4000);
+      }
+    } catch (error) {
+      console.error("[AppleLogin] error", error);
+      if (error?.error === "popup_closed_by_user") return;
+      showNotice("Hyrja me Apple dështoi. Provo përsëri.", "error", 4000);
+    }
+  };
+
   const toggleProfilePanel = (e) => {
     e?.stopPropagation?.();
     setIsProfileOpen((prev) => !prev);
@@ -743,11 +795,35 @@ useEffect(() => {
   const logout = async () => {
     try {
       await logoutRequest(node_url);
-      setUserId(null);
-      setIsLoggedIn(false);
     } catch (err) {
-      console.error("Logout failed", err);
+      console.error("Logout request failed (will clear locally anyway)", err);
     }
+
+    // Drop any locally stored bearer tokens so the stale session can't be reused.
+    localStorage.removeItem("token");
+    localStorage.removeItem("jwtToken");
+
+    // Reset all user/session UI state back to anonymous.
+    setUserId(null);
+    setIsLoggedIn(false);
+    setIsRegistered(false);
+    setEmail("");
+    setProfileData({ firstName: "", lastName: "", email: "" });
+    setIsProfileOpen(false);
+    setShowRegisterModal(false);
+
+    // Drop cached queries (favorites/products) so they refetch for the anonymous user.
+    queryClient.clear();
+
+    // Start a fresh anonymous session so the app keeps working after logout.
+    try {
+      await initializeSession(apiFetch);
+      await checkSession();
+    } catch (err) {
+      console.error("Failed to re-initialize anonymous session after logout", err);
+    }
+
+    showNotice("Dolët nga llogaria juaj.", "success", 2600);
   };
 
   // ─── Effects ─────────────────────────────────────────────────────────────────
@@ -1087,6 +1163,26 @@ const settings = {
                     Hyr me Google
                   </button>
                 )}
+                {!hasLinkedAccount && (
+                  <button
+                    type="button"
+                    onClick={startAppleLogin}
+                    style={{
+                      marginBottom: 8,
+                      width: "100%",
+                      border: "1px solid #000000",
+                      borderRadius: 8,
+                      background: "#000000",
+                      padding: "7px 10px",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "#ffffff",
+                      cursor: "pointer",
+                    }}
+                  >
+                     Hyr me Apple
+                  </button>
+                )}
                 {favoriteProductsForProfile.length > 0 ? (
                   <ul style={{ margin: 0, paddingLeft: 18, maxHeight: 150, overflowY: "auto" }}>
                     {favoriteProductsForProfile.map((p) => (
@@ -1119,6 +1215,26 @@ const settings = {
                 >
                   Shiko të gjitha favoritët
                 </button>
+                {hasLinkedAccount && (
+                  <button
+                    type="button"
+                    onClick={logout}
+                    style={{
+                      marginTop: 8,
+                      width: "100%",
+                      border: "1px solid #fecaca",
+                      borderRadius: 8,
+                      background: "#fef2f2",
+                      padding: "7px 10px",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "#b91c1c",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Dil nga llogaria
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -1236,6 +1352,26 @@ const settings = {
                     Hyr me Google
                   </button>
                 )}
+                {!hasLinkedAccount && (
+                  <button
+                    type="button"
+                    onClick={startAppleLogin}
+                    style={{
+                      marginBottom: 8,
+                      width: "100%",
+                      border: "1px solid #000000",
+                      borderRadius: 8,
+                      background: "#000000",
+                      padding: "7px 10px",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "#ffffff",
+                      cursor: "pointer",
+                    }}
+                  >
+                     Hyr me Apple
+                  </button>
+                )}
                 {favoriteProductsForProfile.length > 0 ? (
                   <ul style={{ margin: 0, paddingLeft: 18, maxHeight: 150, overflowY: "auto" }}>
                     {favoriteProductsForProfile.map((p) => (
@@ -1268,6 +1404,26 @@ const settings = {
                 >
                   Shiko të gjitha favoritët
                 </button>
+                {hasLinkedAccount && (
+                  <button
+                    type="button"
+                    onClick={logout}
+                    style={{
+                      marginTop: 8,
+                      width: "100%",
+                      border: "1px solid #fecaca",
+                      borderRadius: 8,
+                      background: "#fef2f2",
+                      padding: "7px 10px",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "#b91c1c",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Dil nga llogaria
+                  </button>
+                )}
               </div>
             </div>
           )}
