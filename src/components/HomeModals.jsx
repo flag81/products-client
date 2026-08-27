@@ -13,6 +13,8 @@ export default function HomeModals({
   modalProduct,
   handleToggleFavorite,
   handleFlyerModal,
+  handleShareProduct,
+  shareProductId,
   zoomResetKey,
   isFlyerModalOpen,
   flyerBookData,
@@ -34,6 +36,7 @@ export default function HomeModals({
         modalProduct={modalProduct}
         handleToggleFavorite={handleToggleFavorite}
         handleFlyerModal={handleFlyerModal}
+        handleShareProduct={handleShareProduct}
         resetZoomKey={zoomResetKey}
       />
 
@@ -46,6 +49,7 @@ export default function HomeModals({
           closeFlyerModal={closeFlyerModal}
           isLoading={isFlyerLoading}
           error={flyerBookError}
+          shareProductId={shareProductId}
         />
       )}
     </>

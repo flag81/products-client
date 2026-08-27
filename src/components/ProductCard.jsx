@@ -12,6 +12,7 @@ import ProductImageOverlays from "./ProductImageOverlays";
 import FavoriteToggle from "./FavoriteToggle";
 import StoreBadge from "./StoreBadge";
 import ExpiryBadge from "./ExpiryBadge";
+import { FiShare2 } from "react-icons/fi";
 
 export default function ProductCard({
   variant,
@@ -23,6 +24,7 @@ export default function ProductCard({
   setIsCardImageLoaded,
   onOpenModal,
   onToggleFavorite,
+  onOpenShare,
 }) {
   const imageMetaRef = useRef(null);
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
@@ -240,6 +242,22 @@ export default function ProductCard({
                     iconSize={bottomIconSize}
                   />
                 </div>
+
+                <div
+                  role="button"
+                  title="Ndaj produktin"
+                  onClick={() => onOpenShare && onOpenShare(product)}
+                  style={{ display: "flex", alignItems: "flex-end", height: 34, cursor: "pointer" }}
+                >
+                  <FiShare2
+                    aria-label="Ndaj produktin"
+                    style={{
+                      width: bottomIconSize,
+                      height: bottomIconSize,
+                      color: "#0f172a",
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </Card.Body>
@@ -372,6 +390,28 @@ export default function ProductCard({
                 isFavorite={product.isFavorite}
                 onClick={() => onToggleFavorite(product.productId, product.isFavorite)}
               />
+
+              <div
+                role="button"
+                title="Ndaj produktin"
+                onClick={() => onOpenShare && onOpenShare(product)}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
+                <FiShare2
+                  aria-label="Ndaj produktin"
+                  style={{
+                    width: 24,
+                    height: 24,
+                    color: "#0f172a",
+                  }}
+                />
+              </div>
             </div>
           </div>
         </Card.Body>

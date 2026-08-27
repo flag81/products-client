@@ -14,6 +14,14 @@ export async function fetchFlyerBookImages(nodeUrl, flyerBookId) {
   return response.json();
 }
 
+export async function fetchFlyerByProduct(nodeUrl, productId) {
+  const response = await fetch(`${nodeUrl}/flyers/byProduct/${productId}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch flyer: ${response.status}`);
+  }
+  return response.json();
+}
+
 export async function logoutRequest(nodeUrl) {
   return fetch(`${nodeUrl}/logout`, { credentials: "include" });
 }

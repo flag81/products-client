@@ -3,6 +3,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Home from './Home';
 import Dashboard from './Dashboard';
+import FlyerView from './FlyerView';
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -20,6 +21,7 @@ const App = () => {
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/product/:productId" element={<FlyerView />} />
 
             </Routes>
         </Router>

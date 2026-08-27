@@ -7,8 +7,9 @@ import Zoom from "react-medium-image-zoom";
 import "react-medium-image-zoom/dist/styles.css";
 
 import Button from "react-bootstrap/Button";
+import { FiShare2 } from "react-icons/fi";
 
-const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) => {
+const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal, shareProductId }) => {
 
     console.log('[DEBUG] flyerBook:', flyerBook);
     console.log('[DEBUG] baseUrl:', baseUrl);
@@ -28,6 +29,7 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
     const [currentSlide, setCurrentSlide] = useState(0);
     const [loadedUrls, setLoadedUrls] = useState({});
     const [failedUrls, setFailedUrls] = useState({});
+    const [shareCopied, setShareCopied] = useState(false);
 
     const toImageUrl = (item) => {
       const raw = String(item?.image_url || "").trim();
@@ -84,6 +86,24 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
     const getRealIndex = (index) => {
       const n = visibleFlyers.length || 1;
       return ((index % n) + n) % n;
+    };
+
+    const handleShare = async () => {
+      if (!shareProductId) return;
+      const url = `${window.location.origin}/product/${shareProductId}`;
+      try {
+        if (typeof navigator !== 'undefined' && navigator.share) {
+          await navigator.share({ title: 'Fletushka', url });
+          return;
+        }
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(url);
+          setShareCopied(true);
+          setTimeout(() => setShareCopied(false), 2000);
+        }
+      } catch (err) {
+        console.error('Share failed:', err);
+      }
     };
 
   // Check if flyerBook is an array and has elements
@@ -143,8 +163,32 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal }) 
 
   {/* slide counter */}
   {Array.isArray(visibleFlyers) && visibleFlyers.length > 0 && (
-    <div style={{ color: '#fff', textAlign: 'center', marginBottom: 8 }}>
+    <div style={{ color: '#fff', textAlign: 'center', marginBottom: 8, position: 'relative' }}>
       {currentSlide + 1}/{visibleFlyers.length}
+      {shareProductId && (
+        <button
+          onClick={handleShare}
+          title="Ndaj fletushkën"
+          style={{
+            position: 'absolute',
+            right: 0,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            background: 'rgba(255,255,255,0.15)',
+            border: '1px solid rgba(255,255,255,0.35)',
+            color: '#fff',
+            borderRadius: 16,
+            padding: '4px 12px',
+            fontSize: 13,
+            cursor: 'pointer',
+          }}
+        >
+          <FiShare2 size={14} /> {shareCopied ? 'U kopjua!' : 'Ndaj'}
+        </button>
+      )}
     </div>
   )}
 

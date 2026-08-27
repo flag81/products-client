@@ -3,6 +3,7 @@ import Placeholder from "react-bootstrap/Placeholder";
 import Button from "react-bootstrap/Button";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { getDisplayDiscountPercentage } from "./utils/pricing";
+import { FiShare2 } from "react-icons/fi";
 
 const ProductModal = ({
   isOpen,
@@ -14,6 +15,7 @@ const ProductModal = ({
   modalProduct,
   handleToggleFavorite,
   handleFlyerModal,
+  handleShareProduct,
   resetZoomKey, // <- new prop
 }) => {
   if (!isOpen) return null;
@@ -416,6 +418,21 @@ const ProductModal = ({
                   <span className="icon-description">Fletushka</span>
                 </div>
               )}
+
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  marginRight: 5,
+                }}
+                onClick={() => handleShareProduct && handleShareProduct(modalProduct?.productId)}
+              >
+                <FiShare2 size={24} color="#172033" />
+                <span className="icon-description">Ndaj</span>
+              </div>
 
 
             </div>

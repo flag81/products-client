@@ -18,6 +18,7 @@ import SectionHeader from "./components/SectionHeader";
 import ProductsGrid from "./components/ProductsGrid";
 import TransientNotice from "./components/TransientNotice";
 import ScrollToTopButton from "./components/ScrollToTopButton";
+import ShareModal from "./components/ShareModal";
 
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -108,6 +109,7 @@ useEffect(() => {
   const [email, setEmail] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFlyerModalOpen, setIsFlyerModalOpen ] = useState(false);
+  const [shareProduct, setShareProduct] = useState(null);
   const [modalImageUrl, setModalImageUrl] = useState("");
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [modalProduct, setModalProduct] = useState(null);
@@ -611,6 +613,32 @@ useEffect(() => {
     } finally {
       setIsFlyerLoading(false);
     }
+  };
+
+  const handleShareProduct = async (productId) => {
+    if (!productId) return;
+    const url = `${window.location.origin}/product/${productId}`;
+    const shareData = { title: "Fletushka", url };
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share(shareData);
+        return;
+      }
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        showNotice("Linku u kopjua.", "success", 2200);
+      }
+    } catch (err) {
+      console.error("Share failed:", err);
+    }
+  };
+
+  const openShareModal = (product) => {
+    setShareProduct(product);
+  };
+
+  const closeShareModal = () => {
+    setShareProduct(null);
   };
 
     // --- Check User Session ---
@@ -1682,6 +1710,7 @@ minWidth: 0,
       setIsCardImageLoaded={setIsCardImageLoaded}
       onOpenModal={openModal}
       onToggleFavorite={handleToggleFavorite}
+      onOpenShare={openShareModal}
     />
   ))}
 </ProductsGrid>
@@ -1727,6 +1756,7 @@ notOnSaleProducts.length > 0 && (
       setIsCardImageLoaded={setIsCardImageLoaded}
       onOpenModal={openModal}
       onToggleFavorite={handleToggleFavorite}
+      onOpenShare={openShareModal}
     />
   ))}
 
@@ -1743,6 +1773,8 @@ notOnSaleProducts.length > 0 && (
         modalProduct={modalProduct}
         handleToggleFavorite={handleToggleFavorite}
         handleFlyerModal={handleFlyerModal}
+        handleShareProduct={handleShareProduct}
+        shareProductId={modalProduct?.productId}
         zoomResetKey={zoomResetKey}
         isFlyerModalOpen={isFlyerModalOpen}
         flyerBookData={flyerBookData}
@@ -1751,6 +1783,8 @@ notOnSaleProducts.length > 0 && (
         isFlyerLoading={isFlyerLoading}
         flyerBookError={flyerBookError}
       />
+
+      <ShareModal product={shareProduct} onClose={closeShareModal} />
 
       <div ref={observerRef} style={{ height: 20, margin: "10px 0" }} />
       {isFetchingNextPage && (
