@@ -93,6 +93,23 @@ img { max-width: 100%; height: auto; display: block; }
   white-space: nowrap;
 }
 
+/* Desktop only (>=769px): store icons fill their tiles as big as possible, with
+   some breathing room on all sides of the box and small gaps between the icons.
+   Mobile (<=768px) keeps the original look. */
+@media (min-width: 769px) {
+  .store-scroller-shell {
+    padding: 6px 24px !important; /* breathing room on all sides; wider on left/right between icons and box edges */
+  }
+  .store-scroller-item {
+    padding: 4px !important;    /* margin around the icon inside its tile */
+    margin: 0 4px !important;   /* small gaps between the icons */
+  }
+  .store-scroller-logo {
+    max-width: none !important;  /* remove the 58px cap */
+    max-height: none !important; /* remove the 36px cap */
+  }
+}
+
 /* Hide global horizontal scrollbar on mobile browsers that add 100vw quirks */
 body::-webkit-scrollbar { /* keep default vertical scrollbar; this selector can be left empty */ }
 

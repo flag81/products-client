@@ -15,6 +15,7 @@ export default function StoreScroller({
 
   return (
     <div
+      className="store-scroller-shell"
       style={{
         position: "relative",
         width: "100%",
@@ -87,6 +88,7 @@ export default function StoreScroller({
           return (
             <div
               key={store.storeId}
+              className="store-scroller-item"
               role="button"
               tabIndex={0}
               aria-pressed={isSelected}
@@ -159,6 +161,7 @@ export default function StoreScroller({
 
               {store.logoUrl ? (
                 <img
+                  className="store-scroller-logo"
                   src={`${store.logoUrl.replace("/upload/", "/upload/f_auto,q_auto:best,dpr_auto,c_limit,w_160,h_96/")}`}
                   alt={store.storeName || "Store"}
                   style={{
