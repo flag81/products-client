@@ -110,6 +110,16 @@ img { max-width: 100%; height: auto; display: block; }
   }
 }
 
+/* Desktop only (>=768px): hide the mobile "tap here" (click.png) overlay on
+   product images. App.css also has this rule, but index.css is the global
+   stylesheet (imported by main.jsx) so the rule is guaranteed to apply on
+   every page, including Home. */
+@media (min-width: 768px) {
+  .overlay-container2 {
+    display: none;
+  }
+}
+
 /* Hide global horizontal scrollbar on mobile browsers that add 100vw quirks */
 body::-webkit-scrollbar { /* keep default vertical scrollbar; this selector can be left empty */ }
 

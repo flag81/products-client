@@ -147,7 +147,7 @@ export default function ProductCard({
               imgUrl={imgUrl}
               product={product}
               onOpenModal={openFromCard}
-              discountPct={0}
+              discountPct={getDisplayDiscountPercentage(product)}
             />
           </div>
 

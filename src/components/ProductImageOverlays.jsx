@@ -9,8 +9,8 @@ export default function ProductImageOverlays({ imgUrl, product, onOpenModal, dis
         style={{
           position: "absolute",
           top: "5px",
-          right: "5px",
-          backgroundColor: "rgb(249, 245, 245)",
+          left: "5px",
+          backgroundColor: "rgba(255, 255, 255, 0.5)",
           padding: "15px",
           borderRadius: "20%",
         }}
@@ -32,7 +32,6 @@ export default function ProductImageOverlays({ imgUrl, product, onOpenModal, dis
           backgroundColor: "rgba(255, 255, 255, 0.5)",
           padding: "5px",
           borderRadius: "20%",
-          display: "inline-flex",
         }}
       >
         <img
@@ -52,7 +51,7 @@ export default function ProductImageOverlays({ imgUrl, product, onOpenModal, dis
           position: "absolute",
           top: "5px",
           right: "5px",
-          backgroundColor: "rgba(255, 255, 255, 0.9)",
+          backgroundColor: "rgba(255, 255, 255, 0.8)",
           borderRadius: "20%",
         }}
       >
