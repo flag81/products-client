@@ -1711,6 +1711,7 @@ minWidth: 0,
       onOpenModal={openModal}
       onToggleFavorite={handleToggleFavorite}
       onOpenShare={openShareModal}
+      onOpenFlyer={handleFlyerModal}
     />
   ))}
 </ProductsGrid>
@@ -1757,6 +1758,7 @@ notOnSaleProducts.length > 0 && (
       onOpenModal={openModal}
       onToggleFavorite={handleToggleFavorite}
       onOpenShare={openShareModal}
+      onOpenFlyer={handleFlyerModal}
     />
   ))}
 

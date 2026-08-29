@@ -17,13 +17,27 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal, sh
 
     const sliderRef = useRef(null);
     const loadTimeoutsRef = useRef({});
+    // Placeholder frame while an image loads (fixed 3:4 box so the slide doesn't jump)
     const imageFrameStyle = {
-      width: '400px',
-      maxWidth: '100%',
-      maxHeight: '80vh',
+      width: '100%',
+      maxWidth: 'min(92vw, 640px)',
+      maxHeight: '88vh',
       aspectRatio: '3 / 4',
       objectFit: 'contain',
       display: 'block',
+      margin: '0 auto',
+    };
+
+    // Actual flyer image: render at natural size (capped to viewport) so the
+    // carousel stays compact and centered instead of stretching across the screen.
+    const flyerImageStyle = {
+      maxWidth: '100%',
+      maxHeight: '88vh',
+      width: 'auto',
+      height: 'auto',
+      objectFit: 'contain',
+      display: 'block',
+      margin: '0 auto',
     };
     // current slide index and per-slide loaded flags
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -158,7 +172,7 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal, sh
 <div id="flamur"
   className="slider-container"
   onClick={e => e.stopPropagation()}
-  style={{ width: '100%', maxWidth: '400px', margin: '0 auto' }} // Added styles
+  style={{ width: '100%', maxWidth: 'min(92vw, 640px)', margin: '0 auto' }} // compact & centered
 >
 
   {/* slide counter */}
@@ -214,6 +228,7 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal, sh
                   border: '1px solid rgba(255,255,255,0.25)',
                   borderRadius: 6,
                   position: 'relative',
+                  backgroundColor: 'rgba(255,255,255,0.04)',
                 }}
               >
                 <div
@@ -221,14 +236,17 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal, sh
                     position: 'absolute',
                     inset: 0,
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#ffffff',
+                    gap: 10,
+                    color: 'rgba(255,255,255,0.85)',
                     fontSize: 13,
                     letterSpacing: 0.3,
                   }}
                 >
-                  Loading image...
+                  <span className="flyer-loading-spinner" aria-hidden="true" />
+                  Duke ngarkuar...
                 </div>
               </div>
             )}
@@ -241,7 +259,7 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal, sh
               style={{
                 opacity: loadedUrls[url] ? 1 : 0,
                 transition: 'opacity 140ms ease-out',
-                ...imageFrameStyle,
+                ...flyerImageStyle,
                 position: loadedUrls[url] ? 'static' : 'absolute',
                 top: 0,
                 left: 0,
@@ -260,7 +278,8 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal, sh
             />
 
       
-       <Button
+       {loadedUrls[url] && (
+        <Button
               style={{
                 position: "absolute",
                 top: "5px",
@@ -287,6 +306,7 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal, sh
                 alt="Zoom"
               />
             </Button>
+       )}
 
             </div>
 

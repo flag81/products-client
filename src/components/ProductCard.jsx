@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card";
-import Placeholder from "react-bootstrap/Placeholder";
 import Zoom from "react-medium-image-zoom";
 import "react-medium-image-zoom/dist/styles.css";
 
@@ -11,7 +10,6 @@ import { getApiBaseUrl } from "../api/apiFetch";
 import ProductImageOverlays from "./ProductImageOverlays";
 import FavoriteToggle from "./FavoriteToggle";
 import StoreBadge from "./StoreBadge";
-import ExpiryBadge from "./ExpiryBadge";
 import { FiShare2 } from "react-icons/fi";
 
 export default function ProductCard({
@@ -20,13 +18,14 @@ export default function ProductCard({
   baseUrl,
   autoTransformation,
   directory,
-  isCardImageLoaded,
   setIsCardImageLoaded,
   onOpenModal,
   onToggleFavorite,
   onOpenShare,
+  onOpenFlyer,
 }) {
   const imageMetaRef = useRef(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
   const hasReportedBrokenRef = useRef(false);
   const nodeUrl = getApiBaseUrl();
@@ -107,14 +106,9 @@ export default function ProductCard({
             marginBottom: 30,
           }}
         >
-          <div style={{ position: "relative", width: "100%", height: "100%" }}>
-            {!isCardImageLoaded && (
-              <Placeholder as="div" animation="glow">
-                <Placeholder
-                  style={{ width: "100%", height: "200px" }}
-                  className="rounded"
-                />
-              </Placeholder>
+          <div className="product-card-image" style={{ position: "relative", width: "100%", height: "auto" }}>
+            {!imageLoaded && (
+              <div className="product-image-skeleton" aria-hidden="true" />
             )}
 
             <Zoom>
@@ -128,6 +122,7 @@ export default function ProductCard({
                     width: e.currentTarget?.naturalWidth,
                     height: e.currentTarget?.naturalHeight,
                   };
+                  setImageLoaded(true);
                   setIsCardImageLoaded(true);
                 }}
                 onError={() => {
@@ -139,16 +134,20 @@ export default function ProductCard({
                   cursor: "pointer",
                   width: "100%",
                   height: "auto",
+                  opacity: imageLoaded ? 1 : 0,
+                  transition: "opacity 200ms ease-out",
                 }}
               />
             </Zoom>
 
-            <ProductImageOverlays
-              imgUrl={imgUrl}
-              product={product}
-              onOpenModal={openFromCard}
-              discountPct={getDisplayDiscountPercentage(product)}
-            />
+            {imageLoaded && (
+              <ProductImageOverlays
+                imgUrl={imgUrl}
+                product={product}
+                onOpenModal={openFromCard}
+                discountPct={getDisplayDiscountPercentage(product)}
+              />
+            )}
           </div>
 
           <Card.Body
@@ -235,13 +234,30 @@ export default function ProductCard({
                   />
                 </div>
 
-                <div style={{ display: "flex", alignItems: "flex-end", height: 34 }} role="button">
-                  <ExpiryBadge
-                    saleEndDate={product.sale_end_date}
-                    productOnSale={product.productOnSale}
-                    iconSize={bottomIconSize}
-                  />
-                </div>
+                {product?.flyer_book_id > 0 && (
+                  <div
+                    role="button"
+                    title="Fletushka"
+                    onClick={() => onOpenFlyer && onOpenFlyer(product.flyer_book_id)}
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-end",
+                      height: 34,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <img
+                      src="/flyer.png"
+                      alt="Fletushka"
+                      style={{
+                        width: bottomIconSize,
+                        height: bottomIconSize,
+                        objectFit: "contain",
+                        display: "block",
+                      }}
+                    />
+                  </div>
+                )}
 
                 <div
                   role="button"
@@ -279,14 +295,9 @@ export default function ProductCard({
           borderColor: product.productOnSale ? "green" : null,
         }}
       >
-        <div style={{ position: "relative", width: "100%", height: "100%" }}>
-          {!isCardImageLoaded && (
-            <Placeholder as="div" animation="glow">
-              <Placeholder
-                style={{ width: "100%", height: "200px" }}
-                className="rounded"
-              />
-            </Placeholder>
+        <div className="product-card-image" style={{ position: "relative", width: "100%", height: "auto" }}>
+          {!imageLoaded && (
+            <div className="product-image-skeleton" aria-hidden="true" />
           )}
 
           <Zoom>
@@ -300,6 +311,7 @@ export default function ProductCard({
                   width: e.currentTarget?.naturalWidth,
                   height: e.currentTarget?.naturalHeight,
                 };
+                setImageLoaded(true);
                 setIsCardImageLoaded(true);
               }}
               onError={() => {
@@ -312,16 +324,20 @@ export default function ProductCard({
                 width: "100%",
                 height: "auto",
                 filter: "grayscale(100%)",
+                opacity: imageLoaded ? 1 : 0,
+                transition: "opacity 200ms ease-out",
               }}
             />
           </Zoom>
 
-          <ProductImageOverlays
-            imgUrl={imgUrl}
-            product={product}
-            onOpenModal={openFromCard}
-            discountPct={pct}
-          />
+          {imageLoaded && (
+            <ProductImageOverlays
+              imgUrl={imgUrl}
+              product={product}
+              onOpenModal={openFromCard}
+              discountPct={pct}
+            />
+          )}
         </div>
 
         <Card.Body
@@ -390,6 +406,31 @@ export default function ProductCard({
                 isFavorite={product.isFavorite}
                 onClick={() => onToggleFavorite(product.productId, product.isFavorite)}
               />
+
+              {product?.flyer_book_id > 0 && (
+                <div
+                  role="button"
+                  title="Fletushka"
+                  onClick={() => onOpenFlyer && onOpenFlyer(product.flyer_book_id)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  <img
+                    src="/flyer.png"
+                    alt="Fletushka"
+                    style={{
+                      width: 24,
+                      height: 24,
+                      objectFit: "contain",
+                      display: "block",
+                    }}
+                  />
+                </div>
+              )}
 
               <div
                 role="button"

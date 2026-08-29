@@ -59,6 +59,49 @@ export default function ProductImageOverlays({ imgUrl, product, onOpenModal, dis
           <span style={{ color: "green", fontWeight: "bold" }}>-{discountPct}%</span>
         ) : null}
       </div>
+
+      <div
+        className="overlay-container4"
+        style={{
+          position: "absolute",
+          bottom: "5px",
+          right: "5px",
+          backgroundColor: "rgba(255, 255, 255, 0.9)",
+          padding: "6px 10px",
+          borderRadius: "20%",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 5,
+        }}
+      >
+        {product?.sale_end_date ? (
+          <>
+            <img
+              src="/expire2.png"
+              alt="Expires"
+              style={{
+                width: 18,
+                height: 18,
+                objectFit: "contain",
+                display: "block",
+              }}
+            />
+            <span
+              style={{
+                color: product.productOnSale ? "green" : "red",
+                fontWeight: "bold",
+                fontSize: 14,
+              }}
+            >
+              {new Date(product.sale_end_date).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "2-digit",
+              })}
+            </span>
+          </>
+        ) : null}
+      </div>
     </>
   );
 }
