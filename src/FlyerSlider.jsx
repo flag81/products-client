@@ -76,11 +76,21 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal, sh
       });
     };
 
+    // A slow image is not a broken image: advance the slide so the carousel
+    // never appears stuck, but keep the flyer in the list so it can still be
+    // seen once its load actually completes.
+    const skipSlowImage = (url) => {
+      clearLoadTimeout(url);
+      requestAnimationFrame(() => {
+        sliderRef.current?.slickNext?.();
+      });
+    };
+
     const scheduleLoadTimeout = (url) => {
       if (!url || loadedUrls[url] || failedUrls[url] || loadTimeoutsRef.current[url]) return;
       loadTimeoutsRef.current[url] = setTimeout(() => {
-        markAsFailedAndSkip(url);
-      }, 7000);
+        skipSlowImage(url);
+      }, 15000);
     };
     
     useEffect(() => {
@@ -255,7 +265,6 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal, sh
               ref={() => scheduleLoadTimeout(url)}
               src={url}
               alt={`Flyer ${i}`}
-              loading="lazy"
               style={{
                 opacity: loadedUrls[url] ? 1 : 0,
                 transition: 'opacity 140ms ease-out',
@@ -263,6 +272,10 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal, sh
                 position: loadedUrls[url] ? 'static' : 'absolute',
                 top: 0,
                 left: 0,
+                // While loading, fill the placeholder frame so the element
+                // never has a 0x0 box (which can defer the browser fetch).
+                width: loadedUrls[url] ? 'auto' : '100%',
+                height: loadedUrls[url] ? 'auto' : '100%',
               }} // Adjusted image styles for better fitting
                // add lazy loading placeholder component onload
 
