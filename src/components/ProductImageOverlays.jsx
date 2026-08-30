@@ -102,6 +102,48 @@ export default function ProductImageOverlays({ imgUrl, product, onOpenModal, dis
           </>
         ) : null}
       </div>
+
+      {product?.city ? (
+        <div
+          className="overlay-container-city"
+          title={product.city}
+          style={{
+            position: "absolute",
+            bottom: "5px",
+            left: "5px",
+            backgroundColor: "rgba(255, 255, 255, 0.9)",
+            padding: "6px 10px",
+            borderRadius: "20%",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 5,
+            maxWidth: "70%",
+          }}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="#dc2626"
+            aria-hidden="true"
+            style={{ flexShrink: 0 }}
+          >
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" />
+          </svg>
+          <span
+            style={{
+              color: "#0f172a",
+              fontWeight: "bold",
+              fontSize: 13,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {product.city}
+          </span>
+        </div>
+      ) : null}
     </>
   );
 }
