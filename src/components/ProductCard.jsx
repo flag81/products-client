@@ -23,6 +23,7 @@ export default function ProductCard({
   onToggleFavorite,
   onOpenShare,
   onOpenFlyer,
+  compact = false,
 }) {
   const imageMetaRef = useRef(null);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -91,8 +92,14 @@ export default function ProductCard({
 
   if (!imgUrl || imageLoadFailed) return null;
 
-  const commonCardClass = "h-100 pt-1 px-1 pb-0 product-card d-flex flex-column";
-  const bottomIconSize = 30;
+  // In compact (2-per-row mobile) layout everything scales down (0.78 = 0.5 + 30% + 20%).
+  const compactScale = compact ? 0.78 : 1;
+  const bottomIconSize = Math.round(30 * compactScale);
+  const priceOldSize = `${Math.round(15 * compactScale)}px`;
+  const priceNewSize = `${Math.round(20 * compactScale)}px`;
+  const menuSize = Math.round(34 * compactScale);
+  const miniIconSize = Math.round(24 * compactScale);
+  const commonCardClass = `h-100 pt-1 px-1 pb-0 product-card d-flex flex-column${compact ? " product-card-compact" : ""}`;
 
   if (variant === "onsale") {
     return (
@@ -146,6 +153,7 @@ export default function ProductCard({
                 product={product}
                 onOpenModal={openFromCard}
                 discountPct={getDisplayDiscountPercentage(product)}
+                compact={compact}
               />
             )}
           </div>
@@ -172,20 +180,20 @@ export default function ProductCard({
                 textAlign: "center",
               }}
             >
-              <span style={{ color: "red", fontWeight: "bold", fontSize: "15px" }}>
+              <span style={{ color: "red", fontWeight: "bold", fontSize: priceOldSize }}>
                 {product.old_price && product.old_price > 0
                   ? product.old_price + "€  - "
                   : ""}
               </span>
               <span
-                style={{ color: "green", fontWeight: "bold", fontSize: "20px" }}
+                style={{ color: "green", fontWeight: "bold", fontSize: priceNewSize }}
                 className="bold-text"
               >
                 {product.new_price > 0 ? `${product.new_price}€` : ""}
               </span>
 
               <span
-                style={{ color: "green", fontWeight: "bold", fontSize: "20px" }}
+                style={{ color: "green", fontWeight: "bold", fontSize: priceNewSize }}
                 className="bold-text"
               >
                 {(() => {
@@ -215,10 +223,10 @@ export default function ProductCard({
                   paddingTop: 0,
                   justifyContent: "space-between",
                   borderRadius: 0,
-                  minHeight: 34,
+                  minHeight: menuSize,
                 }}
               >
-                <div style={{ display: "flex", alignItems: "flex-end", height: 34 }}>
+                <div style={{ display: "flex", alignItems: "flex-end", height: menuSize }}>
                   <FavoriteToggle
                     isFavorite={product.isFavorite}
                     onClick={() => onToggleFavorite(product.productId, product.isFavorite)}
@@ -226,7 +234,7 @@ export default function ProductCard({
                   />
                 </div>
 
-                <div style={{ display: "flex", alignItems: "flex-end", height: 34 }}>
+                <div style={{ display: "flex", alignItems: "flex-end", height: menuSize }}>
                   <StoreBadge
                     logoUrl={product.logoUrl}
                     storeName={product.storeName}
@@ -242,7 +250,7 @@ export default function ProductCard({
                     style={{
                       display: "flex",
                       alignItems: "flex-end",
-                      height: 34,
+                      height: menuSize,
                       cursor: "pointer",
                     }}
                   >
@@ -263,7 +271,7 @@ export default function ProductCard({
                   role="button"
                   title="Ndaj produktin"
                   onClick={() => onOpenShare && onOpenShare(product)}
-                  style={{ display: "flex", alignItems: "flex-end", height: 34, cursor: "pointer" }}
+                  style={{ display: "flex", alignItems: "flex-end", height: menuSize, cursor: "pointer" }}
                 >
                   <FiShare2
                     aria-label="Ndaj produktin"
@@ -336,6 +344,7 @@ export default function ProductCard({
               product={product}
               onOpenModal={openFromCard}
               discountPct={pct}
+              compact={compact}
             />
           )}
         </div>
@@ -405,6 +414,7 @@ export default function ProductCard({
               <FavoriteToggle
                 isFavorite={product.isFavorite}
                 onClick={() => onToggleFavorite(product.productId, product.isFavorite)}
+                size={miniIconSize}
               />
 
               {product?.flyer_book_id > 0 && (
@@ -423,8 +433,8 @@ export default function ProductCard({
                     src="/flyer.png"
                     alt="Fletushka"
                     style={{
-                      width: 24,
-                      height: 24,
+                      width: miniIconSize,
+                      height: miniIconSize,
                       objectFit: "contain",
                       display: "block",
                     }}
@@ -447,8 +457,8 @@ export default function ProductCard({
                 <FiShare2
                   aria-label="Ndaj produktin"
                   style={{
-                    width: 24,
-                    height: 24,
+                    width: miniIconSize,
+                    height: miniIconSize,
                     color: "#0f172a",
                   }}
                 />

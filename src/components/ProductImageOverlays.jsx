@@ -1,6 +1,13 @@
 import React from "react";
 
-export default function ProductImageOverlays({ imgUrl, product, onOpenModal, discountPct }) {
+export default function ProductImageOverlays({ imgUrl, product, onOpenModal, discountPct, compact = false }) {
+  // Compact (2-per-row mobile) layout: scale every size down (0.78 = 0.65 + extra 20%).
+  const s = compact ? 0.78 : 1;
+  const px = (n) => `${Math.round(n * s)}px`;
+  const iconClick = Math.round(46 * s);
+  const iconExpire = Math.round(18 * s);
+  const iconPin = Math.round(14 * s);
+
   return (
     <>
       <div
@@ -30,7 +37,7 @@ export default function ProductImageOverlays({ imgUrl, product, onOpenModal, dis
           top: "5px",
           left: "5px",
           backgroundColor: "rgba(255, 255, 255, 0.5)",
-          padding: "5px",
+          padding: px(5),
           borderRadius: "20%",
         }}
       >
@@ -38,7 +45,7 @@ export default function ProductImageOverlays({ imgUrl, product, onOpenModal, dis
           src={"/click.png"}
           alt="Overlay"
           style={{
-            width: 46,
+            width: iconClick,
             maxWidth: "none",
           }}
           onClick={() => onOpenModal(imgUrl, product)}
@@ -56,7 +63,15 @@ export default function ProductImageOverlays({ imgUrl, product, onOpenModal, dis
         }}
       >
         {discountPct > 0 ? (
-          <span style={{ color: "green", fontWeight: "bold" }}>-{discountPct}%</span>
+          <span
+            style={{
+              color: "green",
+              fontWeight: "bold",
+              fontSize: compact ? "16px" : undefined,
+            }}
+          >
+            -{discountPct}%
+          </span>
         ) : null}
       </div>
 
@@ -67,7 +82,7 @@ export default function ProductImageOverlays({ imgUrl, product, onOpenModal, dis
           bottom: "5px",
           right: "5px",
           backgroundColor: "rgba(255, 255, 255, 0.9)",
-          padding: "6px 10px",
+          padding: `${px(6)} ${px(10)}`,
           borderRadius: "20%",
           display: "inline-flex",
           alignItems: "center",
@@ -80,8 +95,8 @@ export default function ProductImageOverlays({ imgUrl, product, onOpenModal, dis
               src="/expire2.png"
               alt="Expires"
               style={{
-                width: 18,
-                height: 18,
+                width: iconExpire,
+                height: iconExpire,
                 objectFit: "contain",
                 display: "block",
               }}
@@ -90,7 +105,7 @@ export default function ProductImageOverlays({ imgUrl, product, onOpenModal, dis
               style={{
                 color: product.productOnSale ? "green" : "red",
                 fontWeight: "bold",
-                fontSize: 14,
+                fontSize: px(14),
               }}
             >
               {new Date(product.sale_end_date).toLocaleDateString("en-GB", {
@@ -112,7 +127,7 @@ export default function ProductImageOverlays({ imgUrl, product, onOpenModal, dis
             bottom: "5px",
             left: "5px",
             backgroundColor: "rgba(255, 255, 255, 0.9)",
-            padding: "6px 10px",
+            padding: `${px(6)} ${px(10)}`,
             borderRadius: "20%",
             display: "inline-flex",
             alignItems: "center",
@@ -121,8 +136,8 @@ export default function ProductImageOverlays({ imgUrl, product, onOpenModal, dis
           }}
         >
           <svg
-            width="14"
-            height="14"
+            width={iconPin}
+            height={iconPin}
             viewBox="0 0 24 24"
             fill="#dc2626"
             aria-hidden="true"
@@ -134,7 +149,7 @@ export default function ProductImageOverlays({ imgUrl, product, onOpenModal, dis
             style={{
               color: "#0f172a",
               fontWeight: "bold",
-              fontSize: 13,
+              fontSize: px(13),
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",

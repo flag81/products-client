@@ -116,6 +116,18 @@ useEffect(() => {
   const [zoomResetKey, setZoomResetKey] = useState(0);
   const [modalImageFrame, setModalImageFrame] = useState(null);
 
+  // Compact scaling (2 cards per row) only applies on small/mobile screens
+  // (xs, <576px) so desktop cards are never shrunk.
+  const [isXsScreen, setIsXsScreen] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 575.98px)").matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 575.98px)");
+    const onMqChange = (e) => setIsXsScreen(e.matches);
+    mq.addEventListener("change", onMqChange);
+    return () => mq.removeEventListener("change", onMqChange);
+  }, []);
+
   const [flyerBookData, setFlyerBookData] = useState([]);
   const [isFlyerLoading, setIsFlyerLoading] = useState(false);
   const [flyerBookError, setFlyerBookError] = useState(null);
@@ -1691,6 +1703,7 @@ minWidth: 0,
 {/* FIX: Updated Row props for a standard responsive grid. */}
 <ProductsGrid
   className="g-2  justify-content-start"
+  xs={2}
   style={{
     background: "#d7d8db",
     borderRadius: 8,
@@ -1706,6 +1719,7 @@ minWidth: 0,
       baseUrl={baseUrl}
       autoTransformation={autoTransformation}
       directory={directory}
+      compact={isXsScreen}
       isCardImageLoaded={isCardImageLoaded}
       setIsCardImageLoaded={setIsCardImageLoaded}
       onOpenModal={openModal}
@@ -1739,6 +1753,7 @@ notOnSaleProducts.length > 0 && (
 {/* FIX: Updated Row props for a standard responsive grid. */}
 <ProductsGrid
   className="g-2 justify-content-start"
+  xs={2}
   style={{
     //border: "1px solid black", // Add a black border
     //borderRadius: "5px", // Optional: Add rounded corners
@@ -1753,6 +1768,7 @@ notOnSaleProducts.length > 0 && (
       baseUrl={baseUrl}
       autoTransformation={autoTransformation}
       directory={directory}
+      compact={isXsScreen}
       isCardImageLoaded={isCardImageLoaded}
       setIsCardImageLoaded={setIsCardImageLoaded}
       onOpenModal={openModal}

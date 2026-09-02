@@ -86,6 +86,21 @@ body {
   margin: 0 auto;     /* center when alone */
 }
 
+/* Compact (2-per-row) mobile layout: halve card padding and text sizes */
+.product-card.product-card-compact {
+  padding: 0.125rem 0.125rem 0 !important;
+}
+.product-card-compact .product-description {
+  font-size: 15px;
+}
+.product-card-compact .sale-date {
+  font-size: 9px;
+}
+.product-card-compact .overlay-container3 span {
+  font-size: 16px;
+  font-weight: bold;
+}
+
 
 
 
