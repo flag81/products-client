@@ -68,6 +68,9 @@ const [mode, setMode] = useState('dashboard');
 const [jobLogs, setJobLogs] = useState([]);
 const [jobLogsLoading, setJobLogsLoading] = useState(false);
 const [showJobLogs, setShowJobLogs] = useState(false);
+const [viewingJobLogId, setViewingJobLogId] = useState(null);
+const [jobLogDetail, setJobLogDetail] = useState(null);
+const [jobLogDetailLoading, setJobLogDetailLoading] = useState(false);
 const [brokenImageLogs, setBrokenImageLogs] = useState([]);
 const [brokenImageLogsLoading, setBrokenImageLogsLoading] = useState(false);
 const [brokenImageScanLoading, setBrokenImageScanLoading] = useState(false);
@@ -1097,6 +1100,26 @@ const fetchJobLogs = async () => {
     setStatus('Error fetching job logs.');
   } finally {
     setJobLogsLoading(false);
+  }
+};
+
+const openJobLogDetail = async (id) => {
+  setViewingJobLogId(id);
+  setJobLogDetailLoading(true);
+  setJobLogDetail(null);
+  try {
+    const response = await fetch(`${node_url}/job-logs/${id}`);
+    const result = await response.json();
+    if (response.ok) {
+      setJobLogDetail(result);
+    } else {
+      setStatus('Failed to fetch run detail.');
+    }
+  } catch (error) {
+    console.error('Error fetching run detail:', error);
+    setStatus('Error fetching run detail.');
+  } finally {
+    setJobLogDetailLoading(false);
   }
 };
 
@@ -2872,7 +2895,53 @@ onClick={() => {
         <h3 style={{ margin: 0 }}>Job Logs</h3>
         <button onClick={() => setShowJobLogs(false)} style={{ fontSize: 18, cursor: 'pointer', background: 'none', border: 'none' }}>✕</button>
       </div>
-      {jobLogsLoading ? (
+      {viewingJobLogId ? (
+        <div>
+          <button onClick={() => { setViewingJobLogId(null); setJobLogDetail(null); }} style={{ marginBottom: 10, cursor: 'pointer' }}>← Back to list</button>
+          {jobLogDetailLoading ? (
+            <p>Loading detail...</p>
+          ) : jobLogDetail ? (
+            <div>
+              <h4>Run #{jobLogDetail.job.id} — {jobLogDetail.job.job_name} ({jobLogDetail.job.status})</h4>
+              <p>Mode: {jobLogDetail.job.mode || '-'} &nbsp;|&nbsp; Trigger: {jobLogDetail.job.triggered_by || '-'} &nbsp;|&nbsp; Duration: {jobLogDetail.job.duration_ms != null ? `${jobLogDetail.job.duration_ms}ms` : '-'} &nbsp;|&nbsp; Quota hit: {jobLogDetail.job.quota_exhausted ? 'Yes' : 'No'}</p>
+              <p>Stores: {jobLogDetail.job.stores_processed ?? '-'} &nbsp;|&nbsp; Posts: {jobLogDetail.job.posts_fetched ?? '-'} &nbsp;|&nbsp; Images: {jobLogDetail.job.images_processed ?? '-'} &nbsp;|&nbsp; Products: {jobLogDetail.job.products_inserted ?? '-'}</p>
+              <p style={{ maxWidth: 600, wordBreak: 'break-word' }}>{jobLogDetail.job.message}</p>
+
+              <h5>Stores ({jobLogDetail.storeLogs.length})</h5>
+              <table border="1" cellPadding="6" cellSpacing="0" style={{ width: '100%', fontSize: 12 }}>
+                <thead><tr><th>Store</th><th>Posts</th><th>Disc.</th><th>Up.</th><th>With Prods</th><th>Products</th><th>Errors</th></tr></thead>
+                <tbody>
+                  {jobLogDetail.storeLogs.map((s) => (
+                    <tr key={s.id}><td>{s.storeName || s.store_id}</td><td>{s.posts_fetched}</td><td>{s.images_discovered}</td><td>{s.images_uploaded}</td><td>{s.images_with_products}</td><td>{s.products_inserted}</td><td style={{ maxWidth: 220, wordBreak: 'break-word' }}>{s.errors || '-'}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <h5>Facebook items ({jobLogDetail.facebookItems.length})</h5>
+              <table border="1" cellPadding="6" cellSpacing="0" style={{ width: '100%', fontSize: 12 }}>
+                <thead><tr><th>Status</th><th>Store</th><th>Post</th><th>Image</th><th>Text</th><th>URI</th></tr></thead>
+                <tbody>
+                  {jobLogDetail.facebookItems.map((f) => (
+                    <tr key={f.id}><td>{f.status}</td><td>{f.store_id}</td><td>{f.post_id}</td><td>{f.image_id}</td><td style={{ maxWidth: 200, wordBreak: 'break-word' }}>{f.post_text || ''}</td><td style={{ maxWidth: 250, wordBreak: 'break-word' }}>{f.image_uri || ''}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <h5>Image runs ({jobLogDetail.imageRuns.length})</h5>
+              <table border="1" cellPadding="6" cellSpacing="0" style={{ width: '100%', fontSize: 12 }}>
+                <thead><tr><th>Status</th><th>Image</th><th>Products</th><th>Model</th><th>Dur ms</th><th>Tok p/c</th><th>Error</th><th>Raw</th></tr></thead>
+                <tbody>
+                  {jobLogDetail.imageRuns.map((r) => (
+                    <tr key={r.id}><td>{r.status}</td><td>{r.image_id}</td><td>{r.products_inserted}</td><td>{r.model_name}</td><td>{r.duration_ms}</td><td>{r.prompt_tokens}/{r.completion_tokens}</td><td style={{ maxWidth: 220, wordBreak: 'break-word' }}>{r.error_message || '-'}</td><td style={{ maxWidth: 250, wordBreak: 'break-word' }}>{r.raw_response ? r.raw_response.slice(0, 200) : ''}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p>No detail.</p>
+          )}
+        </div>
+      ) : jobLogsLoading ? (
         <p>Loading...</p>
       ) : jobLogs.length === 0 ? (
         <p>No job logs found.</p>
@@ -2881,16 +2950,19 @@ onClick={() => {
           <thead>
             <tr style={{ backgroundColor: '#f5f5f5' }}>
               <th>ID</th>
-              <th>Job Name</th>
+              <th>Job</th>
               <th>Status</th>
-              <th>Message</th>
+              <th>Mode</th>
+              <th>Trigger</th>
+              <th>Duration</th>
+              <th>Quota</th>
               <th>Store</th>
               <th>Posts</th>
-              <th>Images Disc.</th>
               <th>Images Up.</th>
-              <th>Products Ins.</th>
+              <th>Products</th>
               <th>Errors</th>
-              <th>Created At</th>
+              <th>Created</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -2907,14 +2979,17 @@ onClick={() => {
                     {log.status}
                   </span>
                 </td>
-                <td style={{ maxWidth: 250, wordBreak: 'break-word' }}>{log.job_message}</td>
-                <td>{log.storeName || (log.store_id ? `Store #${log.store_id}` : '-')}</td>
-                <td>{log.posts_fetched ?? '-'}</td>
-                <td>{log.images_discovered ?? '-'}</td>
+                <td>{log.mode || '-'}</td>
+                <td>{log.triggered_by || '-'}</td>
+                <td>{log.duration_ms != null ? `${log.duration_ms}ms` : '-'}</td>
+                <td>{log.quota_exhausted ? '⚠️' : ''}</td>
+                <td>{log.storeName || '-'}</td>
+                <td>{log.store_posts_fetched ?? '-'}</td>
                 <td>{log.images_uploaded ?? '-'}</td>
-                <td>{log.products_inserted ?? '-'}</td>
+                <td>{log.store_products_inserted ?? '-'}</td>
                 <td style={{ maxWidth: 150, wordBreak: 'break-word', color: log.ingest_errors ? '#a94442' : 'inherit' }}>{log.ingest_errors || '-'}</td>
                 <td>{log.job_created_at ? new Date(log.job_created_at).toLocaleString() : ''}</td>
+                <td><button onClick={() => openJobLogDetail(log.job_log_id)} style={{ cursor: 'pointer' }}>Details</button></td>
               </tr>
             ))}
           </tbody>
