@@ -1672,7 +1672,7 @@ minWidth: 0,
   onClearOnSale={() => setOnSale(false)}
 />
 
-{normalizedSearchKeyword.length > 0 && (
+{normalizedSearchKeyword.length > 0 && !(isFetching && !isFetchingNextPage) && (
   <div
     style={{
       margin: "8px 0 10px 0",
