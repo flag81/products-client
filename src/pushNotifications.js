@@ -12,7 +12,7 @@ export async function enablePushNotifications() {
 
   // Use the service worker file that exists in the `public` folder.
   // Vite serves files from `public/` at the site root, so register that file.
-  const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+  const registration = await navigator.serviceWorker.register('/sw.js');
   // Wait until a service worker is active and controlling the page.
   // `navigator.serviceWorker.ready` resolves to a registration with an active worker.
   const activeRegistration = await navigator.serviceWorker.ready;
