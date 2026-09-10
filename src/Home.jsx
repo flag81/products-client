@@ -218,6 +218,7 @@ useEffect(() => {
         showNotice("Shfletuesi juaj nuk mbështet njoftime push.", "error");
       }
     } catch (_error) {
+      console.error("Enable notifications failed:", _error);
       showNotice("Aktivizimi i njoftimeve dështoi. Provo përsëri.", "error");
     }
   };
