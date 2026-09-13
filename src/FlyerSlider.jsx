@@ -306,7 +306,7 @@ const FlyerSlider = ({ flyerBook, baseUrl, isFlyerModalOpen, closeFlyerModal, sh
                 justifyContent: "center",
                 borderRadius: "30%",
                 cursor: "pointer",
-                backgroundColor: "rgba(255, 255, 255, 0.5)",
+                backgroundColor: "rgba(255, 255, 255, 0.95)",
               }}
             >
               <img

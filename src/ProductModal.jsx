@@ -467,7 +467,7 @@ const ProductModal = ({
             position: "absolute",
             top: 8,
             left: 8,
-            backgroundColor: "rgba(255, 255, 255, 0.5)",
+            backgroundColor: "rgba(255, 255, 255, 0.95)",
             color: zoomEnabled ? "#fff" : "#000",
             border: "none",
             width: 54,
