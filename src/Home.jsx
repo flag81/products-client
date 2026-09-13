@@ -30,6 +30,11 @@ import Card from "react-bootstrap/Card";
 import Placeholder from "react-bootstrap/Placeholder";
 import { FiBell, FiUser, FiStar } from "react-icons/fi";
 
+// App main logo, served from Cloudinary (like store logos) so it can be updated without a rebuild.
+const MAIN_LOGO_URL =
+  "https://res.cloudinary.com/dt7a4yl1x/image/upload/v1789122325/3ae7de37-6cf0-40be-9df9-da267d1ddddb_2_f3f7g5.png";
+
+
 
 
 
@@ -1058,7 +1063,7 @@ const settings = {
       {/* Desktop: single row header (logo + search + button + icons) */}
       <div className="d-none d-md-flex align-items-center gap-3 mb-3" style={{ width: "100%" }}>
         <img
-          src={"mainlogo.png"}
+          src={MAIN_LOGO_URL}
           alt="Meniven.com"
           style={{
             width: "auto",
@@ -1297,7 +1302,7 @@ const settings = {
       >
 
       <img
-                  src={"mainlogo.png"}
+                  src={MAIN_LOGO_URL}
                   alt="Meniven.com"
                   className="mobile-top-logo"
                   style={{
