@@ -31,8 +31,14 @@ import Placeholder from "react-bootstrap/Placeholder";
 import { FiBell, FiUser, FiStar } from "react-icons/fi";
 
 // App main logo, served from Cloudinary (like store logos) so it can be updated without a rebuild.
-const MAIN_LOGO_URL =
+const MAIN_LOGO_BASE_URL =
   "https://res.cloudinary.com/dt7a4yl1x/image/upload/v1789122325/3ae7de37-6cf0-40be-9df9-da267d1ddddb_2_f3f7g5.png";
+
+// Auto-optimized delivery (same treatment as store logos), sized for the ~220px header logo.
+const MAIN_LOGO_URL = MAIN_LOGO_BASE_URL.replace(
+  "/upload/",
+  "/upload/f_auto,q_auto,w_440,c_scale/"
+);
 
 
 
