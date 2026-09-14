@@ -32,7 +32,7 @@ import { FiBell, FiUser, FiStar } from "react-icons/fi";
 
 // App main logo, served from Cloudinary (like store logos) so it can be updated without a rebuild.
 const MAIN_LOGO_BASE_URL =
-  "https://res.cloudinary.com/dt7a4yl1x/image/upload/v1789408714/WhatsApp_Image_2026-09-14_at_7.57.17_PM_uwoztt.jpg";
+  "https://res.cloudinary.com/dt7a4yl1x/image/upload/v1789408813/WhatsApp_Image_2026-09-14_at_7.59.13_PM_wbouby.jpg";
 
 // Auto-optimized delivery (same treatment as store logos), sized for the ~220px header logo.
 const MAIN_LOGO_URL = MAIN_LOGO_BASE_URL.replace(
