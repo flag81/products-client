@@ -53,6 +53,10 @@ const [uploadedImageUrl, setUploadedImageUrl] = useState('');
   const [insertStatus, setInsertStatus] = useState('');
   const [deleteStatus, setDeleteStatus] = useState('');
 
+  // Keyword whose results are currently listed in the product table ('' = full list).
+  // Kept so edits/deletes refresh the SAME filtered list instead of the unfiltered one.
+  const [activeSearchKeyword, setActiveSearchKeyword] = useState('');
+
   const [stores, setStores] = useState([]);
 const [users, setUsers] = useState([]);
 
@@ -923,7 +927,7 @@ const saveProductEdits = async (productId) => {
 
     setStatus(`Product ${productId} updated successfully.`);
     cancelEditingProduct();
-    await loadLatestProducts();
+    await refreshProductsKeepingSearch();
   } catch (error) {
     console.error('Error saving product edits:', error);
     setStatus(`Failed to save product ${productId}: ${error.message}`);
@@ -1466,6 +1470,7 @@ console.log('editStore called:', productId, storeId);
   
       if (response.ok) {
         setProducts(result);
+        setActiveSearchKeyword(String(keyword || '').trim());
         console.log('result:', result);
       } else {
         console.error('Failed to fetch products:', result.message);
@@ -1513,6 +1518,8 @@ console.log('editStore called:', productId, storeId);
             } else {
               setProducts(prev => [...prev, ...result]);
             }
+            // A full-list load replaces whatever keyword search was on screen.
+            setActiveSearchKeyword('');
            } catch (error) {
              console.error('Error fetching prod:', error);
            }
@@ -1521,6 +1528,17 @@ console.log('editStore called:', productId, storeId);
 
   };
   
+
+  // Refresh the product table while keeping the current search context: after a keyword
+  // search, an edit/delete must re-run that same search instead of loading the full list.
+  const refreshProductsKeepingSearch = async () => {
+    const keyword = activeSearchKeyword.trim();
+    if (keyword) {
+      await searchProducts(keyword);
+      return;
+    }
+    await loadLatestProducts();
+  };
 
   // Fetch media files from Cloudinary
   const fetchMediaFiles = async () => {
@@ -2199,7 +2217,15 @@ if (!productId || !keyword) {
 
 Search Products: <input type="text" id="keyword_search" name="keyword_search" onKeyDown={(e) => { if (e.key === 'Enter') searchProducts(e.target.value); }} />
 
-  <button onClick={() => document.getElementById('keyword_search').value = ''}>Clear</button>
+  <button
+    onClick={async () => {
+      document.getElementById('keyword_search').value = '';
+      setActiveSearchKeyword('');
+      await loadLatestProducts();
+    }}
+  >
+    Clear
+  </button>
   
   
 
@@ -2644,7 +2670,7 @@ onClick={() => {
                             return;
                           }
                           await handleDeleteProduct(product.productId);
-                          await loadLatestProducts();
+                          await refreshProductsKeepingSearch();
                         }}
                       >
                         Delete
