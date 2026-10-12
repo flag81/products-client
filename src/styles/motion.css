@@ -1,0 +1,242 @@
+/* ---------------------------------------------------------------------------
+   Motion pilot: Home search bar + product cards.
+
+   Additive only - no existing rule is redefined here, so removing the pilot is
+   just "delete the motion wrappers + this file". Everything animated is
+   transform/opacity except the static hover box-shadow (paint only on hover,
+   never during scroll).
+   --------------------------------------------------------------------------- */
+
+/* Wrapper created by ProductCard.jsx.
+   The <Card> used to be the direct flex child of <Col className="d-flex">;
+   this wrapper takes that spot so the card keeps its width:100% / h-100 box. */
+.product-card-motion {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Desktop-only hover lift. The transform goes on the inner .product-card (not
+   on the motion wrapper) so it never fights Motion's inline transform. */
+@media (hover: hover) and (pointer: fine) {
+  .product-card-motion .product-card {
+    transition:
+      transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 180ms ease-out;
+  }
+
+  .product-card-motion:hover .product-card {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.16);
+  }
+}
+
+/* Focus glow behind/around the search input (desktop top bar + mobile bar).
+   Drawn with box-shadow on a transparent layer, so only the ring and the soft
+   halo are visible; the layer itself never tints the field. */
+.home-search-focus-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.45),
+    0 0 16px 2px rgba(37, 99, 235, 0.28);
+  pointer-events: none;
+}
+
+@media (max-width: 767.98px) {
+  /* the mobile field is a 28px-radius pill */
+  .home-search-focus-ring {
+    border-radius: 28px;
+  }
+}
+
+/* Honour the OS "reduce motion" setting, EXCEPT in capture mode (?promo=...),
+   where the animations are the thing being recorded and the page explicitly
+   opted out of every downgrade. `:root` is where motion/promo.js adds
+   `promo-mode`. */
+@media (prefers-reduced-motion: reduce) {
+  :root:not(.promo-mode) .product-card-motion .product-card,
+  :root:not(.promo-mode) .product-card-motion:hover .product-card {
+    transition: none;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* the card image transition lives in an inline style -> needs !important */
+  :root:not(.promo-mode) .product-card .product-image {
+    transition: opacity 200ms ease-out !important;
+    transform: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Click flash - a short bright pulse + glow on the icons that actually do
+   something (favourite star, share, flyer, bell, favourites filter, profile,
+   clear search, back to top). Opt in by adding `data-flash` to the clickable
+   element; the class is toggled by src/hooks/useClickFlash.js on pointerdown.
+
+   Filter only, for three reasons:
+   - SVG elements never render ::before/::after, and the header icons are raw
+     <svg> (react-icons), so a pseudo-element halo would silently skip them;
+   - one `filter` rule glows the whole rendered subtree (svg, img, text),
+     needs no positioning and cannot be clipped by an overflow ancestor;
+   - `transform` is deliberately never animated here, so the Motion `whileTap`
+     scale on the same element keeps working - a CSS animation would otherwise
+     beat Motion's inline transform.
+   --------------------------------------------------------------------------- */
+:root {
+  --click-flash-duration: 280ms;
+}
+
+/* In capture mode (?promo=<speed>) the flash stretches with everything else:
+   promo.js publishes --motion-time-scale. */
+:root.promo-mode {
+  --click-flash-duration: calc(280ms * var(--motion-time-scale, 1));
+}
+
+[data-flash].click-flash {
+  animation: click-flash-glow var(--click-flash-duration) ease-out both;
+}
+
+@keyframes click-flash-glow {
+  0% {
+    filter: none;
+  }
+  /* white core + blue halo: readable on a dark icon on white and on a busy
+     product image alike */
+  18% {
+    filter: brightness(1.5) saturate(1.6)
+      drop-shadow(0 0 3px rgba(255, 255, 255, 1))
+      drop-shadow(0 0 8px rgba(37, 99, 235, 0.95));
+  }
+  45% {
+    filter: brightness(1.25) saturate(1.3)
+      drop-shadow(0 0 6px rgba(37, 99, 235, 0.6));
+  }
+  100% {
+    filter: none;
+  }
+}
+
+/* `prefers-reduced-motion` wins outside capture mode, where the animations are
+   the thing being recorded (same rule as the rest of the pilot). */
+@media (prefers-reduced-motion: reduce) {
+  :root:not(.promo-mode) [data-flash].click-flash {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Capture ("promo") bar - rendered only when the page was opened with
+   ?promo=<speed> (src/components/PromoControls.jsx). Fixed bottom-left, above
+   every other overlay, and small enough to hide behind a crop if needed.
+   --------------------------------------------------------------------------- */
+.promo-bar {
+  position: fixed;
+  /* Safe-area aware so the capture bar never sits under the home bar / notch
+     (Stage 0). The tokens are 0px on every device without insets, so the
+     desktop offsets stay exactly the original 12px. */
+  bottom: calc(12px + var(--safe-bottom, 0px));
+  left: calc(12px + var(--safe-left, 0px));
+  z-index: 2147483000;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100vw - 24px - var(--safe-left, 0px) - var(--safe-right, 0px));
+  flex-wrap: wrap;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.9);
+  color: #e2e8f0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 12px;
+  line-height: 1.2;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.35);
+}
+
+.promo-bar__label {
+  padding: 0 4px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7dd3fc;
+  white-space: nowrap;
+}
+
+.promo-bar button {
+  padding: 4px 8px;
+  border: 1px solid rgba(226, 232, 240, 0.28);
+  border-radius: 7px;
+  background: rgba(226, 232, 240, 0.1);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Desktop-only: on touch the hover background sticks after a tap (Stage 0). */
+@media (hover: hover) and (pointer: fine) {
+  .promo-bar button:hover {
+    background: rgba(226, 232, 240, 0.22);
+  }
+}
+
+.promo-bar kbd {
+  margin-left: 3px;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: rgba(15, 23, 42, 0.55);
+  font: inherit;
+  font-size: 10px;
+  opacity: 0.75;
+}
+
+/* Collapsed state (H): a tiny tab so it can be reopened without reloading. */
+.promo-bar-show {
+  position: fixed;
+  bottom: calc(12px + var(--safe-bottom, 0px)); /* Stage 0: safe-area aware */
+  left: calc(12px + var(--safe-left, 0px));
+  z-index: 2147483000;
+  padding: 4px 8px;
+  border: 1px solid rgba(15, 23, 42, 0.25);
+  border-radius: 7px;
+  background: rgba(15, 23, 42, 0.55);
+  color: #e2e8f0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+/* Desktop-only: on touch the hover opacity sticks after a tap (Stage 0). */
+@media (hover: hover) and (pointer: fine) {
+  .promo-bar-show:hover {
+    opacity: 1;
+  }
+}
+
+/* Phones: keep the bar to a single thin strip at the very bottom so it covers
+   as little of the recording as possible (it can still be hidden with H). */
+@media (max-width: 480px) {
+  .promo-bar {
+    gap: 4px;
+    padding: 4px 6px;
+    font-size: 11px;
+  }
+
+  .promo-bar__label {
+    padding: 0 2px;
+  }
+
+  .promo-bar button {
+    padding: 3px 6px;
+  }
+
+  .promo-bar kbd {
+    display: none;
+  }
+}

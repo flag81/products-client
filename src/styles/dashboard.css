@@ -1,0 +1,745 @@
+/* ============================================================================
+   Dashboard (admin console) design system
+   ----------------------------------------------------------------------------
+   Imported by Dashboard.jsx *after* App.css. Everything is scoped to
+   `.dashboard-page` (plus the Job Logs modal, which React renders outside that
+   wrapper) so the storefront styles are never affected. Selectors are
+   deliberately one class deeper than App.css / bootstrap, so they win without
+   needing `!important`.
+   ============================================================================ */
+
+.dashboard-page {
+  /* Design tokens */
+  --dash-bg: #eef2f7;
+  --dash-surface: #ffffff;
+  --dash-surface-alt: #f8fafc;
+  --dash-border: #e2e8f0;
+  --dash-border-strong: #cbd5e1;
+  --dash-text: #0f172a;
+  --dash-text-soft: #334155;
+  --dash-muted: #64748b;
+  --dash-primary: #2563eb;
+  --dash-primary-dark: #1d4ed8;
+  --dash-primary-soft: #eff6ff;
+  --dash-danger: #dc2626;
+  --dash-danger-dark: #b91c1c;
+  --dash-success: #16a34a;
+  --dash-success-dark: #15803d;
+  --dash-success-soft: #f0fdf4;
+  --dash-success-border: #86efac;
+  --dash-warn: #ea580c;
+  --dash-warn-soft: #fff7ed;
+  --dash-warn-border: #fed7aa;
+  --dash-radius: 16px;
+  --dash-radius-sm: 10px;
+  --dash-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px rgba(15, 23, 42, 0.06);
+  --dash-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --dash-focus: 0 0 0 3px rgba(37, 99, 235, 0.28);
+
+  color-scheme: light; /* keep native controls light even on a dark-mode OS */
+  width: 100%;
+  max-width: none;
+  min-height: 100vh;
+  min-height: var(--vh-full);
+  margin: 0;
+  padding: 28px clamp(14px, 2.5vw, 40px) 80px;
+  background: var(--dash-bg);
+  color: var(--dash-text);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- Page header ----------------------------------------------------------- */
+.dashboard-page .dashboard-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 22px;
+}
+
+.dashboard-page .dashboard-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.dashboard-page .dashboard-logo {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #fff;
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
+}
+
+.dashboard-page .dashboard-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--dash-text);
+}
+
+.dashboard-page .dashboard-subtitle {
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: var(--dash-muted);
+}
+
+.dashboard-page .dashboard-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.dashboard-page .dashboard-user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--dash-border);
+  background: var(--dash-surface);
+  box-shadow: var(--dash-shadow-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dash-text-soft);
+}
+
+.dashboard-page .dashboard-user-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+}
+
+/* --- Status banner --------------------------------------------------------- */
+.dashboard-page .dashboard-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 12px 16px;
+  border: 1px solid var(--dash-border);
+  border-left: 4px solid var(--dash-primary);
+  border-radius: var(--dash-radius-sm);
+  background: var(--dash-surface);
+  box-shadow: var(--dash-shadow-sm);
+  font-size: 13px;
+  color: var(--dash-text-soft);
+}
+
+.dashboard-page .dashboard-status p {
+  margin: 0;
+}
+
+.dashboard-page .dashboard-status-content {
+  min-width: 0;
+}
+
+/* --- Panels & section headers --------------------------------------------- */
+.dashboard-page .dashboard-panel {
+  padding: 18px;
+  margin-bottom: 18px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+  background: var(--dash-surface);
+  box-shadow: var(--dash-shadow);
+}
+
+.dashboard-page .dashboard-table-panel {
+  padding: 18px;
+}
+
+.dashboard-page .dashboard-logs-panel {
+  margin-top: 18px;
+}
+
+.dashboard-page .dashboard-feed-panel {
+  margin-bottom: 18px;
+}
+
+.dashboard-page .dashboard-section-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--dash-text);
+}
+
+.dashboard-page .dashboard-section-header,
+.dashboard-page .dashboard-feed-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--dash-border);
+}
+
+/* --- Toolbar --------------------------------------------------------------- */
+.dashboard-page .dashboard-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 16px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+  background: var(--dash-surface);
+  box-shadow: var(--dash-shadow);
+}
+
+/* Toolbars that sit inside a panel are plain rows, not nested cards. */
+.dashboard-page .dashboard-feed-panel .dashboard-toolbar {
+  padding: 0 0 4px;
+  margin: 0 0 12px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dashboard-page .dashboard-toolbar-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-page .dashboard-toolbar-wide {
+  flex: 1 1 100%;
+}
+
+.dashboard-page .dashboard-field-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dash-muted);
+}
+
+.dashboard-page .dashboard-hint {
+  font-size: 11px;
+  color: var(--dash-muted);
+}
+
+/* --- Buttons --------------------------------------------------------------- */
+.dashboard-page button,
+.dashboard-modal button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 9px 14px;
+  border: 1px solid var(--dash-border-strong);
+  border-radius: var(--dash-radius-sm);
+  background: var(--dash-surface);
+  color: var(--dash-text-soft);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: var(--dash-shadow-sm);
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+    box-shadow 0.15s ease, transform 0.06s ease, color 0.15s ease;
+}
+
+.dashboard-page button:hover:not(:disabled),
+.dashboard-modal button:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: var(--dash-text);
+}
+
+.dashboard-page button:active:not(:disabled),
+.dashboard-modal button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.dashboard-page button:focus-visible,
+.dashboard-modal button:focus-visible {
+  outline: none;
+  border-color: var(--dash-primary);
+  box-shadow: var(--dash-focus);
+}
+
+.dashboard-page button:disabled,
+.dashboard-modal button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.dashboard-page .dash-btn-primary,
+.dashboard-modal .dash-btn-primary {
+  background: var(--dash-primary);
+  border-color: var(--dash-primary);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
+}
+
+.dashboard-page .dash-btn-primary:hover:not(:disabled),
+.dashboard-modal .dash-btn-primary:hover:not(:disabled) {
+  background: var(--dash-primary-dark);
+  border-color: var(--dash-primary-dark);
+  color: #fff;
+}
+
+.dashboard-page .dash-btn-secondary {
+  background: var(--dash-primary-soft);
+  border-color: #bfdbfe;
+  color: var(--dash-primary-dark);
+}
+
+.dashboard-page .dash-btn-secondary:hover:not(:disabled) {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: var(--dash-primary-dark);
+}
+
+.dashboard-page .dash-btn-danger {
+  background: var(--dash-danger);
+  border-color: var(--dash-danger);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.22);
+}
+
+.dashboard-page .dash-btn-danger:hover:not(:disabled) {
+  background: var(--dash-danger-dark);
+  border-color: var(--dash-danger-dark);
+  color: #fff;
+}
+
+.dashboard-page .dash-btn-block {
+  width: 100%;
+}
+
+/* --- Form controls --------------------------------------------------------- */
+.dashboard-page input:not([type="checkbox"]):not([type="radio"]),
+.dashboard-page select,
+.dashboard-page textarea {
+  font: inherit;
+  font-size: 13px;
+  color: var(--dash-text);
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border-strong);
+  border-radius: var(--dash-radius-sm);
+  padding: 8px 11px;
+  min-height: 36px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dashboard-page select {
+  padding-right: 30px;
+}
+
+.dashboard-page input:not([type="checkbox"]):not([type="radio"]):focus,
+.dashboard-page select:focus,
+.dashboard-page textarea:focus {
+  outline: none;
+  border-color: var(--dash-primary);
+  box-shadow: var(--dash-focus);
+}
+
+.dashboard-page input[type="checkbox"],
+.dashboard-page input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--dash-primary);
+  cursor: pointer;
+}
+
+/* --- Tables ---------------------------------------------------------------- */
+.dashboard-page table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  font-size: 13px;
+}
+
+.dashboard-page th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 11px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--dash-muted);
+  background: var(--dash-surface-alt);
+  border-bottom: 1px solid var(--dash-border);
+}
+
+.dashboard-page td {
+  padding: 11px 14px;
+  vertical-align: top;
+  color: var(--dash-text-soft);
+  border-bottom: 1px solid #eef2f7;
+}
+
+.dashboard-page tr:last-child > td {
+  border-bottom: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dashboard-page tbody tr:hover > td,
+  .dashboard-page table > tr:hover > td {
+    background: var(--dash-surface-alt);
+  }
+}
+
+/* Selected product row (replaces the old inline `lightblue` background). */
+.dashboard-page tr.dash-row-selected > td {
+  background: var(--dash-primary-soft);
+}
+
+.dashboard-page tr.dash-row-inactive {
+  opacity: 0.55;
+}
+
+/* Inside a scroll shell the shell owns the frame, so the table drops its own. */
+.dashboard-page .scrollable-div > table,
+.dashboard-page .scrollable-div2 > table,
+.dashboard-page .dashboard-table-shell > table {
+  border: none;
+}
+
+/* --- Scroll shells --------------------------------------------------------- */
+.dashboard-page .scrollable-div,
+.dashboard-page .scrollable-div2 {
+  border: 1px solid var(--dash-border);
+  border-radius: 12px;
+  background: var(--dash-surface);
+  overflow: auto;
+}
+
+.dashboard-page .scrollable-div {
+  max-height: 800px;
+}
+
+.dashboard-page .scrollable-div2 {
+  max-height: 320px;
+}
+
+.dashboard-page .dashboard-table-shell {
+  width: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* --- Fetch-frequency schedule panel --------------------------------------- */
+.dashboard-page .dashboard-schedule-panel {
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid var(--dash-border);
+  border-radius: 12px;
+  background: var(--dash-surface-alt);
+  font-size: 12px;
+  color: var(--dash-text-soft);
+  overflow-x: auto;
+}
+
+.dashboard-page .dashboard-schedule-meta {
+  margin-bottom: 10px;
+  color: var(--dash-text-soft);
+}
+
+.dashboard-page .dashboard-schedule-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.dashboard-page .dashboard-schedule-status {
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+/* --- Global scraping switch + status badges -------------------------------- */
+.dashboard-page .dashboard-schedule-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Pill toggle: sliding knob on the left, label on the right. */
+.dashboard-page .dash-switch {
+  gap: 9px;
+  padding: 6px 14px 6px 8px;
+  font-weight: 600;
+}
+
+.dashboard-page .dash-switch-track {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--dash-border-strong);
+  transition: background-color 0.15s ease;
+}
+
+.dashboard-page .dash-switch-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.35);
+  transition: transform 0.15s ease;
+}
+
+.dashboard-page .dash-switch-on {
+  background: var(--dash-success-soft);
+  border-color: var(--dash-success);
+  color: var(--dash-success-dark);
+}
+
+.dashboard-page .dash-switch-on .dash-switch-track {
+  background: var(--dash-success);
+}
+
+.dashboard-page .dash-switch-on .dash-switch-knob {
+  transform: translateX(18px);
+}
+
+.dashboard-page .dash-switch-on:hover:not(:disabled) {
+  background: #dcfce7;
+  border-color: var(--dash-success-dark);
+  color: var(--dash-success-dark);
+}
+
+.dashboard-page .dash-switch-off {
+  background: #fef2f2;
+  border-color: var(--dash-danger);
+  color: var(--dash-danger-dark);
+}
+
+.dashboard-page .dash-switch-off .dash-switch-track {
+  background: var(--dash-danger);
+}
+
+.dashboard-page .dash-switch-off:hover:not(:disabled) {
+  background: #fee2e2;
+  border-color: var(--dash-danger-dark);
+  color: var(--dash-danger-dark);
+}
+
+.dashboard-page .dash-switch:disabled {
+  opacity: 0.65;
+  cursor: progress;
+}
+
+/* Small status pills (paused store, master switch off, ...). */
+.dashboard-page .dash-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.dashboard-page .dash-badge-paused {
+  border-color: var(--dash-warn-border);
+  background: var(--dash-warn-soft);
+  color: #9a3412;
+}
+
+/* Banner shown inside the panel while the master switch is off. */
+.dashboard-page .dashboard-schedule-alert {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid #fecaca;
+  border-left: 4px solid var(--dash-danger);
+  border-radius: var(--dash-radius-sm);
+  background: #fef2f2;
+  color: #7f1d1d;
+}
+
+/* --- Facebook feed cards --------------------------------------------------- */
+.dashboard-page .dashboard-post-card {
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid var(--dash-border);
+  border-radius: 12px;
+  background: var(--dash-surface-alt);
+}
+
+/* --- Keyword chips --------------------------------------------------------- */
+.dashboard-page .dash-keyword-row {
+  display: inline-flex;
+  margin: 3px 4px 3px 0;
+}
+
+.dashboard-page .dash-keyword-chip {
+  gap: 6px;
+  min-height: 0;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 999px;
+  background: var(--dash-primary-soft);
+  border-color: #bfdbfe;
+  color: var(--dash-primary-dark);
+}
+
+.dashboard-page .dash-keyword-chip:hover:not(:disabled) {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: var(--dash-primary-dark);
+}
+
+.dashboard-page .dash-keyword-x {
+  font-weight: 700;
+  opacity: 0.7;
+}
+
+/* --- Image previews -------------------------------------------------------- */
+.dashboard-page .dashboard-image-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.dashboard-page .dashboard-image-preview img,
+.dashboard-page #prod_image img {
+  border-radius: 10px;
+  box-shadow: var(--dash-shadow-sm);
+}
+
+.dashboard-page table img {
+  border-radius: 6px;
+}
+
+/* --- Job Logs modal -------------------------------------------------------- */
+.dashboard-modal-overlay {
+  backdrop-filter: blur(2px);
+}
+
+.dashboard-modal {
+  width: min(1180px, 94vw);
+  max-width: 94vw;
+  max-height: calc(var(--vh-full, 100vh) * 0.9);
+  padding: 22px;
+  overflow: auto;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+  color: var(--dash-text, #0f172a);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color-scheme: light;
+}
+
+.dashboard-modal h3,
+.dashboard-modal h4,
+.dashboard-modal h5 {
+  margin: 0 0 8px;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.dashboard-modal table {
+  width: 100%;
+  margin-bottom: 14px;
+  border-collapse: collapse;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 12px;
+}
+
+.dashboard-modal th {
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dashboard-modal td {
+  padding: 8px 10px;
+  vertical-align: top;
+  color: #334155;
+  border-bottom: 1px solid #eef2f7;
+}
+
+/* --- Responsive ------------------------------------------------------------ */
+@media (max-width: 991.98px) {
+  .dashboard-page .dashboard-header {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .dashboard-page {
+    padding: 16px 12px 60px;
+  }
+
+  .dashboard-page .dashboard-title {
+    font-size: 18px;
+  }
+
+  .dashboard-page .dashboard-panel,
+  .dashboard-page .dashboard-toolbar,
+  .dashboard-page .dashboard-schedule-panel {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .dashboard-page .dashboard-logo {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+
+  .dashboard-page th,
+  .dashboard-page td {
+    padding: 9px 10px;
+  }
+}
