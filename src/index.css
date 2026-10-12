@@ -13,19 +13,94 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ============================================================================
+   STAGE 0 - mobile-first base: tokens + touch hygiene
+   ----------------------------------------------------------------------------
+   Breakpoint system (Bootstrap's, and the only one new code should use):
+     base    the phone layout - no media query needed (mobile-first)
+     >=576   sm     phone-only overrides use  max-width: 575.98px
+     >=768   md     phone/tablet-portrait overrides use max-width: 767.98px
+     >=992   lg
+     >=1200  xl
+   Smaller steps (480/420/360) are allowed as *refinements* for small phones,
+   never as the primary layout switch.
+   Rule of thumb: "and up" -> `min-width: Xpx`, "and below" -> `max-width:
+   (X - 0.02px)`, so no device width can match both sides of one boundary
+   (768px used to match `max-width:768` and `min-width:769` inconsistently).
+   ============================================================================ */
+:root {
+  /* Smallest comfortable tap target (WCAG 2.5.5 / Apple HIG 44pt / Android 48dp).
+     Stage 1 (hit areas) consumes this. */
+  --tap-min: 44px;
+  /* Full viewport height that follows the browser chrome. The 100vh value is the
+     fallback for browsers without dvh (iOS < 15.4, Chrome < 108). */
+  --vh-full: 100vh;
+  /* Safe-area insets. Declared as 0px first so that even in a browser without
+     env() support `calc(12px + var(--safe-bottom))` stays a valid length
+     instead of invalidating the whole declaration. */
+  --safe-top: 0px;
+  --safe-right: 0px;
+  --safe-bottom: 0px;
+  --safe-left: 0px;
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --vh-full: 100dvh;
+  }
+}
+
+@supports (padding: env(safe-area-inset-bottom)) {
+  :root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+  }
+}
+
+/* Touch hygiene: `manipulation` drops the 300ms double-tap-zoom delay (pan and
+   pinch still work) so a tap scrolls/presses immediately. */
+a,
+button,
+label,
+summary,
+input,
+select,
+textarea,
+[data-flash] {
+  touch-action: manipulation;
+}
+
+/* Icons that draw their own press feedback (hooks/useClickFlash.js +
+   .click-flash in styles/motion.css): suppress the OS grey tap box, the
+   long-press callout and stray text selection so only our flash shows. */
+[data-flash],
+.mobile-top-icon {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 a {
   font-weight: 500;
   color: #646cff;
   text-decoration: inherit;
 }
-a:hover {
-  color: #535bf2;
+/* Desktop-only hover. On touch, :hover sticks after a tap and leaves a tapped
+   link looking permanently active (Stage 0). */
+@media (hover: hover) and (pointer: fine) {
+  a:hover {
+    color: #535bf2;
+  }
 }
 
 body {
   margin: 0;
   min-width: 320px;
-  min-height: 100vh;
+  min-height: 100vh; /* fallback */
+  min-height: var(--vh-full); /* dvh where supported (Stage 0) */
   display: block;
 }
 
@@ -54,8 +129,10 @@ button {
   cursor: pointer;
   transition: border-color 0.25s;
 }
-button:hover {
-  border-color: #646cff;
+@media (hover: hover) and (pointer: fine) {
+  button:hover {
+    border-color: #646cff;
+  }
 }
 button:focus,
 button:focus-visible {
@@ -93,10 +170,10 @@ img { max-width: 100%; height: auto; display: block; }
   white-space: nowrap;
 }
 
-/* Desktop only (>=769px): store icons fill their tiles as big as possible, with
+/* Tablet and up (>=768px): store icons fill their tiles as big as possible, with
    some breathing room on all sides of the box and small gaps between the icons.
-   Mobile (<=768px) keeps the original look. */
-@media (min-width: 769px) {
+   Phones (<=767.98px) keep the original look. */
+@media (min-width: 768px) {
   .store-scroller-shell {
     padding: 6px 24px !important; /* breathing room on all sides; wider on left/right between icons and box edges */
   }
@@ -164,11 +241,14 @@ body::-webkit-scrollbar { /* keep default vertical scrollbar; this selector can 
     color: #213547;
     background-color: #ffffff;
   }
-  a:hover {
-    color: #747bff;
-  }
   button {
     background-color: #f9f9f9;
+  }
+  /* Desktop-only hover (see the note next to the main a:hover rule). */
+  @media (hover: hover) and (pointer: fine) {
+    a:hover {
+      color: #747bff;
+    }
   }
 }
 
@@ -177,7 +257,7 @@ body::-webkit-scrollbar { /* keep default vertical scrollbar; this selector can 
   color: rgba(255, 255, 255, 0.8);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
   .home-search-shell {
     padding-left: 0;
     padding-right: 0;

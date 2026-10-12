@@ -10,14 +10,23 @@ import { apiFetch, getApiBaseUrl } from "./api/apiFetch";
 import { fetchFlyerBookImages, fetchStores, logoutRequest } from "./api/homeApi";
 import { fetchSession, initializeSession } from "./api/sessionApi";
 import { useHorizontalScrollButtons } from "./hooks/useHorizontalScrollButtons";
+import useCardEntrance from "./hooks/useCardEntrance";
+import usePromoMode from "./hooks/usePromoMode";
+import * as m from "motion/react-m";
+import { AnimatePresence, useReducedMotion } from "motion/react";
+import { bannerVariants, clearButtonVariants, focusRingVariants } from "./motion/variants";
+import { buildStableCardKeys } from "./utils/stableKeys";
+import { loadAppleSdk } from "./utils/appleSdk";
 import StoreScroller from "./components/StoreScroller";
 import ActiveFiltersBar from "./components/ActiveFiltersBar";
 import ProductCard from "./components/ProductCard";
 import HomeModals from "./components/HomeModals";
 import SectionHeader from "./components/SectionHeader";
 import ProductsGrid from "./components/ProductsGrid";
+import OnlinePriceCheck from "./components/OnlinePriceCheck";
 import TransientNotice from "./components/TransientNotice";
 import ScrollToTopButton from "./components/ScrollToTopButton";
+import PromoControls from "./components/PromoControls";
 import ShareModal from "./components/ShareModal";
 
 import Container from "react-bootstrap/Container";
@@ -115,6 +124,8 @@ useEffect(() => {
   const [onSale, setOnSale] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [searchKeyword, setSearchKeyword] = useState("");
+  // Drives the animated focus glow around the search input (desktop + mobile bars).
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false); // NEW: Track registration status  
@@ -242,8 +253,12 @@ useEffect(() => {
 
   const startAppleLogin = async () => {
     try {
-      if (!window.AppleID) {
-        showNotice("Apple login nuk u ngarkua. Rifresko faqen.", "error", 4000);
+      // The SDK is fetched on demand now (src/utils/appleSdk.js), so a first tap
+      // waits for it instead of telling the user to reload the page.
+      try {
+        await loadAppleSdk();
+      } catch {
+        showNotice("Apple login nuk u ngarkua. Kontrollo lidhjen dhe provo përsëri.", "error", 4000);
         return;
       }
 
@@ -913,12 +928,14 @@ useEffect(() => {
     setSearchKeyword("");
   }, [searchInput]);
 
+  // Used to live as empty placeholders; they now drive the animated focus glow
+  // around the search input (see focusRingVariants).
   const handleSearchFocus = () => {
-    // Intentionally minimal: keep existing UX, just avoid missing handler errors.
+    setIsSearchFocused(true);
   };
 
   const handleSearchBlur = () => {
-    // Intentionally minimal: keep existing UX, just avoid missing handler errors.
+    setIsSearchFocused(false);
   };
 
   const handleSearch = (value) => {
@@ -1000,12 +1017,53 @@ useEffect(() => {
         ? ` te dyqani ${selectedStoreNames[0]}`
         : ` te dyqanet ${selectedStoreNames.join(", ")}`;
 
+  // A new keyword means a brand-new result set: jump back to the top of the
+  // scrollable area so a freshly rendered online-price panel is fully in view.
+  // (Loading more pages keeps the keyword, so the scroll position is preserved.)
+  useEffect(() => {
+    if (productsScrollRef.current) {
+      productsScrollRef.current.scrollTop = 0;
+    }
+  }, [normalizedSearchKeyword]);
+
+
   // REMOVED: The dynamic lgCols calculation is no longer needed.
   // const count       = allProducts.length;
   // const lgCols      = count >= 4 ? 4 : count || 1;
 
   const onSaleProducts = allProducts.filter(p => p.productOnSale);
   const notOnSaleProducts = allProducts.filter(p => !p.productOnSale);
+
+  // ── Motion pilot: product card entrance ──────────────────────────────────────
+  // Cards are keyed by productId+storeId instead of list index. That way a
+  // changed result set really is "new elements" for React, which is what lets a
+  // card play its entrance instead of silently reusing the previous DOM node.
+  const reduceMotion = useReducedMotion();
+  // Capture mode (?promo=...) lifts the downgrades on purpose: the entrance
+  // animation is exactly what is being recorded. See motion/promo.js.
+  const promoMode = usePromoMode();
+  const cardEntranceDisabled = reduceMotion === true && !promoMode.enabled;
+  const onSaleCards = buildStableCardKeys(onSaleProducts, "onsale");
+  const notOnSaleCards = buildStableCardKeys(notOnSaleProducts, "notonsale");
+  // Identity of the current result set = the React Query key, so a new keyword
+  // or filter change animates in, while "load more" only animates what it added.
+  const resultSetKey = productsQueryKey.join("|");
+  const onSaleEntrances = useCardEntrance(
+    onSaleCards.map((card) => card.key),
+    {
+      disabled: cardEntranceDisabled,
+      resetKey: resultSetKey,
+      replayToken: promoMode.replayToken,
+    }
+  );
+  const notOnSaleEntrances = useCardEntrance(
+    notOnSaleCards.map((card) => card.key),
+    {
+      disabled: cardEntranceDisabled,
+      resetKey: resultSetKey,
+      replayToken: promoMode.replayToken,
+    }
+  );
 
   
 
@@ -1037,7 +1095,10 @@ const settings = {
         WebkitOverflowScrolling: "touch",
         display: "flex",
         flexDirection: "column",
-        height: "100vh",
+        // --vh-full is 100dvh where supported (iOS 15.4+ / Chrome 108+), 100vh
+        // in older browsers: the mobile shell no longer hides behind the
+        // collapsing browser toolbars (Stage 0).
+        height: "var(--vh-full, 100vh)",
         // added rules to further prevent horizontal panning on iOS
         overscrollBehaviorX: "contain",
         touchAction: "pan-y",
@@ -1086,6 +1147,14 @@ const settings = {
 
         <div className="d-flex align-items-center" style={{ flex: 1, minWidth: 0 }}>
           <div style={{ position: "relative", width: "100%" }}>
+            {/* Focus glow: opacity + scale only (see styles/motion.css) */}
+            <m.div
+              className="home-search-focus-ring"
+              aria-hidden="true"
+              variants={focusRingVariants}
+              initial="idle"
+              animate={isSearchFocused ? "focused" : "idle"}
+            />
             <Form.Control
               className="form-control-lg"
               style={{
@@ -1114,16 +1183,26 @@ const settings = {
               }}
             />
 
-            {searchInput?.length > 0 && (
-              <button
-                type="button"
-                aria-label="Clear search"
-                onClick={clearSearch}
-                style={{
+            <AnimatePresence>
+              {searchInput?.length > 0 && (
+                <m.button
+                  type="button"
+                  aria-label="Clear search"
+                  data-flash
+                  variants={clearButtonVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  onClick={clearSearch}
+                  style={{
                   position: "absolute",
                   right: 6,
+                  // Centred with a negative margin, not translateY(-50%): Motion owns
+                  // the inline `transform` for the pop-in (scale/rotate), so a static
+                  // transform here would be overwritten. 14px = half of the 28px
+                  // button box (16px line-height + 2x6px padding).
                   top: "50%",
-                  transform: "translateY(-50%)",
+                  marginTop: -14,
                   background: "transparent",
                   border: "none",
                   fontSize: 16,
@@ -1134,8 +1213,9 @@ const settings = {
                 }}
               >
                 ×
-              </button>
-            )}
+              </m.button>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
@@ -1147,12 +1227,14 @@ const settings = {
           {!notificationsAllowed && (
             <FiBell
               aria-label="Enable notifications"
+              data-flash
               style={desktopTopIconStyle}
               onClick={handleEnableNotifications}
             />
           )}
           <FiStar
             aria-label="Favoritet"
+            data-flash
             style={{
               ...desktopTopIconStyle,
               color: "#0f172a",
@@ -1163,6 +1245,7 @@ const settings = {
 
           <FiUser
             aria-label="Profili"
+            data-flash
             style={desktopTopIconStyle}
             onClick={toggleProfilePanel}
           />
@@ -1332,6 +1415,7 @@ const settings = {
           {!notificationsAllowed && (
             <FiBell
               aria-label="Enable notifications"
+              data-flash
               className="mobile-top-icon"
               style={mobileTopIconStyle}
               onClick={handleEnableNotifications}
@@ -1340,6 +1424,7 @@ const settings = {
 
           <FiStar
             aria-label="Favoritet"
+            data-flash
             className="mobile-top-icon"
             style={{
               ...mobileTopIconStyle,
@@ -1351,6 +1436,7 @@ const settings = {
 
           <FiUser
             aria-label="Profili"
+            data-flash
             className="mobile-top-icon"
             style={mobileTopIconStyle}
             onClick={toggleProfilePanel}
@@ -1546,6 +1632,14 @@ minWidth: 0,
     <div className="select-description flex-grow-1 form-control-lg home-search-control-wrap" style={{ width: "100%", margin: 0, padding: 0, display: "flex" }}>
       {/* Controlled input so we can show an inline clear button */}
       <div className="home-search-field-frame" style={{ position: "relative", width: "100%", display: "flex", alignItems: "center" }}>
+        {/* Focus glow: opacity + scale only (see styles/motion.css) */}
+        <m.div
+          className="home-search-focus-ring"
+          aria-hidden="true"
+          variants={focusRingVariants}
+          initial="idle"
+          animate={isSearchFocused ? "focused" : "idle"}
+        />
         <Form.Control
           className="select-description flex-grow-1 form-control-lg home-search-input"
           style={{
@@ -1576,13 +1670,19 @@ minWidth: 0,
         <span className="home-search-icon" aria-hidden="true" />
 
         {/* Inline clear button positioned inside the input area */}
-        {searchInput?.length > 0 && (
-          <button
-            type="button"
-            className="home-search-clear-btn"
-            aria-label="Clear search"
-            onClick={clearSearch}
-            style={{
+        <AnimatePresence>
+          {searchInput?.length > 0 && (
+            <m.button
+              type="button"
+              className="home-search-clear-btn"
+              aria-label="Clear search"
+              data-flash
+              variants={clearButtonVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              onClick={clearSearch}
+              style={{
               position: "absolute",
               right: 6,
               background: "transparent",
@@ -1594,8 +1694,9 @@ minWidth: 0,
             }}
           >
             ×
-          </button>
-        )}
+          </m.button>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Use state for searching instead of DOM traversal */}
@@ -1686,8 +1787,13 @@ minWidth: 0,
   onClearOnSale={() => setOnSale(false)}
 />
 
+<AnimatePresence>
 {normalizedSearchKeyword.length > 0 && !(isFetching && !isFetchingNextPage) && (
-  <div
+  <m.div
+    variants={bannerVariants}
+    initial="hidden"
+    animate="visible"
+    exit="exit"
     style={{
       margin: "8px 0 10px 0",
       padding: "8px 12px",
@@ -1700,11 +1806,16 @@ minWidth: 0,
     }}
   >
     U gjet{totalItemsFound === 1 ? "" : "en"} {totalItemsFound} {totalItemsFound === 1 ? "artikull" : "artikuj"} per &quot;{normalizedSearchKeyword}&quot;{selectedStoresSuffix}.
-  </div>
+  </m.div>
 )}
+</AnimatePresence>
 
          </div>
-         {/* Scrollable section: only the product cards scroll, scrollbar hidden */}
+         {/* Scrollable section: product results + the online price panel scroll
+             together.
+             Everything below the pinned filters must live in here: the page is
+             100vh/overflow:hidden, so content rendered outside this div cannot be
+             scrolled into view (it just gets clipped). */}
          <div
            ref={productsScrollRef}
            className="hide-scrollbar"
@@ -1725,9 +1836,9 @@ minWidth: 0,
     border: "0px solid #060101ff",
   }}
 >
-  {onSaleProducts.map((product, idx) => (
+  {onSaleCards.map(({ product, key }, cardIndex) => (
     <ProductCard
-      key={`onsale-${idx}`}
+      key={key}
       variant="onsale"
       product={product}
       baseUrl={baseUrl}
@@ -1740,6 +1851,9 @@ minWidth: 0,
       onToggleFavorite={handleToggleFavorite}
       onOpenShare={openShareModal}
       onOpenFlyer={handleFlyerModal}
+      shouldAnimate={onSaleEntrances[cardIndex]?.animate === true}
+      enterDelay={onSaleEntrances[cardIndex]?.delay || 0}
+      replayToken={promoMode.replayToken}
     />
   ))}
 </ProductsGrid>
@@ -1774,9 +1888,9 @@ notOnSaleProducts.length > 0 && (
     //padding: "10px", // Optional: Add padding inside the row
   }}
 >
-  {notOnSaleProducts.map((product, idx) => (
+  {notOnSaleCards.map(({ product, key }, cardIndex) => (
     <ProductCard
-      key={`notonsale-${idx}`}
+      key={key}
       variant="notonsale"
       product={product}
       baseUrl={baseUrl}
@@ -1789,11 +1903,25 @@ notOnSaleProducts.length > 0 && (
       onToggleFavorite={handleToggleFavorite}
       onOpenShare={openShareModal}
       onOpenFlyer={handleFlyerModal}
+      shouldAnimate={notOnSaleEntrances[cardIndex]?.animate === true}
+      enterDelay={notOnSaleEntrances[cardIndex]?.delay || 0}
+      replayToken={promoMode.replayToken}
     />
   ))}
 
 </ProductsGrid>
 
+{/* Regular prices from the shops' own online shops. Always rendered after the
+    results whenever there is a keyword, no matter whether the keyword matched
+    products in the flyers or not. */}
+{normalizedSearchKeyword.length > 1 && (
+  <OnlinePriceCheck
+    keyword={normalizedSearchKeyword}
+    storeIds={storeIdsCsv}
+    nodeUrl={node_url}
+    autoCheck
+  />
+)}
 
       <HomeModals
         isModalOpen={isModalOpen}
@@ -1835,7 +1963,7 @@ notOnSaleProducts.length > 0 && (
           style={{
             position: "fixed",
             left: "50%",
-            bottom: 16,
+            bottom: "calc(16px + var(--safe-bottom, 0px))",
             transform: "translateX(-50%)",
             zIndex: 1050,
           }}
@@ -1851,6 +1979,9 @@ notOnSaleProducts.length > 0 && (
          </div>
 
          <ScrollToTopButton scrollContainerRef={productsScrollRef} />
+
+      {/* Capture bar: only renders when the page was opened with ?promo=<speed>. */}
+      <PromoControls />
 
       <RegistrationModal
         show={showRegisterModal}

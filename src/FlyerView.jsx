@@ -86,7 +86,7 @@ export default function FlyerView() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f4f5f7", display: "flex", flexDirection: "column" }}>
+    <div style={{ minHeight: "var(--vh-full, 100vh)", background: "#f4f5f7", display: "flex", flexDirection: "column" }}>
       <header
         style={{
           display: "flex",

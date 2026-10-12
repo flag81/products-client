@@ -20,13 +20,16 @@ export default function ScrollToTopButton({ scrollContainerRef, threshold = 300 
   return (
     <button
       type="button"
+      data-flash
       onClick={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
       aria-label="Kthehu lart"
       title="Kthehu lart"
       style={{
         position: "fixed",
-        bottom: 24,
-        right: 20,
+        // Safe-area aware: on a home-bar phone / landscape notch the button must
+        // stay a thumb's width away from the OS gesture zone (Stage 0).
+        bottom: "calc(24px + var(--safe-bottom, 0px))",
+        right: "calc(20px + var(--safe-right, 0px))",
         width: 52,
         height: 52,
         borderRadius: "50%",

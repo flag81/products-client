@@ -1,7 +1,10 @@
 import React from "react";
+import PropTypes from "prop-types";
 
-export default function NoProductsMessage({ show }) {
+export default function NoProductsMessage({ show, keyword, children }) {
   if (!show) return null;
+
+  const trimmedKeyword = String(keyword || "").trim();
 
   return (
     <div
@@ -16,7 +19,14 @@ export default function NoProductsMessage({ show }) {
         background: "#d7d8db",
       }}
     >
-      Nuk u gjenden produkte.
+      Nuk u gjenden produkte{trimmedKeyword ? ` për "${trimmedKeyword}"` : ""}.
+      {children}
     </div>
   );
 }
+
+NoProductsMessage.propTypes = {
+  show: PropTypes.bool,
+  keyword: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  children: PropTypes.node,
+};

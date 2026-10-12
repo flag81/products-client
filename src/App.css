@@ -1,22 +1,14 @@
 #root {
   width: 100%;
-  min-height: 100vh;
+  min-height: 100vh; /* fallback for browsers without dvh */
+  min-height: var(--vh-full); /* dvh where supported (token: index.css, Stage 0) */
   margin: 0;
   padding: 0;
+  /* Notch / rounded-corner insets. Both tokens resolve to 0px on every device
+     without safe-area insets, so desktop never shifts (Stage 0). */
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
   text-align: left;
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
 
@@ -38,33 +30,18 @@
   background: #fff;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* Add this to your CSS file */
 .responsive-button {
   margin-right: 5px;
   font-size: 16px; /* Default font size for larger screens */
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
   .responsive-button {
     font-size: 12px; /* Smaller font size for mobile */
   }
 }
 
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
 
 body {
   margin: 0; /* Remove default margin to prevent overflow */
@@ -75,10 +52,6 @@ body {
 
 .card {
   padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
 }
 
 .product-card {
@@ -151,7 +124,7 @@ body {
   display: block;       /* remove inline gaps */
 }
 
-@media (max-width: 576px) {
+@media (max-width: 575.98px) {
   .icon-image {
     width: 25px; /* Minimum size on small screens */
     
@@ -166,20 +139,20 @@ body {
 }
 
 
-@media (max-width: 576px) {
+@media (max-width: 575.98px) {
   .product-image {
     height: auto;
   }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 575.98px) {
   .sale-date {
     font-size: 12px; /* Minimum size on small screens */
     margin: 0%;
   }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 575.98px) {
   .product-description {
     font-size: 16px; /* Minimum size on small screens */
     margin: 0%;
@@ -209,7 +182,7 @@ body {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
   .overlay-container {
     display: none;
 
@@ -221,7 +194,7 @@ body {
 
 
 
-@media (max-width: 576px) {
+@media (max-width: 575.98px) {
   .icon-description {
     font-size: 12px; /* Minimum size on small screens */
     margin: 0%;
@@ -236,7 +209,7 @@ body {
 }
 
 
-@media (max-width: 576px) {
+@media (max-width: 575.98px) {
   .select-description {
     font-size: 10px; /* Minimum size on small screens */
     margin: 0%;
@@ -253,7 +226,8 @@ body {
 .dashboard-page {
   width: 100%;
   max-width: none;
-  min-height: 100vh;
+  min-height: 100vh; /* fallback */
+  min-height: var(--vh-full); /* dvh where supported (Stage 0) */
   margin: 0;
   padding: 20px;
   background: linear-gradient(180deg, #f7f8fb 0%, #eef2f7 100%);
@@ -344,13 +318,16 @@ body {
   margin-top: 18px;
 }
 
+/* Deliberately a component breakpoint, not a Bootstrap step: the editor grid
+   switches to one column when it can no longer fit two (documented in MOBILE.md
+   rather than silently rounded to a framework value). */
 @media (max-width: 1100px) {
   .dashboard-editor-grid {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
   .dashboard-page {
     padding: 12px;
   }

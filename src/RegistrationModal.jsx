@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Modal, Form, Button } from "react-bootstrap";
 import { getApiBaseUrl } from "./api/apiFetch";
+import { loadAppleSdk } from "./utils/appleSdk";
 
 function RegistrationModal({ show, setShowRegisterModal, setUserId , setIsLoggedIn ,setEmail }) {
 
@@ -12,6 +13,57 @@ function RegistrationModal({ show, setShowRegisterModal, setUserId , setIsLogged
 
   const startGoogleLogin = () => {
     window.location.assign(`${node_url}/auth/google`);
+  };
+
+  const startAppleLogin = async () => {
+    try {
+      // Loaded on demand (src/utils/appleSdk.js); the SDK is no longer a
+      // blocking <script> in index.html.
+      try {
+        await loadAppleSdk();
+      } catch {
+        alert("Apple login nuk u ngarkua. Kontrollo lidhjen dhe provo përsëri.");
+        return;
+      }
+
+      window.AppleID.auth.init({
+        clientId: import.meta.env.VITE_APPLE_CLIENT_ID || "com.meniven.web",
+        scope: "email",
+        usePopup: true,
+      });
+
+      const response = await window.AppleID.auth.signIn();
+      const idToken = response?.authorization?.id_token;
+      if (!idToken) throw new Error("Missing Apple id_token");
+
+      const res = await fetch(`${node_url}/auth/apple/callback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ id_token: idToken }),
+      });
+      if (!res.ok) throw new Error(`Apple callback failed (${res.status})`);
+
+      // Clear stale anonymous header token so the fresh Apple cookie session wins.
+      localStorage.removeItem("token");
+      localStorage.removeItem("jwtToken");
+
+      const sessionResponse = await fetch(`${node_url}/check-session`, {
+        method: "GET",
+        credentials: "include",
+      });
+      const session = await sessionResponse.json();
+
+      setUserId(session?.userId ?? null);
+      setIsLoggedIn(Boolean(session?.isLoggedIn));
+      setEmail(session?.email || "");
+      setShowRegisterModal(false);
+    } catch (error) {
+      console.error("[AppleLogin] error", error);
+      if (error?.error !== "popup_closed_by_user") {
+        alert("Hyrja me Apple dështoi. Provo përsëri.");
+      }
+    }
   };
 
   const sendVerificationCode = async () => {
@@ -106,6 +158,14 @@ function RegistrationModal({ show, setShowRegisterModal, setUserId , setIsLogged
 
             <Button variant="outline-dark" onClick={startGoogleLogin} className="mt-2">
               Hyr me Google
+            </Button>
+
+            <Button
+              onClick={startAppleLogin}
+              className="mt-2"
+              style={{ background: "#000000", borderColor: "#000000", marginLeft: "10px" }}
+            >
+               Hyr me Apple
             </Button>
 
           </>

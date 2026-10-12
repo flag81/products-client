@@ -16,7 +16,26 @@ import { post } from 'jquery';
 import { filterOutExistingById } from './utils/idUtils';
 import { dedupePhotosByImageIdOrUri } from './utils/dedupe';
 import { getApiBaseUrl } from './api/apiFetch';
+import './styles/dashboard.css';
 
+
+// --- Per-store fetch schedule (N fetches/day) helpers -----------------------
+// The dropdown values map to a minute interval on the server (1440 / N).
+const FETCHES_PER_DAY_OPTIONS = [0.5, 1, 2, 3, 4, 6, 8, 12, 24];
+const scheduleCellStyle = undefined;
+const scheduleHeadStyle = undefined;
+
+function formatScheduleDate(value) {
+  if (!value) return '—';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleString();
+}
+
+function isScheduleOverBudget(scheduler) {
+  if (!scheduler || !scheduler.rapidApiDailyBudget) return false;
+  return Number(scheduler.estimatedCallsPerDay || 0) > Number(scheduler.rapidApiDailyBudget);
+}
 
 
 function Dashboard() {
@@ -92,6 +111,18 @@ const [selectedStore, setSelectedStore] = useState('0'); // Default to "All Stor
 const [selectedStoreName, setSelectedStoreName] = useState('All Stores'); // Default to "All Stores"
 const [selectedStoreFacebookPageId, setSelectedStoreFacebookPageId ] = useState(''); // State for selected store's Facebook URL
 const [ingestStoreIds, setIngestStoreIds] = useState([]); // Store IDs selected for ingest test
+
+// --- Per-store fetch frequency (dashboard-controlled, N fetches/day) ---
+const [showSchedulePanel, setShowSchedulePanel] = useState(false);
+const [storeSchedules, setStoreSchedules] = useState([]);
+const [scheduleScheduler, setScheduleScheduler] = useState(null);
+const [scheduleDrafts, setScheduleDrafts] = useState({}); // storeId -> { fetchesPerDay: 'auto'|'4', pinned: bool }
+const [savingScheduleId, setSavingScheduleId] = useState(null);
+const [scheduleStatus, setScheduleStatus] = useState('');
+const [scheduleLoading, setScheduleLoading] = useState(false);
+// Global on/off switch for all Facebook scraping (`app_settings.ingest_enabled`).
+const [ingestEnabled, setIngestEnabled] = useState(true);
+const [savingIngestSwitch, setSavingIngestSwitch] = useState(false);
 const [editingProductId, setEditingProductId] = useState(null);
 const [productEditForm, setProductEditForm] = useState({
   description: '',
@@ -815,6 +846,9 @@ console.log('flyerBookId:', flyerBookId);
 
   getPostIds();
 
+  fetchStoreSchedules();
+  fetchIngestSettings();
+
  // storeId = document.querySelector('select[name="store"]').value;
   //getAllProducts();
 }, []);
@@ -1132,6 +1166,12 @@ const handleTriggerDailyIngest = async () => {
   const storeLabel = ingestStoreIds.length > 0
     ? `stores: ${ingestStoreIds.join(', ')}`
     : 'ALL active stores';
+  // The server refuses a bulk run while the master switch is off (it is only
+  // bypassed when specific store IDs are sent).
+  if (!ingestEnabled && ingestStoreIds.length === 0) {
+    setStatus(<font style={{color:'orange'}}><b>Facebook scraping is switched OFF for all stores. Turn the master switch back on (or select specific stores) to run an ingest.</b></font>);
+    return;
+  }
   if (!window.confirm(`Run daily ingest for ${storeLabel}? This will fetch Facebook posts, upload to Cloudinary, extract with Gemini, and insert into the DB.`)) {
     return;
   }
@@ -1152,6 +1192,176 @@ const handleTriggerDailyIngest = async () => {
   } catch (error) {
     console.error('Error triggering daily ingest:', error);
     setStatus(<font style={{color:'red'}}><b>Network error triggering daily ingest.</b></font>);
+  }
+};
+
+// --- Per-store fetch frequency (N fetches/day) ---
+// Loads every Facebook store with its configured + effective cadence.
+const fetchStoreSchedules = async () => {
+  setScheduleLoading(true);
+  try {
+    const response = await fetch(`${node_url}/stores/schedule`);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || `HTTP ${response.status}`);
+    }
+    const rows = Array.isArray(data.stores) ? data.stores : [];
+    setStoreSchedules(rows);
+    setScheduleScheduler(data.scheduler || null);
+    const drafts = {};
+    for (const s of rows) {
+      drafts[s.storeId] = {
+        fetchesPerDay: s.enabled === false
+          ? 'off'
+          : s.mode === 'manual'
+            ? String(s.requestedFetchesPerDay ?? '')
+            : 'auto',
+        pinned: Boolean(s.pinned),
+      };
+    }
+    setScheduleDrafts(drafts);
+  } catch (error) {
+    console.error('Error loading store schedules:', error);
+    setScheduleStatus(<font style={{color:'red'}}><b>Could not load fetch schedules: {error.message}</b></font>);
+  } finally {
+    setScheduleLoading(false);
+  }
+};
+
+// --- Global ingest switch (turn Facebook scraping off for ALL stores) ---
+const fetchIngestSettings = async () => {
+  try {
+    const response = await fetch(`${node_url}/ingestion/settings`);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || `HTTP ${response.status}`);
+    }
+    setIngestEnabled(Boolean(data.ingestEnabled));
+  } catch (error) {
+    console.error('Error loading ingest settings:', error);
+  }
+};
+
+const toggleIngestSwitch = async () => {
+  const next = !ingestEnabled;
+  const question = next
+    ? 'Turn Facebook scraping ON again for all stores? Stores that were paused individually stay paused.'
+    : 'Turn Facebook scraping OFF for ALL stores? The scheduler will stop fetching every store until you turn it back on.';
+  if (!window.confirm(question)) return;
+
+  setSavingIngestSwitch(true);
+  try {
+    const response = await fetch(`${node_url}/ingestion/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: next }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(result.error || `HTTP ${response.status}`);
+    }
+    setIngestEnabled(Boolean(result.ingestEnabled));
+    setScheduleStatus(<font style={{color: result.ingestEnabled ? 'green' : 'orange'}}><b>{result.message}</b></font>);
+    await fetchStoreSchedules();
+  } catch (error) {
+    console.error('Error toggling the ingest switch:', error);
+    setScheduleStatus(<font style={{color:'red'}}><b>Could not update the ingest switch: {error.message}</b></font>);
+  } finally {
+    setSavingIngestSwitch(false);
+  }
+};
+
+const setScheduleDraft = (storeId, patch) => {
+  setScheduleDrafts(prev => ({
+    ...prev,
+    [storeId]: { ...(prev[storeId] || { fetchesPerDay: 'auto', pinned: false }), ...patch },
+  }));
+};
+
+// "off" = 0 fetches/day for this single store (paused).
+const schedulePayloadFromDraft = (draft) =>
+  draft.fetchesPerDay === 'auto'
+    ? { mode: 'auto' }
+    : draft.fetchesPerDay === 'off'
+      ? { enabled: false }
+      : { fetchesPerDay: Number(draft.fetchesPerDay), pinned: Boolean(draft.pinned) };
+
+const putStoreSchedule = async (storeId, payload) => {
+  const response = await fetch(`${node_url}/stores/${storeId}/schedule`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(result.error || `HTTP ${response.status}`);
+  }
+  return result;
+};
+
+const saveStoreSchedule = async (storeId) => {
+  const draft = scheduleDrafts[storeId];
+  if (!draft) return;
+  setSavingScheduleId(storeId);
+  try {
+    const result = await putStoreSchedule(storeId, schedulePayloadFromDraft(draft));
+    const warn = Array.isArray(result.warnings) && result.warnings.length > 0 ? ` ⚠ ${result.warnings.join(' ')}` : '';
+    setScheduleStatus(<font style={{color:'green'}}><b>{result.message}{warn}</b></font>);
+    await fetchStoreSchedules();
+  } catch (error) {
+    console.error('Error saving store schedule:', error);
+    setScheduleStatus(<font style={{color:'red'}}><b>Error saving store {storeId}: {error.message}</b></font>);
+  } finally {
+    setSavingScheduleId(null);
+  }
+};
+
+const saveAllStoreSchedules = async () => {
+  const storeIds = Object.keys(scheduleDrafts).map(Number).filter(Number.isFinite);
+  if (storeIds.length === 0) return;
+  if (!window.confirm(`Save fetch frequencies for ${storeIds.length} store(s)?`)) return;
+  setSavingScheduleId('all');
+  const failures = [];
+  for (const storeId of storeIds) {
+    const draft = scheduleDrafts[storeId];
+    if (!draft) continue;
+    try {
+      await putStoreSchedule(storeId, schedulePayloadFromDraft(draft));
+    } catch (error) {
+      failures.push(`${storeId}: ${error.message}`);
+    }
+  }
+  await fetchStoreSchedules();
+  setSavingScheduleId(null);
+  if (failures.length === 0) {
+    setScheduleStatus(<font style={{color:'green'}}><b>Saved fetch frequencies for {storeIds.length} store(s).</b></font>);
+  } else {
+    setScheduleStatus(<font style={{color:'red'}}><b>{failures.length} schedule(s) failed: {failures.join('; ')}</b></font>);
+  }
+};
+
+// Bypass the Facebook cache and ingest one store right now (uses 1 RapidAPI call).
+const handleFetchStoreNow = async (storeId) => {
+  if (!window.confirm(`Fetch store ${storeId} now? This bypasses the Facebook cache and consumes one RapidAPI call.`)) {
+    return;
+  }
+  setSavingScheduleId(storeId);
+  try {
+    const response = await fetch(`${node_url}/trigger-daily-ingest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ storeIds: [storeId], force: true }),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || `HTTP ${response.status}`);
+    }
+    setScheduleStatus(<font style={{color:'orange'}}><b>{result.message}</b></font>);
+  } catch (error) {
+    console.error('Error triggering store fetch:', error);
+    setScheduleStatus(<font style={{color:'red'}}><b>Could not trigger store {storeId}: {error.message}</b></font>);
+  } finally {
+    setSavingScheduleId(null);
   }
 };
 
@@ -2149,9 +2359,33 @@ if (!productId || !keyword) {
   <button onClick={requestNotificationPermission}>Enable Notifications</button>
   </div> */}
 
-<div className="dashboard-status">
-<p>{status}</p>
+<header className="dashboard-header">
+  <div className="dashboard-brand">
+    <div className="dashboard-logo" aria-hidden="true">M</div>
+    <div>
+      <h1 className="dashboard-title">Meniven Admin Console</h1>
+      <p className="dashboard-subtitle">Store ingestion, product review and notification operations</p>
+    </div>
   </div>
+  <div className="dashboard-header-actions">
+    <span className="dashboard-user-chip">
+      <span className="dashboard-user-dot" aria-hidden="true" />
+      {userName ? userName : `User #${loggedInUser}`}
+    </span>
+    <button type="button" onClick={fetchJobLogs}>
+      Job Logs
+    </button>
+    <button type="button" className="dash-btn dash-btn-danger" onClick={handleSendAllNotifications}>
+      Notify all users
+    </button>
+  </div>
+</header>
+
+{status && (
+  <div className="dashboard-status">
+    <div className="dashboard-status-content">{status}</div>
+  </div>
+)}
 
 
 {
@@ -2163,7 +2397,15 @@ if (!productId || !keyword) {
 <div className="dashboard-panel">
   <div style={{ display: 'flex' }}>
     <div className='scrollable-div2' style={{ width: '100%' }}>
-      <table name="media" border="1" cellPadding="10" cellSpacing="0">
+      <table name="media" className="dashboard-table">
+        <thead>
+          <tr>
+            <th>Preview</th>
+            <th>File</th>
+            <th>Actions</th>
+            <th>Select</th>
+          </tr>
+        </thead>
         <tbody>
           {mediaFiles.map((file) => (
             <tr key={file.public_id}>
@@ -2215,7 +2457,15 @@ if (!productId || !keyword) {
 
 <div className="dashboard-toolbar">
 
-Search Products: <input type="text" id="keyword_search" name="keyword_search" onKeyDown={(e) => { if (e.key === 'Enter') searchProducts(e.target.value); }} />
+  <div className="dashboard-toolbar-group">
+    <label className="dashboard-field-label" htmlFor="keyword_search">Search products</label>
+    <input
+      type="text"
+      id="keyword_search"
+      name="keyword_search"
+      placeholder="Keyword or description..."
+      onKeyDown={(e) => { if (e.key === 'Enter') searchProducts(e.target.value); }}
+    />
 
   <button
     onClick={async () => {
@@ -2226,6 +2476,11 @@ Search Products: <input type="text" id="keyword_search" name="keyword_search" on
   >
     Clear
   </button>
+  </div>
+
+  <div className="dashboard-toolbar-group">
+    <span className="dashboard-field-label">Catalog</span>
+
   
   
 
@@ -2262,12 +2517,14 @@ Search Products: <input type="text" id="keyword_search" name="keyword_search" on
       Refresh Products
     </button>
 
-    <button onClick={loadLatestProducts} style={{ fontWeight: 'bold' }}>
+    <button type="button" onClick={loadLatestProducts}>
       Load Latest DB Products
     </button>
+  </div>
   
     {/* --- Daily Ingest: store selector + trigger button --- */}
-    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+    <div className="dashboard-toolbar-group">
+      <span className="dashboard-field-label">Ingest</span>
       <select
         multiple
         size={3}
@@ -2282,25 +2539,212 @@ Search Products: <input type="text" id="keyword_search" name="keyword_search" on
           <option key={store.storeId} value={store.storeId}>{store.storeName}</option>
         ))}
       </select>
-      <div style={{ fontSize: 11, color: '#555' }}>
-        {ingestStoreIds.length === 0 ? 'All stores' : `${ingestStoreIds.length} selected`}<br/>
-        <span style={{ color: '#888' }}>(Ctrl+click to multi-select)</span>
+      <div className="dashboard-hint">
+        {ingestStoreIds.length === 0 ? 'All stores' : `${ingestStoreIds.length} selected`}
+        <br />
+        <span>(Ctrl+click to multi-select)</span>
       </div>
-      <button onClick={handleTriggerDailyIngest} style={{ backgroundColor: '#31708f', color: 'white', borderColor: '#245269', fontWeight: 'bold' }}>
+      <button type="button" className="dash-btn dash-btn-primary" onClick={handleTriggerDailyIngest}>
         Run Daily Ingest
       </button>
     </div>
 
-    {/* --- NEW: Button to trigger notifications for all users --- */}
-    <button onClick={handleSendAllNotifications} style={{ backgroundColor: '#c9302c', color: 'white', borderColor: '#ac2925', fontWeight: 'bold' }}>
-      Dërgo Njoftime Për Të Gjithë
-    </button>
+    {/* --- Global scraping switch + per-store fetch frequency (N fetches/day) --- */}
+    <div className="dashboard-toolbar-wide">
+      <div className="dashboard-schedule-toolbar">
+        <button
+          type="button"
+          className={`dash-switch ${ingestEnabled ? 'dash-switch-on' : 'dash-switch-off'}`}
+          onClick={toggleIngestSwitch}
+          disabled={savingIngestSwitch}
+          aria-pressed={ingestEnabled}
+          title={
+            ingestEnabled
+              ? 'Facebook scraping is ON — click to switch every store off'
+              : 'Facebook scraping is OFF — click to switch every store back on'
+          }
+        >
+          <span className="dash-switch-track">
+            <span className="dash-switch-knob" />
+          </span>
+          <span className="dash-switch-label">
+            {savingIngestSwitch
+              ? 'Saving…'
+              : ingestEnabled
+                ? 'Scraping ON — turn off all'
+                : 'Scraping OFF — turn on all'}
+          </span>
+        </button>
 
-    {/* --- Button to show job logs --- */}
-    <button onClick={fetchJobLogs} style={{ backgroundColor: '#5bc0de', color: 'white', borderColor: '#46b8da', fontWeight: 'bold' }}>
-      Show Job Logs
-    </button>
-</div>  
+        <button
+          type="button"
+          className="dash-btn dash-btn-secondary"
+          onClick={() => {
+            const next = !showSchedulePanel;
+            setShowSchedulePanel(next);
+            if (next) fetchStoreSchedules();
+          }}
+        >
+          {showSchedulePanel ? 'Hide Fetch Frequencies' : 'Fetch Frequencies (N/day)'}
+        </button>
+
+        {!ingestEnabled && (
+          <span className="dash-badge dash-badge-paused">Master switch OFF — nothing is fetched</span>
+        )}
+        {ingestEnabled && Boolean(scheduleScheduler?.disabledStoreCount) && (
+          <span className="dash-badge dash-badge-paused">
+            {scheduleScheduler.disabledStoreCount} store(s) at 0/day
+          </span>
+        )}
+      </div>
+
+      {scheduleStatus && <div className="dashboard-schedule-status">{scheduleStatus}</div>}
+
+      {showSchedulePanel && (
+        <div className="dashboard-schedule-panel">
+          {!ingestEnabled && (
+            <div className="dashboard-schedule-alert">
+              <b>Scraping is turned OFF for all stores.</b> The scheduler skips every store until the master
+              switch is turned back on. Stores that you paused individually (0/day) stay paused after re-enabling.
+            </div>
+          )}
+          {scheduleScheduler && (
+            <div className="dashboard-schedule-meta">
+              Scheduler tick <b>{scheduleScheduler.cronExpression}</b> (every {scheduleScheduler.tickMinutes} min)
+              {' · '}
+              {scheduleScheduler.quietHours
+                ? `quiet hours ${scheduleScheduler.quietHours.start}:00-${scheduleScheduler.quietHours.end}:00`
+                : 'no quiet hours'}
+              {' · '}
+              RapidAPI today{' '}
+              <b style={{ color: scheduleScheduler.rapidApiDailyBudget > 0 && scheduleScheduler.rapidApiUsedToday >= scheduleScheduler.rapidApiDailyBudget ? 'red' : 'green' }}>
+                {scheduleScheduler.rapidApiUsedToday}/{scheduleScheduler.rapidApiDailyBudget}
+              </b>
+              {' · '}
+              estimated{' '}
+              <b style={{ color: isScheduleOverBudget(scheduleScheduler) ? 'red' : 'green' }}>
+                {scheduleScheduler.estimatedCallsPerDay}
+              </b>{' '}
+              calls/day
+              {isScheduleOverBudget(scheduleScheduler) && (
+                <span style={{ color: 'red', fontWeight: 'bold' }}> — over budget, later stores may be skipped</span>
+              )}
+              {' · '}
+              min interval {scheduleScheduler.minIntervalMinutes} min (max {scheduleScheduler.maxFetchesPerDay}/day)
+            </div>
+          )}
+
+          <div className="dashboard-schedule-actions">
+            <button type="button" onClick={fetchStoreSchedules} disabled={scheduleLoading}>
+              {scheduleLoading ? 'Loading…' : 'Reload'}
+            </button>
+            <button
+              type="button"
+              className="dash-btn dash-btn-primary"
+              onClick={saveAllStoreSchedules}
+              disabled={savingScheduleId !== null || scheduleLoading}
+            >
+              {savingScheduleId === 'all' ? 'Saving…' : 'Save all'}
+            </button>
+            <span className="dashboard-hint">
+              &quot;Auto&quot; = cadence derived from the store&apos;s posting rate; explicit values are pinned against the budget scaler.
+              &quot;0/day (paused)&quot; switches that single store off without losing its configured cadence.
+              Scheduled fetches only run outside the quiet hours shown above.
+            </span>
+          </div>
+
+          <table className="dashboard-table">
+            <thead>
+              <tr>
+                <th style={scheduleHeadStyle}>Store</th>
+                <th style={scheduleHeadStyle}>Fetches / day</th>
+                <th style={scheduleHeadStyle}>Effective cadence</th>
+                <th style={scheduleHeadStyle}>Pin</th>
+                <th style={scheduleHeadStyle}>Next fetch</th>
+                <th style={scheduleHeadStyle}>Last fetch</th>
+                <th style={scheduleHeadStyle}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {storeSchedules.map(store => {
+                const draft = scheduleDrafts[store.storeId] || { fetchesPerDay: 'auto', pinned: false };
+                const isPaused = draft.fetchesPerDay === 'off';
+                const isCustom = !isPaused && draft.fetchesPerDay !== 'auto' && !FETCHES_PER_DAY_OPTIONS.includes(Number(draft.fetchesPerDay));
+                const busy = savingScheduleId !== null;
+                return (
+                  <tr key={store.storeId} className={store.active && !isPaused ? undefined : 'dash-row-inactive'}>
+                    <td style={scheduleCellStyle}>
+                      {store.storeName || store.storeId}
+                      {!store.active && ' (inactive)'}
+                    </td>
+                    <td style={scheduleCellStyle}>
+                      <select
+                        value={draft.fetchesPerDay}
+                        onChange={e => setScheduleDraft(store.storeId, { fetchesPerDay: e.target.value })}
+                        style={{ fontSize: 11 }}
+                      >
+                        <option value="off">0/day (paused)</option>
+                        <option value="auto">Auto (adaptive)</option>
+                        {FETCHES_PER_DAY_OPTIONS.map(n => (
+                          <option key={n} value={String(n)}>
+                            {n}/day ({Math.round(1440 / n)} min)
+                          </option>
+                        ))}
+                        {isCustom && <option value={draft.fetchesPerDay}>{draft.fetchesPerDay}/day (custom)</option>}
+                      </select>
+                    </td>
+                    <td style={scheduleCellStyle}>
+                      {store.enabled === false ? (
+                        <span className="dash-badge dash-badge-paused">0/day — paused</span>
+                      ) : store.effectiveIntervalMinutes ? (
+                        `~${store.fetchesPerDay}/day (every ${store.effectiveIntervalMinutes} min)`
+                      ) : (
+                        '—'
+                      )}
+                      {store.enabled !== false && store.mode === 'auto' && <span style={{ color: '#888' }}> auto</span>}
+                      {store.enabled !== false && store.pinned && <span style={{ color: '#31708f', fontWeight: 'bold' }}> pinned</span>}
+                    </td>
+                    <td style={scheduleCellStyle}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(draft.pinned)}
+                        disabled={draft.fetchesPerDay === 'auto' || isPaused}
+                        title={isPaused ? 'Paused stores are skipped by the scheduler' : 'Pinned stores are never stretched by the RapidAPI budget scaler'}
+                        onChange={e => setScheduleDraft(store.storeId, { pinned: e.target.checked })}
+                      />
+                    </td>
+                    <td style={scheduleCellStyle}>{formatScheduleDate(store.nextFetchAt)}</td>
+                    <td style={scheduleCellStyle}>{formatScheduleDate(store.lastFetchedAt)}</td>
+                    <td style={scheduleCellStyle}>
+                      <button onClick={() => saveStoreSchedule(store.storeId)} disabled={busy} style={{ fontSize: 11 }}>
+                        {savingScheduleId === store.storeId ? 'Saving…' : 'Save'}
+                      </button>{' '}
+                      <button
+                        onClick={() => handleFetchStoreNow(store.storeId)}
+                        disabled={busy}
+                        style={{ fontSize: 11 }}
+                        title="Bypass the Facebook cache and ingest this store right now (1 RapidAPI call)"
+                      >
+                        Fetch now
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          {storeSchedules.length === 0 && (
+            <div style={{ color: '#888', marginTop: 6 }}>
+              {scheduleLoading ? 'Loading stores…' : 'No stores with a Facebook page found.'}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+
+    {/* Notification + job-log actions now live in the page header. */}
+</div>
     
 
 
@@ -2309,24 +2753,9 @@ Search Products: <input type="text" id="keyword_search" name="keyword_search" on
 
 
 
-<div style={{ 
-
-  display: "inline-block",
-  
-  fontSize: 12,
- color: "#333" ,
- // add a border with rounded corners
-  border: "1px solid #ccc",
-  borderRadius: 5,
-  padding: 10,
-  cursor: "pointer",
-  margin: "0 5px",
-  
-
-
-
-}}
-
+<button
+  type="button"
+  className="dash-btn dash-btn-secondary dash-btn-block"
 onClick={() => {
   //setSelectedStore(store.storeId);
   //setStoreId(store.storeId);
@@ -2335,25 +2764,17 @@ onClick={() => {
   handleFetchFacebookPostsRapidApi(store.facebookPageId); // Fetch photos for the selected store using Rapid API
 
 } }
-
-
-
 >
-  
-  
-  <span style={{  textAlign: "center" }}>
   Fetch Photos for all Facebook Posts
-</span>      
-
-</div>
+</button>
 
 
 
 
-<div id="prod_image" style={{ display: 'flex', flexDirection: 'row', gap: '10px', margin : '10px', justifyContent: 'center', alignItems: 'center' }}>
+<div id="prod_image" className="dashboard-image-preview">
 
 
-  <button onClick={extractTextSingle}>Process images</button>
+  <button type="button" className="dash-btn dash-btn-primary" onClick={extractTextSingle}>Process images</button>
 
 
 </div>
@@ -2410,7 +2831,7 @@ onClick={() => {
       postsMap[photo.postId].images.push(photo.uri);
     });
     return Object.entries(postsMap).map(([postId, post]) => (
-      <div key={postId} style={{ border: '0px solid #ccc', borderRadius: 5, marginBottom: 20, padding: 10 }}>
+      <div key={postId} className="dashboard-post-card">
         <div style={{ display: 'flex', flexDirection: 'row', gap: 10, alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div style={{ marginBottom: 8, fontWeight: 'bold', color: '#333', flex: 1 }}>
             {post.message || <span style={{ color: '#888' }}>[No message]</span>}
@@ -2480,7 +2901,7 @@ onClick={() => {
 
         
 
-            <table name="products" border="1" cellPadding="10" cellSpacing="0" borderColor="black">
+            <table name="products" className="dashboard-table">
             <tr>
               <th>Selected</th>
               <th>Product ID</th>
@@ -2494,7 +2915,7 @@ onClick={() => {
 
 <tr
   key={`${product.productId}-${product.imageId || 'noimg'}-${idx}`}
-  style={{ backgroundColor: selectedProduct === product.productId ? 'lightblue' : 'white' }}
+  className={selectedProduct === product.productId ? 'dash-row-selected' : undefined}
   onClick={() => {
     const newSelectedProduct = product.productId === selectedProduct ? '' : product.productId;
     setSelectedProduct(newSelectedProduct);
@@ -2640,8 +3061,15 @@ onClick={() => {
       ? product.keywords.split(',')
       : []
   ).map((keyword, idx) => (
-    <div key={idx} style={{ gap: '10px', margin: '10px', fontSize: '10px' }}>
-      <button onClick={() => removeKeyword(selectedProduct, keyword)}>{keyword} X</button>
+    <div key={idx} className="dash-keyword-row">
+      <button
+        type="button"
+        className="dash-keyword-chip"
+        onClick={() => removeKeyword(selectedProduct, keyword)}
+      >
+        {keyword}
+        <span className="dash-keyword-x" aria-hidden="true">{'\u00d7'}</span>
+      </button>
     </div>
   ))}
 </td>
@@ -2908,15 +3336,17 @@ onClick={() => {
 
 {/* --- Job Logs Modal Overlay --- */}
 {showJobLogs && (
-  <div style={{
-    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+  <div className="dashboard-modal-overlay" style={{
+    // Full-screen overlay: `100%` (viewport, not 100vw) plus the dvh token and
+    // safe-area padding keeps it inside the notch/home-bar on phones
+    // (Stage 0). The padding is 0 on desktop, so the panel stays centred.
+    position: 'fixed', top: 0, left: 0, width: '100%', height: 'var(--vh-full, 100vh)',
+    padding: 'calc(12px + var(--safe-top, 0px)) calc(12px + var(--safe-right, 0px)) calc(12px + var(--safe-bottom, 0px)) calc(12px + var(--safe-left, 0px))',
+    boxSizing: 'border-box',
     backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999,
     display: 'flex', justifyContent: 'center', alignItems: 'center'
   }}>
-    <div style={{
-      backgroundColor: 'white', borderRadius: 8, padding: 20,
-      maxWidth: '90vw', maxHeight: '90vh', overflow: 'auto'
-    }}>
+    <div className="dashboard-modal">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <h3 style={{ margin: 0 }}>Job Logs</h3>
         <button onClick={() => setShowJobLogs(false)} style={{ fontSize: 18, cursor: 'pointer', background: 'none', border: 'none' }}>✕</button>

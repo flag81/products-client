@@ -1,9 +1,12 @@
 import PropTypes from "prop-types";
+import * as m from "motion/react-m";
 import { FiStar } from "react-icons/fi";
+import { STAR_TAP } from "../motion/variants";
 
 export default function FavoriteToggle({ isFavorite, onClick, size = 24 }) {
   return (
-    <div
+    <m.div
+      data-flash
       style={{
         display: "flex",
         flexDirection: "column",
@@ -13,6 +16,7 @@ export default function FavoriteToggle({ isFavorite, onClick, size = 24 }) {
         cursor: "pointer",
       }}
       role="button"
+      whileTap={STAR_TAP}
       onClick={onClick}
     >
       <FiStar
@@ -22,9 +26,10 @@ export default function FavoriteToggle({ isFavorite, onClick, size = 24 }) {
           height: size,
           color: "#0f172a",
           fill: isFavorite ? "#facc15" : "transparent",
+          transition: "fill 180ms ease-out",
         }}
       />
-    </div>
+    </m.div>
   );
 }
 

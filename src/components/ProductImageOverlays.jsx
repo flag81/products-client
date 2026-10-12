@@ -1,4 +1,6 @@
 import React from "react";
+import * as m from "motion/react-m";
+import { SPRING } from "../motion/tokens";
 
 export default function ProductImageOverlays({ imgUrl, product, onOpenModal, discountPct, compact = false }) {
   // Compact (2-per-row mobile) layout: scale every size down (0.78 = 0.65 + extra 20%).
@@ -52,8 +54,13 @@ export default function ProductImageOverlays({ imgUrl, product, onOpenModal, dis
         />
       </div>
 
-      <div
+      {/* Discount badge: springs in when it mounts together with the card image
+          (mount animation only, so it never replays on unrelated re-renders). */}
+      <m.div
         className="overlay-container3"
+        initial={{ opacity: 0, scale: 0.6 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={SPRING.pop}
         style={{
           position: "absolute",
           top: "5px",
@@ -73,7 +80,7 @@ export default function ProductImageOverlays({ imgUrl, product, onOpenModal, dis
             -{discountPct}%
           </span>
         ) : null}
-      </div>
+      </m.div>
 
       <div
         className="overlay-container4"

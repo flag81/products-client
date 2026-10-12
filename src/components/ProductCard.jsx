@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import * as m from "motion/react-m";
 import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card";
 import Zoom from "react-medium-image-zoom";
@@ -7,6 +8,7 @@ import "react-medium-image-zoom/dist/styles.css";
 import { getDisplayDiscountPercentage } from "../utils/pricing";
 import { buildProductImageUrl } from "../utils/cloudinary";
 import { getApiBaseUrl } from "../api/apiFetch";
+import { cardVariants, CARD_TAP, ICON_TAP } from "../motion/variants";
 import ProductImageOverlays from "./ProductImageOverlays";
 import FavoriteToggle from "./FavoriteToggle";
 import StoreBadge from "./StoreBadge";
@@ -24,6 +26,9 @@ export default function ProductCard({
   onOpenShare,
   onOpenFlyer,
   compact = false,
+  shouldAnimate = false,
+  enterDelay = 0,
+  replayToken = 0,
 }) {
   const imageMetaRef = useRef(null);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -104,6 +109,21 @@ export default function ProductCard({
   if (variant === "onsale") {
     return (
       <Col className="d-flex mb-3 mb-sm-0" style={{ minWidth: 0 }}>
+        {/* Motion wrapper: entrance (staggered via `enterDelay`) + tap feedback.
+            initial={false} for cards that were already on screen, so they render
+            straight in their final state instead of re-animating.
+            `key` = promo replay token: in capture mode (?promo) bumping it
+            remounts the wrapper so `initial` runs again - the only reliable way
+            to replay an entrance for a card that is already on screen. */}
+        <m.div
+          key={replayToken}
+          className="product-card-motion"
+          variants={cardVariants}
+          initial={shouldAnimate ? "hidden" : false}
+          animate="visible"
+          custom={enterDelay}
+          whileTap={CARD_TAP}
+        >
         <Card
           className={commonCardClass}
           style={{
@@ -142,7 +162,11 @@ export default function ProductCard({
                   width: "100%",
                   height: "auto",
                   opacity: imageLoaded ? 1 : 0,
-                  transition: "opacity 200ms ease-out",
+                  // subtle scale-in paired with the existing fade; the shimmer
+                  // skeleton stays as it is
+                  transform: imageLoaded ? "scale(1)" : "scale(1.02)",
+                  transition:
+                    "opacity 200ms ease-out, transform 320ms cubic-bezier(0.22, 1, 0.36, 1)",
                 }}
               />
             </Zoom>
@@ -243,9 +267,11 @@ export default function ProductCard({
                 </div>
 
                 {product?.flyer_book_id > 0 && (
-                  <div
+                  <m.div
                     role="button"
                     title="Fletushka"
+                    data-flash
+                    whileTap={ICON_TAP}
                     onClick={() => onOpenFlyer && onOpenFlyer(product.flyer_book_id)}
                     style={{
                       display: "flex",
@@ -264,12 +290,14 @@ export default function ProductCard({
                         display: "block",
                       }}
                     />
-                  </div>
+                  </m.div>
                 )}
 
-                <div
+                <m.div
                   role="button"
                   title="Ndaj produktin"
+                  data-flash
+                  whileTap={ICON_TAP}
                   onClick={() => onOpenShare && onOpenShare(product)}
                   style={{ display: "flex", alignItems: "flex-end", height: menuSize, cursor: "pointer" }}
                 >
@@ -281,11 +309,12 @@ export default function ProductCard({
                       color: "#0f172a",
                     }}
                   />
-                </div>
+                </m.div>
               </div>
             </div>
           </Card.Body>
         </Card>
+        </m.div>
       </Col>
     );
   }
@@ -295,6 +324,17 @@ export default function ProductCard({
 
   return (
     <Col className="d-flex" style={{ minWidth: 0 }}>
+      {/* Motion wrapper: entrance (staggered via `enterDelay`) + tap feedback.
+          `key` = promo replay token (see the onsale branch above). */}
+      <m.div
+        key={replayToken}
+        className="product-card-motion"
+        variants={cardVariants}
+        initial={shouldAnimate ? "hidden" : false}
+        animate="visible"
+        custom={enterDelay}
+        whileTap={CARD_TAP}
+      >
       <Card
         className={commonCardClass}
         style={{
@@ -333,7 +373,10 @@ export default function ProductCard({
                 height: "auto",
                 filter: "grayscale(100%)",
                 opacity: imageLoaded ? 1 : 0,
-                transition: "opacity 200ms ease-out",
+                // subtle scale-in paired with the existing fade
+                transform: imageLoaded ? "scale(1)" : "scale(1.02)",
+                transition:
+                  "opacity 200ms ease-out, transform 320ms cubic-bezier(0.22, 1, 0.36, 1)",
               }}
             />
           </Zoom>
@@ -418,9 +461,11 @@ export default function ProductCard({
               />
 
               {product?.flyer_book_id > 0 && (
-                <div
+                <m.div
                   role="button"
                   title="Fletushka"
+                  data-flash
+                  whileTap={ICON_TAP}
                   onClick={() => onOpenFlyer && onOpenFlyer(product.flyer_book_id)}
                   style={{
                     display: "flex",
@@ -439,12 +484,14 @@ export default function ProductCard({
                       display: "block",
                     }}
                   />
-                </div>
+                </m.div>
               )}
 
-              <div
+              <m.div
                 role="button"
                 title="Ndaj produktin"
+                data-flash
+                whileTap={ICON_TAP}
                 onClick={() => onOpenShare && onOpenShare(product)}
                 style={{
                   display: "flex",
@@ -462,11 +509,12 @@ export default function ProductCard({
                     color: "#0f172a",
                   }}
                 />
-              </div>
+              </m.div>
             </div>
           </div>
         </Card.Body>
       </Card>
+      </m.div>
     </Col>
   );
 }
