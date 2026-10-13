@@ -21,7 +21,6 @@ import StoreScroller from "./components/StoreScroller";
 import ActiveFiltersBar from "./components/ActiveFiltersBar";
 import ProductCard from "./components/ProductCard";
 import HomeModals from "./components/HomeModals";
-import SectionHeader from "./components/SectionHeader";
 import ProductsGrid from "./components/ProductsGrid";
 import OnlinePriceCheck from "./components/OnlinePriceCheck";
 import TransientNotice from "./components/TransientNotice";
@@ -1044,20 +1043,11 @@ useEffect(() => {
   const promoMode = usePromoMode();
   const cardEntranceDisabled = reduceMotion === true && !promoMode.enabled;
   const onSaleCards = buildStableCardKeys(onSaleProducts, "onsale");
-  const notOnSaleCards = buildStableCardKeys(notOnSaleProducts, "notonsale");
   // Identity of the current result set = the React Query key, so a new keyword
   // or filter change animates in, while "load more" only animates what it added.
   const resultSetKey = productsQueryKey.join("|");
   const onSaleEntrances = useCardEntrance(
     onSaleCards.map((card) => card.key),
-    {
-      disabled: cardEntranceDisabled,
-      resetKey: resultSetKey,
-      replayToken: promoMode.replayToken,
-    }
-  );
-  const notOnSaleEntrances = useCardEntrance(
-    notOnSaleCards.map((card) => card.key),
     {
       disabled: cardEntranceDisabled,
       resetKey: resultSetKey,
@@ -1859,66 +1849,19 @@ minWidth: 0,
 </ProductsGrid>
 
 
-{/* Not On Sale Products */}
-      
-
-{
-// if not onSaleProducts is empty, do not render this section
-
-notOnSaleProducts.length > 0 && (
-
-  <SectionHeader title="Te skaduara" />
-
-)
-}
-
-
-      
-     
-
-
-
-{/* FIX: Updated Row props for a standard responsive grid. */}
-<ProductsGrid
-  className="g-2 justify-content-start"
-  xs={2}
-  style={{
-    //border: "1px solid black", // Add a black border
-    //borderRadius: "5px", // Optional: Add rounded corners
-    //padding: "10px", // Optional: Add padding inside the row
-  }}
->
-  {notOnSaleCards.map(({ product, key }, cardIndex) => (
-    <ProductCard
-      key={key}
-      variant="notonsale"
-      product={product}
-      baseUrl={baseUrl}
-      autoTransformation={autoTransformation}
-      directory={directory}
-      compact={isXsScreen}
-      isCardImageLoaded={isCardImageLoaded}
-      setIsCardImageLoaded={setIsCardImageLoaded}
-      onOpenModal={openModal}
-      onToggleFavorite={handleToggleFavorite}
-      onOpenShare={openShareModal}
-      onOpenFlyer={handleFlyerModal}
-      shouldAnimate={notOnSaleEntrances[cardIndex]?.animate === true}
-      enterDelay={notOnSaleEntrances[cardIndex]?.delay || 0}
-      replayToken={promoMode.replayToken}
-    />
-  ))}
-
-</ProductsGrid>
-
 {/* Regular prices from the shops' own online shops. Always rendered after the
     results whenever there is a keyword, no matter whether the keyword matched
-    products in the flyers or not. */}
+    products in the flyers or not. The same component also renders the expired
+    flyer deals ("Te skaduara") as its own block above the panel. */}
 {normalizedSearchKeyword.length > 1 && (
   <OnlinePriceCheck
     keyword={normalizedSearchKeyword}
     storeIds={storeIdsCsv}
     nodeUrl={node_url}
+    expiredProducts={notOnSaleProducts}
+    baseUrl={baseUrl}
+    autoTransformation={autoTransformation}
+    directory={directory}
     autoCheck
   />
 )}
